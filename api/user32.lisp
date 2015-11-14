@@ -2,6 +2,8 @@
   (:use #:common-lisp #:cffi #:w32api.type)
   (:export RegisterClassExA
 	   UnregisterClassA
+	   GetClassNameA
+
 ;;	   CreateWindowA
 	   CreateWindowExA
 	   SetParent
@@ -21,12 +23,12 @@
 	   ShowWindow
 	   DestroyWindow
 	   DefWindowProcA
+
 	   GetDC
 	   GetWindowDC
 	   ReleaseDC
-	   GetClassNameA
-	   PostQuitMessage
 
+	   PostQuitMessage
 	   CreateAcceleratorTableA
 	   TranslateAcceleratorA
 	   GetMessageA
@@ -50,6 +52,21 @@
 (defcfun "UnregisterClassA" :boolean
   (lpClassName :string)
   (hInstance HINSTANCE))
+
+(defcfun "GetClassInfoExA" :boolean
+  (hinst    HINSTANCE)
+  (lpszClass      :string)
+  (lpwcx (:pointer (:struct WNDCLASSEX))))
+
+(defcfun "GetClassNameA" :boolean
+  (hWnd HWND)
+  (lpClassName :pointer)
+  (nMaxCount :int))
+
+(defcfun "SetClassLongPtrA" ULONG_PTR
+  (hWnd     HWND)
+  (nIndex      :int)
+  (dwNewLong   LONG_PTR))
 
 ;; (defcfun "CreateWindowA" HWND
 ;;   (lpClassName   :string)
@@ -186,11 +203,6 @@
 (defcfun "ReleaseDC" :boolean
   (hWnd HWND)
   (hDC  HDC))
-
-(defcfun "GetClassNameA" :int
-  (hWnd HWND)
-  (lpClassName :pointer)
-  (nMaxCount :int))
 
 (defcfun "PostQuitMessage" :void
   (id :int))

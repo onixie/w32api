@@ -11,6 +11,17 @@
 	   register-class
 	   unregister-class
 	   create-window
+	   get-window
+	   window-p
+	   get-window-class-name
 	   show-window
 	   hide-window
-	   destroy-window))
+	   enable-window
+	   disable-window
+	   active-window
+	   destroy-window
+	   window-enabled-p
+	   window-visible-p
+	   child-window-p
+	   window-active-p
+	   process-message))

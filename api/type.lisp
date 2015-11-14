@@ -41,7 +41,10 @@
 	   lpszClassName
 	   hIconSm
 
-	   +CW_USERDEFAULT+
+	   GCL_ENUM
+	   CS_FLAG
+
+	   +CW_USEDEFAULT+
 	   +HWND_MESSAGE+
 
 	   WS_EX_FLAG
@@ -119,9 +122,42 @@
 
 (defctype DLGPROC :pointer)
 
+
+
+(defparameter +CW_USEDEFAULT+ (- 0 #x80000000))
+
+(defparameter +HWND_MESSAGE+ -3)
+
+(defbitfield (CS_FLAG :unsigned-int)
+  (:BYTEALIGNCLIENT #x1000); Aligns the window's client area on a byte boundary (in the x direction). This style affects the width of the window and its horizontal placement on the display.
+  (:BYTEALIGNWINDOW #x2000); Aligns the window on a byte boundary (in the x direction). This style affects the width of the window and its horizontal placement on the display.
+  (:CLASSDC #x0040); Allocates one device context to be shared by all windows in the class. Because window classes are process specific, it is possible for multiple threads of an application to create a window of the same class. It is also possible for the threads to attempt to use the device context simultaneously. When this happens, the system allows only one thread to successfully finish its drawing operation.
+  (:DBLCLKS #x0008); Sends a double-click message to the window procedure when the user double-clicks the mouse while the cursor is within a window belonging to the class.
+  (:DROPSHADOW #x00020000); Enables the drop shadow effect on a window. The effect is turned on and off through SPI_SETDROPSHADOW. Typically, this is enabled for small, short-lived windows such as menus to emphasize their Z-order relationship to other windows. Windows created from a class with this style must be top-level windows; they may not be child windows.
+  (:GLOBALCLASS #x4000); Indicates that the window class is an application global class. For more information, see the "Application Global Classes" section of About Window Classes.
+  (:HREDRAW #x0002); Redraws the entire window if a movement or size adjustment changes the width of the client area.
+  (:NOCLOSE #x0200); Disables Close on the window menu.
+  (:OWNDC #x0020); Allocates a unique device context for each window in the class.
+  (:PARENTDC #x0080); Sets the clipping rectangle of the child window to that of the parent window so that the child can draw on the parent. A window with the CS_PARENTDC style bit receives a regular device context from the system's cache of device contexts. It does not give the child the parent's device context or device context settings. Specifying CS_PARENTDC enhances an application's performance.
+  (:SAVEBITS #x0800); Saves, as a bitmap, the portion of the screen image obscured by a window of this class. When the window is removed, the system uses the saved bitmap to restore the screen image, including other windows that were obscured. Therefore, the system does not send WM_PAINT messages to windows that were obscured if the memory used by the bitmap has not been discarded and if other screen actions have not invalidated the stored image.This style is useful for small windows (for example, menus or dialog boxes) that are displayed briefly and then removed before other screen activity takes place. This style increases the time required to display the window, because the system must first allocate memory to store the bitmap.
+  (:VREDRAW #x0001)); Redraws the entire window if a movement or size adjustment changes the height of the client area.
+
+;;; SetClassLongPtr nIndex
+(defcenum (GCL_ENUM :int)
+  (:CBCLSEXTRA -20);Sets the size, in bytes, of the extra memory associated with the class. Setting this value does not change the number of extra bytes already allocated.
+  (:CBWNDEXTRA -18);Sets the size, in bytes, of the extra window memory associated with each window in the class. Setting this value does not change the number of extra bytes already allocated. For information on how to access this memory, see SetWindowLongPtr.
+  (:HBRBACKGROUND -10);Replaces a handle to the background brush associated with the class.
+  (:HCURSOR -12);Replaces a handle to the cursor associated with the class.
+  (:HICON -14);Replaces a handle to the icon associated with the class.
+  (:HICONSM -34);Retrieves a handle to the small icon associated with the class.
+  (:HMODULE -16);Replaces a handle to the module that registered the class.
+  (:MENUNAME -8);Replaces the pointer to the menu name string. The string identifies the menu resource associated with the class.
+  (:STYLE -26);Replaces the window-class style bits.
+  (:WNDPROC -24));Replaces the pointer to the window procedure associated with the class.
+
 (defcstruct WNDCLASSEX
   (cbSize  :unsigned-int)
-  (style      :unsigned-int)
+  (style      CS_FLAG)
   (lpfnWndProc   :pointer)
   (cbClsExtra       :int)
   (cbWndExtra       :int)
@@ -133,10 +169,6 @@
   (lpszClassName   :string)
   (hIconSm     HICON)
   )
-
-(defparameter +CW_USERDEFAULT+ (- 0 #x80000000))
-
-(defparameter +HWND_MESSAGE+ -3)
 
 ;; Extended Window Styles
 (defbitfield (WS_EX_FLAG DWORD)
