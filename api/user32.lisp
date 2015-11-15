@@ -14,6 +14,8 @@
 	   IsWindowEnabled
 	   IsWindowVisible
 	   IsChild
+	   SetFocus
+	   GetFocus
 	   SetActiveWindow
 	   GetActiveWindow
 	   SetForegroundWindow
@@ -117,7 +119,12 @@
   (hWnd HWND)
   (bEnable :boolean))
 
-(defcfun "SetActiveWindow" HWND
+(defcfun "SetFocus" :boolean
+  (hWnd HWND))
+
+(defcfun "GetFocus" HWND)
+
+(defcfun "SetActiveWindow" :boolean
   (hWnd HWND))
 
 (defcfun "GetActiveWindow" HWND)

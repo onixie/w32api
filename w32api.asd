@@ -6,7 +6,7 @@
 		:license "BSD"
 		:serial t
 		:in-order-to ((test-op (test-op "w32api/test")))
-		:depends-on (#:cffi)
+		:depends-on (#:cffi #:bordeaux-threads)
 		:components ((:module "api"
 				      :serial t
 				      :components ((:file "type")
@@ -18,7 +18,7 @@
 			     ))
 
 (asdf:defsystem #:w32api/test
-		:depends-on (#:w32api #:fiveam)
+		:depends-on (#:w32api #:fiveam #:lparallel)
 		:perform (test-op (o s)
 				  (let ((result (symbol-call '#:fiveam '#:run!
 							     (find-symbol* '#:test '#:w32api/test))))

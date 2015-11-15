@@ -13,6 +13,7 @@
       (foreign-string-to-lisp (mem-ref strptr :pointer)))))
 
 ;;; user32
+;(defvar *create-window-lock* (make-lock))
 (defvar *create-window-owned-classes* (make-hash-table))
 (defvar *create-window-owned-procedures* (make-hash-table))
 
@@ -21,18 +22,23 @@
      (Msg   :unsigned-int)
      (wParam WPARAM)
      (lParam LPARAM))
-  (funcall
-   (gethash (pointer-address hWnd) *create-window-owned-procedures*
-	    (lambda (hWnd Msg wParam lParam)
-	      (declare (ignore hWnd Msg wParam lParam))))
-   hWnd Msg wParam lParam)
+  (progn ;with-lock-held (*create-window-lock*)
+    (funcall
+     (gethash (pointer-address hWnd) *create-window-owned-procedures*
+	      (lambda (hWnd Msg wParam lParam)
+		(declare (ignore hWnd Msg wParam lParam))))
+     hWnd Msg wParam lParam))
   (DefWindowProcA hWnd Msg wParam lParam))
 
-(defun register-class (class-name &key (procedure (callback WndProc)))
+(defun register-class (class-name
+		       &key
+			 (procedure (callback WndProc))
+			 (style '(:HREDRAW :VREDRAW))
+			 )
   (with-foreign-object (wnd-class '(:struct WNDCLASSEX))
     
     (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'cbSize) (foreign-type-size '(:struct WNDCLASSEX)))
-    (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'style) '(:HREDRAW :VREDRAW))
+    (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'style) style)
     (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'lpfnWndProc) procedure)
     (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'cbClsExtra) 0)
     (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'cbWndExtra) 0)
@@ -49,30 +55,39 @@
 (defun unregister-class (class-name)
   (UnregisterClassA class-name (GetModuleHandleA (null-pointer))))
 
-(defun create-window (window-name &key (class-name window-name) (procedure nil procedure-p))
+(defun create-window (window-name
+		      &key
+			(class-name window-name)
+			(procedure nil procedure-p)
+			(style +WS_OVERLAPPEDWINDOW+)
+			(extended-style +WS_EX_OVERLAPPEDWINDOW+)
+			(x +CW_USEDEFAULT+)
+			(y +CW_USEDEFAULT+)
+			(width +CW_USEDEFAULT+)
+			(height +CW_USEDEFAULT+))
   (when (null-pointer-p (FindWindowExA (null-pointer) (null-pointer) class-name window-name))
     (let* ((atom (register-class class-name))
-	   (hWnd (CreateWindowExA +WS_EX_OVERLAPPEDWINDOW+
+	   (hWnd (CreateWindowExA extended-style
 				  class-name
 				  window-name
-				  +WS_OVERLAPPEDWINDOW+
-				  +CW_USEDEFAULT+
-				  +CW_USEDEFAULT+
-				  +CW_USEDEFAULT+
-				  +CW_USEDEFAULT+
+				  style
+				  x
+				  y
+				  width
+				  height
 				  (null-pointer)
 				  (null-pointer)
 				  (GetModuleHandleA (null-pointer))
 				  (null-pointer))))
-      (unless (eq atom 0)
-	(if (null-pointer-p hWnd)
-	    (unregister-class class-name)
-	    (setf (gethash (pointer-address hWnd) *create-window-owned-classes*) class-name)))
-      (unless (null-pointer-p hWnd)
-	(when procedure-p
-	  (setf (gethash (pointer-address hWnd) *create-window-owned-procedures*) procedure))
-	(not (ShowWindow hWnd :HIDE))
-	hWnd))))
+      (progn ;with-lock-held (*create-window-lock*)
+	(unless (eq atom 0)
+	  (if (null-pointer-p hWnd)
+	      (unregister-class class-name)
+	      (setf (gethash (pointer-address hWnd) *create-window-owned-classes*) class-name)))
+	(unless (null-pointer-p hWnd)
+	  (when procedure-p
+	    (setf (gethash (pointer-address hWnd) *create-window-owned-procedures*) procedure))
+	  hWnd)))))
 
 (defun get-window (window-name &key (class-name window-name))
   (let ((hWnd (FindWindowExA (null-pointer) (null-pointer) class-name window-name)))
@@ -96,16 +111,18 @@
     (when hWnd
       (prog1
 	  (DestroyWindow hWnd)
-	(remhash (pointer-address hWnd) *create-window-owned-procedures*)
-	(let ((class-name (gethash (pointer-address hWnd) *create-window-owned-classes*)))
-	  (when class-name
-	    (unregister-class class-name)
-	    (remhash (pointer-address hWnd) *create-window-owned-classes*)))))))
+	(progn ;with-lock-held (*create-window-lock*)
+	  (remhash (pointer-address hWnd) *create-window-owned-procedures*)
+	  (let ((class-name (gethash (pointer-address hWnd) *create-window-owned-classes*)))
+	    (when class-name
+	      (unregister-class class-name)
+	      (remhash (pointer-address hWnd) *create-window-owned-classes*))))))))
 
 (defun show-window (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
     (when hWnd
-      (not (ShowWindow hWnd :SHOWNORMAL)))))
+      (or (and (not (ShowWindow hWnd :SHOWNORMAL)) (window-visible-p hWnd)) ; fixme: 1st call wont work right after system load or reload under SBCL
+	  (not (ShowWindow hWnd :SHOWNORMAL))))))
 
 (defun hide-window (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
@@ -125,7 +142,18 @@
 (defun active-window (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
     (when hWnd
-      (SetActiveWindow hWnd))))
+      (or (SetActiveWindow hWnd); fixme: 1st call wont work right after system load or reload under SBCL
+	  (SetActiveWindow hWnd)))))
+
+(defun foreground-window (window-name-or-handle &key (class-name window-name-or-handle))
+  (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
+    (when hWnd
+      (SetForegroundWindow hWnd ))))
+
+(defun focus-window (window-name-or-handle &key (class-name window-name-or-handle))
+  (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
+    (when hWnd
+      (SetFocus hWnd))))
 
 (defun window-enabled-p (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
@@ -137,28 +165,38 @@
     (when hWnd
       (IsWindowVisible hWnd))))
 
-(defun child-window-p (window-name-or-handle parent-window-name-or-handle &key (class-name window-name-or-handle) (parent-class-name parent-window-name-or-handle))
-  (let ((hWnd (window-p window-name-or-handle :class-name class-name))
-	(hParentWnd (window-p parent-window-name-or-handle :class-name parent-class-name)))
-    (when (and hWnd hParentWnd)
-      (IsChild hParentWnd hWnd))))
+(defun window-focused-p (window-name-or-handle &key (class-name window-name-or-handle))
+  (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
+    (when hWnd
+      (pointer-eq hWnd (GetFocus)))))
 
 (defun window-active-p (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
     (when hWnd
       (pointer-eq hWnd (GetActiveWindow)))))
 
-	   ;; SetForegroundWindow
-	   ;; GetForegroundWindow
-
-(defun process-message (window-name-or-handle &key (class-name window-name-or-handle))
+(defun window-foregrounded-p (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
     (when hWnd
-      (with-foreign-object (msg '(:struct MSG))
-	(with-foreign-object (accelerator-table '(:struct ACCEL))
-	  (let ((hAccel (CreateAcceleratorTableA accelerator-table 1)))
-	    (unless (null-pointer-p hAccel)
-	      (loop while (GetMessageA msg (null-pointer) 0 0)
-		 do (unless (TranslateAcceleratorA (foreign-slot-value msg '(:struct MSG) 'hWnd) hAccel msg)
-		      (TranslateMessage msg)
-		      (DispatchMessageA msg))))))))))
+      (pointer-eq hWnd (GetForegroundWindow)))))
+
+(defun child-window-p (window-name-or-handle parent-window-name-or-handle &key (class-name window-name-or-handle) (parent-class-name parent-window-name-or-handle))
+  (let ((hWnd (window-p window-name-or-handle :class-name class-name))
+	(hParentWnd (window-p parent-window-name-or-handle :class-name parent-class-name)))
+    (when (and hWnd hParentWnd)
+      (IsChild hParentWnd hWnd))))
+
+(defun process-message (&key (window-name-or-handle (null-pointer) window-name-or-handle-p) (extra-process-func nil extra-process-func-p))
+  (let ((hWnd (when window-name-or-handle-p (window-p window-name-or-handle))))
+    (with-foreign-object (msg '(:struct MSG))
+      (with-foreign-object (accelerator-table '(:struct ACCEL))
+	(let ((hAccel (CreateAcceleratorTableA accelerator-table 1)))
+	  (unless (null-pointer-p hAccel)
+	    (loop while (GetMessageA msg (or hWnd window-name-or-handle) 0 0)
+	       do (unless (TranslateAcceleratorA (foreign-slot-value msg '(:struct MSG) 'hWnd) hAccel msg)
+		    (when extra-process-func-p (funcall extra-process-func (foreign-slot-value msg '(:struct MSG) 'hWnd) msg))
+		    (TranslateMessage msg)
+		    (DispatchMessageA msg)))))))))
+
+(defun post-quit-message (exit-code)
+  (PostQuitMessage exit-code))

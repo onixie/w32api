@@ -1,7 +1,7 @@
 ;;;; package.lisp
 
 (defpackage #:w32api
-  (:use #:cl #:cffi
+  (:use #:cl #:cffi #:bordeaux-threads
 	#:w32api.type
 	#:w32api.kernel32
 	#:w32api.user32
@@ -18,10 +18,15 @@
 	   hide-window
 	   enable-window
 	   disable-window
+	   focus-window
 	   active-window
+	   foreground-window
 	   destroy-window
 	   window-enabled-p
 	   window-visible-p
 	   child-window-p
+	   window-focused-p
 	   window-active-p
-	   process-message))
+	   window-foregrounded-p
+	   process-message
+	   post-quit-message))
