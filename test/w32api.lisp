@@ -219,9 +219,9 @@
 				      (declare (ignore x y z))
 				      (cond ((foreground-window hWnd)
 					     (setq result (window-foregrounded-p hWnd))
-					     (post-quit-message 0)))))
+					     (post-quit-message hWnd)))))
 	  (show-window <window-name>)
-	  (process-message :window-name-or-handle <window-name>)
+	  (process-message <window-name>)
 	  (destroy-window <window-name>))
 	
 	(is (equal t result)))))
@@ -311,12 +311,13 @@
   (is (equal 0 (hash-table-count w32api::*create-window-owned-procedures*))))
 
 (test |multithread window creation/destroy test|
-  (pmapc (lambda (index)
-	   (let ((name (format nil "WIN~d" index)))
-	     (print name)
-	     (create-window name :procedure (lambda (a b c d) (declare (ignore a b c d))))
-	     (show-window name)
-	     (destroy-window name)))
-	 (loop for x from 1 to 200 collect x))
+  (let ((*kernel* (lparallel:make-kernel 100)))
+    (pmapc (lambda (index)		; fixme: when the worker will be freed?
+	     (let ((name (format nil "WIN~d" index)))
+	       (print name)
+	       (create-window name :procedure (lambda (hWnd b c d) (declare (ignore hWnd b c d))))
+	       (show-window name)
+	       (destroy-window name)))
+	   (loop for x from 1 to 100 collect x)))
   (is (equal 0 (hash-table-count w32api::*create-window-owned-classes*)))
   (is (equal 0 (hash-table-count w32api::*create-window-owned-procedures*))))

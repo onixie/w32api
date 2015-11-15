@@ -1,7 +1,7 @@
 ;;;; package.lisp
 
 (defpackage #:w32api
-  (:use #:cl #:cffi #:bordeaux-threads
+  (:use #:cl #:cffi #:bordeaux-threads #:lparallel
 	#:w32api.type
 	#:w32api.kernel32
 	#:w32api.user32
@@ -29,4 +29,6 @@
 	   window-active-p
 	   window-foregrounded-p
 	   process-message
-	   post-quit-message))
+	   post-quit-message
+	   window-message-p
+	   start-window))

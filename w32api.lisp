@@ -19,16 +19,15 @@
 
 (defcallback WndProc LRESULT
     ((hWnd   HWND)
-     (Msg   :unsigned-int)
+     (Msg    :unsigned-int)
      (wParam WPARAM)
      (lParam LPARAM))
   (progn ;with-lock-held (*create-window-lock*)
-    (funcall
-     (gethash (pointer-address hWnd) *create-window-owned-procedures*
-	      (lambda (hWnd Msg wParam lParam)
-		(declare (ignore hWnd Msg wParam lParam))))
-     hWnd Msg wParam lParam))
-  (DefWindowProcA hWnd Msg wParam lParam))
+    (let ((proc (gethash (pointer-address hWnd) *create-window-owned-procedures*)))
+      (if proc (funcall proc hWnd Msg wParam lParam))))
+  (cond ((eq (window-message-p Msg) :DESTROY)
+  	 (post-quit-message hWnd) 0)
+	(t (DefWindowProcA hWnd Msg wParam lParam))))
 
 (defun register-class (class-name
 		       &key
@@ -186,7 +185,7 @@
     (when (and hWnd hParentWnd)
       (IsChild hParentWnd hWnd))))
 
-(defun process-message (&key (window-name-or-handle (null-pointer) window-name-or-handle-p) (extra-process-func nil extra-process-func-p))
+(defun process-message (&optional (window-name-or-handle (null-pointer) window-name-or-handle-p) (extra-process-func nil extra-process-func-p))
   (let ((hWnd (when window-name-or-handle-p (window-p window-name-or-handle))))
     (with-foreign-object (msg '(:struct MSG))
       (with-foreign-object (accelerator-table '(:struct ACCEL))
@@ -198,5 +197,22 @@
 		    (TranslateMessage msg)
 		    (DispatchMessageA msg)))))))))
 
-(defun post-quit-message (exit-code)
-  (PostQuitMessage exit-code))
+(defun post-quit-message (&optional (window-handle nil))
+  (if window-handle
+      (PostMessageA window-handle (foreign-enum-value 'WM_ENUM :QUIT :errorp nil) 0 0)
+      (PostQuitMessage 0)))
+
+(defun window-message-p (message)
+  (if (keywordp message)
+      (when (foreign-enum-value 'WM_ENUM message :errorp nil)
+	message)
+      (foreign-enum-keyword 'WM_ENUM message :errorp nil)))
+
+(setq *kernel* (make-kernel 512))
+(defun start-window (&rest args)
+  (future
+    (let ((hWnd (apply #'create-window args)))
+      (when hWnd
+	(show-window hWnd)
+	(process-message) ;checkme: if only listen to hWnd Message, [X] button will cause infinite loop.
+	(destroy-window hWnd)))))

@@ -6,4 +6,3 @@
 (def-suite test)
 
 (defvar *run-test-silently* t)
-(setf lparallel:*kernel* (lparallel:make-kernel 4))
