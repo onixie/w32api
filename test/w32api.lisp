@@ -136,6 +136,20 @@
       (destroy-window <window-name>)
       (is (equal nil (gethash key w32api::*create-window-owned-classes*))))))
 
+(test |(get-window-title <new-name>) = nil| 
+  (with-fixture window-name ((string (gensym "WIN")))
+    (is (equal nil (get-window-title <window-name>)))))
+
+(test |(set-window-title <new-name>) = nil|
+  (with-fixture window-name ((string (gensym "WIN")))
+    (is (equal nil (set-window-title <window-name> "Test Window")))))
+
+(test |(set-window-title <exist-name>) = t and the title is changed|
+  (with-fixture window ((string (gensym "WIN")))
+    (is (equal t (set-window-title <window-name> "Test Window")))
+    (is (string-equal "Test Window" (get-window-title "Test Window" :class-name <window-name>)))
+    (set-window-title "Test Window" <window-name> :class-name <window-name>)));change back, otherwise destroy will fail.
+
 (test |(show-window <new-name>) = nil| 
   (with-fixture window-name ((string (gensym "WIN")))
     (is (equal nil (show-window <window-name>)))))

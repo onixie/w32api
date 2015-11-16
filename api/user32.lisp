@@ -24,6 +24,9 @@
 	   FindWindowExA
 	   ShowWindow
 	   DestroyWindow
+	   GetWindowTextLengthA
+	   GetWindowTextA
+	   SetWindowTextA
 	   DefWindowProcA
 
 	   GetDC
@@ -164,6 +167,18 @@
   (Msg   :unsigned-int)
   (wParam WPARAM)
   (lParam LPARAM))
+
+(defcfun "GetWindowTextLengthA" :int
+  (hWnd HWND))
+
+(defcfun "GetWindowTextA" :boolean
+  (hWnd HWND)
+  (lpString :string)
+  (nMaxCount :int))
+
+(defcfun "SetWindowTextA" :boolean
+  (hWnd HWND)
+  (lpString :string))
 
 (defcfun "CreateAcceleratorTableA" HACCEL
   (lpaccl (:pointer (:struct ACCEL)))

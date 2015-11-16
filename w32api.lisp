@@ -13,7 +13,7 @@
       (foreign-string-to-lisp (mem-ref strptr :pointer)))))
 
 ;;; user32
-;(defvar *create-window-lock* (make-lock))
+(defvar *create-window-lock* (make-lock))
 (defvar *create-window-owned-classes* (make-hash-table))
 (defvar *create-window-owned-procedures* (make-hash-table))
 
@@ -22,7 +22,7 @@
      (Msg    :unsigned-int)
      (wParam WPARAM)
      (lParam LPARAM))
-  (progn ;with-lock-held (*create-window-lock*)
+  (with-lock-held (*create-window-lock*)
     (let ((proc (gethash (pointer-address hWnd) *create-window-owned-procedures*)))
       (if proc (funcall proc hWnd Msg wParam lParam))))
   (cond ((eq (window-message-p Msg) :DESTROY)
@@ -78,7 +78,7 @@
 				  (null-pointer)
 				  (GetModuleHandleA (null-pointer))
 				  (null-pointer))))
-      (progn ;with-lock-held (*create-window-lock*)
+      (with-lock-held (*create-window-lock*)
 	(unless (eq atom 0)
 	  (if (null-pointer-p hWnd)
 	      (unregister-class class-name)
@@ -105,12 +105,25 @@
     (string-trim " " (with-foreign-pointer-as-string ((class-name class-name-length) 256)
 		       (GetClassNameA window-handle class-name class-name-length)))))
 
+(defun get-window-title (window-name-or-handle &key (class-name window-name-or-handle))
+  (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
+    (when hWnd
+      (let ((length (GetWindowTextLengthA hWnd)))
+	(unless (eq 0 length)
+	  (with-foreign-pointer-as-string (str (incf length))
+	    (GetWindowTextA hWnd str length)))))))
+
+(defun set-window-title (window-name-or-handle title &key (class-name window-name-or-handle))
+  (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
+    (when hWnd (stringp title)
+      (SetWindowTextA hWnd title))))
+
 (defun destroy-window (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
     (when hWnd
       (prog1
 	  (DestroyWindow hWnd)
-	(progn ;with-lock-held (*create-window-lock*)
+	(with-lock-held (*create-window-lock*)
 	  (remhash (pointer-address hWnd) *create-window-owned-procedures*)
 	  (let ((class-name (gethash (pointer-address hWnd) *create-window-owned-classes*)))
 	    (when class-name
@@ -208,11 +221,11 @@
 	message)
       (foreign-enum-keyword 'WM_ENUM message :errorp nil)))
 
-(setq *kernel* (make-kernel 512))
 (defun start-window (&rest args)
-  (future
-    (let ((hWnd (apply #'create-window args)))
-      (when hWnd
-	(show-window hWnd)
-	(process-message) ;checkme: if only listen to hWnd Message, [X] button will cause infinite loop.
-	(destroy-window hWnd)))))
+  (make-thread
+   (lambda ()
+     (let ((hWnd (apply #'create-window args)))
+       (when hWnd
+	 (show-window hWnd)
+	 (process-message) ;checkme: if only listen to hWnd Message, [X] button will cause infinite loop.
+	 (destroy-window hWnd))))))

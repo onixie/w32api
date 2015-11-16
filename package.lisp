@@ -14,6 +14,8 @@
 	   get-window
 	   window-p
 	   get-window-class-name
+	   get-window-title
+	   set-window-title
 	   show-window
 	   hide-window
 	   enable-window
