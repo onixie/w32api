@@ -154,54 +154,40 @@
   (with-fixture window-name ((string (gensym "WIN")))
     (is (equal nil (show-window <window-name>)))))
 
-(test |(show-window <exist-name>) = t if the window has been hidden| 
+(test |(show-window <exist-name>) = t| 
   (with-fixture window ((string (gensym "WIN")))
+    (hide-window <window-name>)
+    (is (equal t (show-window <window-name>)))
     (is (equal t (show-window <window-name>)))))
-
-(test |(show-window <exist-name>) = nil if the window has been shown| 
-  (with-fixture window ((string (gensym "WIN")))
-    (show-window <window-name>)
-    (is (equal nil (show-window <window-name>)))))
 
 (test |(hide-window <new-name>) = nil|
   (with-fixture window-name ((string (gensym "WIN")))
     (is (equal nil (hide-window <window-name>)))))
 
-(test |(hide-window <exist-name>) = t if the window has been shown| 
+(test |(hide-window <exist-name>) = t| 
   (with-fixture window ((string (gensym "WIN")))
     (show-window <window-name>)
+    (is (equal t (hide-window <window-name>)))
     (is (equal t (hide-window <window-name>)))))
-
-(test |(hide-window <exist-name>) = nil if the window has been hidden| 
-  (with-fixture window ((string (gensym "WIN")))
-    (is (equal nil (hide-window <window-name>)))))
 
 (test |(enable-window <new-name>) = nil|
   (with-fixture window-name ((string (gensym "WIN")))
     (is (equal nil (enable-window <window-name>)))))
 
-(test |(enable-window <exist-name>) = t if the window has been disabled| 
+(test |(enable-window <exist-name>) = t| 
   (with-fixture window ((string (gensym "WIN")))
     (disable-window <window-name>)
+    (is (equal t (enable-window <window-name>)))
     (is (equal t (enable-window <window-name>)))))
-
-(test |(enable-window <exist-name>) = nil if the window has been enabled| 
-  (with-fixture window ((string (gensym "WIN")))
-    (enable-window <window-name>)
-    (is (equal nil (enable-window <window-name>)))))
 
 (test |(disable-window <new-name>) = nil|
   (with-fixture window-name ((string (gensym "WIN")))
     (is (equal nil (disable-window <window-name>)))))
 
-(test |(disable-window <exist-name>) = nil if the window has been disabled| 
-  (with-fixture window ((string (gensym "WIN")))
-    (disable-window <window-name>)
-    (is (equal nil (disable-window <window-name>)))))
-
-(test |(disable-window <exist-name>) = t if the window has been enabled| 
+(test |(disable-window <exist-name>) = t| 
   (with-fixture window ((string (gensym "WIN")))
     (enable-window <window-name>)
+    (is (equal t (disable-window <window-name>)))
     (is (equal t (disable-window <window-name>)))))
 
 (test |(active-window <new-name>) = nil|
@@ -220,6 +206,7 @@
   (with-fixture window ((string (gensym "WIN")))
     (is (equal t (focus-window <window-name>)))
     (with-fixture window ((string (gensym "WIN")))
+      (is (equal t (focus-window <window-name>)))
       (is (equal t (focus-window <window-name>))))))
 
 (test |(foreground-window <exist-name>) will set window foreground |
@@ -239,6 +226,32 @@
 	  (destroy-window <window-name>))
 	
 	(is (equal t result)))))
+
+(test |(minimize-window <new-name>) = nil|
+  (with-fixture window-name ((string (gensym "WIN")))
+    (is (equal nil (minimize-window <window-name>)))))
+
+(test |(minimize-window <exist-name>) = t| 
+  (with-fixture window ((string (gensym "WIN")))
+    (is (equal t (minimize-window <window-name>)))
+    (is (equal t (minimize-window <window-name>)))))
+
+(test |(maximize-window <new-name>) = nil|
+  (with-fixture window-name ((string (gensym "WIN")))
+    (is (equal nil (minimize-window <window-name>)))))
+
+(test |(maximize-window <exist-name>) = t| 
+  (with-fixture window ((string (gensym "WIN")))
+    (is (equal t (maximize-window <window-name>)))
+    (is (equal t (maximize-window <window-name>)))))
+
+(test |(restore-window <new-name>) = nil|
+  (with-fixture window-name ((string (gensym "WIN")))
+    (is (equal nil (restore-window <window-name>)))))
+
+(test |(restore-window <exist-name>) = t| 
+  (with-fixture window ((string (gensym "WIN")))
+    (is (equal t (restore-window <window-name>)))))
 
 (test |(window-visible-p <new-name>) = nil|
   (with-fixture window-name ((string (gensym "WIN")))
@@ -306,7 +319,7 @@
   (with-fixture window ((string (gensym "WIN")))
     (is (equal nil (window-foregrounded-p <window-name>)))))
 
-(test |(window-focused-p <new-name>) = nil if the window is not focused|
+(test |(window-focused-p <new-name>) = nil|
   (with-fixture window-name ((string (gensym "WIN")))
     (is (equal nil (window-focused-p <window-name>)))))
 
@@ -319,6 +332,36 @@
     (focus-window <window-name>)
     (is (equal t (window-focused-p <window-name>)))
     (is (equal t (window-active-p <window-name>)))))
+
+(test |(window-minimized-p <new-name>) = nil|
+  (with-fixture window-name ((string (gensym "WIN")))
+    (is (equal nil (window-minimized-p <window-name>)))))
+
+(test |(window-maximized-p <new-name>) = nil|
+  (with-fixture window-name ((string (gensym "WIN")))
+    (is (equal nil (window-maximized-p <window-name>)))))
+
+(test |(window-minimized-p <exist-name>) = t if the window is minimized|
+  (with-fixture window ((string (gensym "WIN")))
+    (minimize-window <window-name>)
+    (is (equal t (window-minimized-p <window-name>)))))
+
+(test |(window-minimized-p <exist-name>) = nil if the window is not minimized|
+  (with-fixture window ((string (gensym "WIN")))
+    (minimize-window <window-name>)
+    (restore-window <window-name>)
+    (is (equal nil (window-minimized-p <window-name>)))))
+
+(test |(window-maximized-p <exist-name>) = t if the window is maximized|
+  (with-fixture window ((string (gensym "WIN")))
+    (maximize-window <window-name>)
+    (is (equal t (window-maximized-p <window-name>)))))
+
+(test |(window-maximized-p <exist-name>) = nil if the window is not maximized|
+  (with-fixture window ((string (gensym "WIN")))
+    (maximize-window <window-name>)
+    (restore-window <window-name>)
+    (is (equal nil (window-maximized-p <window-name>)))))
 
 (test |check state|
   (is (equal 0 (hash-table-count w32api::*create-window-owned-classes*))) 

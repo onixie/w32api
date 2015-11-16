@@ -23,6 +23,9 @@
 	   focus-window
 	   active-window
 	   foreground-window
+	   maximize-window
+	   minimize-window
+	   restore-window
 	   destroy-window
 	   window-enabled-p
 	   window-visible-p
@@ -30,6 +33,8 @@
 	   window-focused-p
 	   window-active-p
 	   window-foregrounded-p
+	   window-minimized-p
+	   window-maximized-p
 	   process-message
 	   post-quit-message
 	   window-message-p

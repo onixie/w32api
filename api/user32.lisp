@@ -3,7 +3,6 @@
   (:export RegisterClassExA
 	   UnregisterClassA
 	   GetClassNameA
-
 ;;	   CreateWindowA
 	   CreateWindowExA
 	   SetParent
@@ -14,6 +13,8 @@
 	   IsWindowEnabled
 	   IsWindowVisible
 	   IsChild
+	   IsIconic
+	   IsZoomed
 	   SetFocus
 	   GetFocus
 	   SetActiveWindow
@@ -21,6 +22,8 @@
 	   SetForegroundWindow
 	   GetForegroundWindow
 	   LockSetForegroundWindow
+	   CloseWindow
+	   OpenIcon
 	   FindWindowExA
 	   ShowWindow
 	   DestroyWindow
@@ -140,6 +143,12 @@
 (defcfun "LockSetForegroundWindow" :boolean
   (uLockCode :unsigned-int))
 
+(defcfun "CloseWindow" :boolean
+  (hWnd HWND))
+
+(defcfun "OpenIcon" :boolean
+  (hWnd HWND))
+
 (defcfun "FindWindowExA" HWND
   (hwndParent    HWND)
   (hwndChildAfter    HWND)
@@ -157,6 +166,12 @@
   (hWnd HWND))
 
 (defcfun "IsWindowEnabled" :boolean
+  (hWnd HWND))
+
+(defcfun "IsIconic" :boolean
+  (hWnd HWND))
+
+(defcfun "IsZoomed" :boolean
   (hWnd HWND))
 
 (defcfun "DestroyWindow" :boolean
@@ -179,6 +194,7 @@
 (defcfun "SetWindowTextA" :boolean
   (hWnd HWND)
   (lpString :string))
+
 
 (defcfun "CreateAcceleratorTableA" HACCEL
   (lpaccl (:pointer (:struct ACCEL)))

@@ -13,27 +13,29 @@
       (foreign-string-to-lisp (mem-ref strptr :pointer)))))
 
 ;;; user32
-(defvar *create-window-lock* (make-lock))
+(defvar *create-window-lock* (make-recursive-lock))
 (defvar *create-window-owned-classes* (make-hash-table))
 (defvar *create-window-owned-procedures* (make-hash-table))
 
-(defcallback WndProc LRESULT
+(defcallback MainWndProc LRESULT
     ((hWnd   HWND)
      (Msg    :unsigned-int)
      (wParam WPARAM)
      (lParam LPARAM))
-  (with-lock-held (*create-window-lock*)
+  (with-recursive-lock-held (*create-window-lock*)
     (let ((proc (gethash (pointer-address hWnd) *create-window-owned-procedures*)))
       (if proc (funcall proc hWnd Msg wParam lParam))))
+  (print (window-message-p Msg))
   (cond ((eq (window-message-p Msg) :DESTROY)
   	 (post-quit-message 0) 0)
+	((eq (window-message-p Msg) :CLOSE)
+	 (destroy-window hWnd) 0)
 	(t (DefWindowProcA hWnd Msg wParam lParam))))
 
 (defun register-class (class-name
 		       &key
-			 (procedure (callback WndProc))
-			 (style '(:HREDRAW :VREDRAW))
-			 )
+			 (procedure (callback MainWndProc))
+			 (style '(:HREDRAW :VREDRAW)))
   (with-foreign-object (wnd-class '(:struct WNDCLASSEX))
     
     (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'cbSize) (foreign-type-size '(:struct WNDCLASSEX)))
@@ -78,7 +80,7 @@
 				  (null-pointer)
 				  (GetModuleHandleA (null-pointer))
 				  (null-pointer))))
-      (with-lock-held (*create-window-lock*)
+      (with-recursive-lock-held (*create-window-lock*)
 	(unless (eq atom 0)
 	  (if (null-pointer-p hWnd)
 	      (unregister-class class-name)
@@ -123,7 +125,7 @@
     (when hWnd
       (prog1
 	  (DestroyWindow hWnd)
-	(with-lock-held (*create-window-lock*)
+	(with-recursive-lock-held (*create-window-lock*)
 	  (remhash (pointer-address hWnd) *create-window-owned-procedures*)
 	  (let ((class-name (gethash (pointer-address hWnd) *create-window-owned-classes*)))
 	    (when class-name
@@ -133,23 +135,27 @@
 (defun show-window (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
     (when hWnd
-      (or (and (not (ShowWindow hWnd :SHOWNORMAL)) (window-visible-p hWnd)) ; fixme: 1st call wont work right after system load or reload under SBCL
+      (or (window-visible-p hWnd)
+	  (and (not (ShowWindow hWnd :SHOWNORMAL)) (window-visible-p hWnd)) ; fixme: 1st call wont work right after system load or reload under SBCL
 	  (not (ShowWindow hWnd :SHOWNORMAL))))))
 
 (defun hide-window (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
     (when hWnd
-      (ShowWindow hWnd :HIDE))))
+      (or (not (window-visible-p hWnd))
+	  (ShowWindow hWnd :HIDE)))))
 
 (defun enable-window (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
     (when hWnd
-      (EnableWindow hWnd t))))
+      (or (window-enabled-p hWnd)
+	  (EnableWindow hWnd t)))))
 
 (defun disable-window (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
     (when hWnd
-      (not (EnableWindow hWnd nil)))))
+      (or (not (window-enabled-p hWnd))
+	  (not (EnableWindow hWnd nil))))))
 
 (defun active-window (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
@@ -166,6 +172,23 @@
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
     (when hWnd
       (SetFocus hWnd))))
+
+(defun minimize-window (window-name-or-handle &key (class-name window-name-or-handle))
+  (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
+    (when hWnd
+      (CloseWindow hWnd))))
+
+(defun maximize-window (window-name-or-handle &key (class-name window-name-or-handle))
+  (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
+    (when hWnd
+      (ShowWindow hWnd :MAXIMIZE)
+      (window-maximized-p hWnd))))
+
+(defun restore-window (window-name-or-handle &key (class-name window-name-or-handle))
+  (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
+    (when hWnd
+      (ShowWindow hWnd :RESTORE)
+      (not (or (window-minimized-p hWnd) (window-maximized-p hWnd))))))
 
 (defun window-enabled-p (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
@@ -191,6 +214,16 @@
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
     (when hWnd
       (pointer-eq hWnd (GetForegroundWindow)))))
+
+(defun window-minimized-p (window-name-or-handle &key (class-name window-name-or-handle))
+  (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
+    (when hWnd
+      (IsIconic hWnd))))
+
+(defun window-maximized-p (window-name-or-handle &key (class-name window-name-or-handle))
+  (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
+    (when hWnd
+      (IsZoomed hWnd))))
 
 (defun child-window-p (window-name-or-handle parent-window-name-or-handle &key (class-name window-name-or-handle) (parent-class-name parent-window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name))
