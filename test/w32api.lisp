@@ -233,7 +233,7 @@
 				      (declare (ignore x y z))
 				      (cond ((foreground-window hWnd)
 					     (setq result (window-foregrounded-p hWnd))
-					     (post-quit-message hWnd)))))
+					     (post-quit-message 0)))))
 	  (show-window <window-name>)
 	  (process-message <window-name>)
 	  (destroy-window <window-name>))

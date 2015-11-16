@@ -26,7 +26,7 @@
     (let ((proc (gethash (pointer-address hWnd) *create-window-owned-procedures*)))
       (if proc (funcall proc hWnd Msg wParam lParam))))
   (cond ((eq (window-message-p Msg) :DESTROY)
-  	 (post-quit-message hWnd) 0)
+  	 (post-quit-message 0) 0)
 	(t (DefWindowProcA hWnd Msg wParam lParam))))
 
 (defun register-class (class-name
@@ -204,16 +204,14 @@
       (with-foreign-object (accelerator-table '(:struct ACCEL))
 	(let ((hAccel (CreateAcceleratorTableA accelerator-table 1)))
 	  (unless (null-pointer-p hAccel)
-	    (loop while (GetMessageA msg (or hWnd window-name-or-handle) 0 0)
+	    (loop while (eq 1 (GetMessageA msg (or hWnd window-name-or-handle) 0 0))
 	       do (unless (TranslateAcceleratorA (foreign-slot-value msg '(:struct MSG) 'hWnd) hAccel msg)
 		    (when extra-process-func-p (funcall extra-process-func (foreign-slot-value msg '(:struct MSG) 'hWnd) msg))
 		    (TranslateMessage msg)
 		    (DispatchMessageA msg)))))))))
 
-(defun post-quit-message (&optional (window-handle nil))
-  (if window-handle
-      (PostMessageA window-handle (foreign-enum-value 'WM_ENUM :QUIT :errorp nil) 0 0)
-      (PostQuitMessage 0)))
+(defun post-quit-message (exit-code)
+  (PostQuitMessage exit-code))
 
 (defun window-message-p (message)
   (if (keywordp message)
@@ -227,5 +225,5 @@
      (let ((hWnd (apply #'create-window args)))
        (when hWnd
 	 (show-window hWnd)
-	 (process-message) ;checkme: if only listen to hWnd Message, [X] button will cause infinite loop.
+	 (process-message hWnd)
 	 (destroy-window hWnd))))))

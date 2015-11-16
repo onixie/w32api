@@ -189,7 +189,7 @@
   (hAccTable HACCEL)
   (lpMsg (:pointer (:struct MSG))))
 
-(defcfun "GetMessageA" :boolean
+(defcfun "GetMessageA" :int 		;be aware of return -1 when attached window destroyed
   (lpMsg (:pointer (:struct MSG)))
   (hWnd  HWND)
   (wMsgFilterMin :unsigned-int)
