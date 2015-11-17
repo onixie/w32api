@@ -12,6 +12,10 @@
 	   unregister-class
 	   create-window
 	   get-window
+	   set-parent-window
+	   get-parent-window
+	   get-ancestor-window
+	   with-parent-window
 	   window-p
 	   get-window-class-name
 	   get-window-title
@@ -20,6 +24,7 @@
 	   hide-window
 	   enable-window
 	   disable-window
+	   select-window
 	   focus-window
 	   active-window
 	   foreground-window

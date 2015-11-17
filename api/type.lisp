@@ -86,6 +86,7 @@
 	   +HWND_BROADCAST+	   
 
 	   WM_ENUM
+	   GA_ENUM
 	   ))
 
 (in-package #:w32api.type)
@@ -589,4 +590,10 @@
   (:PENWINLAST                   #x038F)
   (:APP                          #x8000)
   (:USER                         #x0400)
+  )
+
+(defcenum (GA_ENUM :unsigned-int)
+  (:PARENT 1);Retrieves the parent window. This does not include the owner, as it does with the GetParent function.
+  (:ROOT 2);Retrieves the root window by walking the chain of parent windows.
+  (:ROOTOWNER 3);Retrieves the owned root window by walking the chain of parent and owner windows returned by GetParent.
   )

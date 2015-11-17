@@ -17,6 +17,15 @@
 (defvar *create-window-owned-classes* (make-hash-table))
 (defvar *create-window-owned-procedures* (make-hash-table))
 
+(defvar *parent-window-handle-lock* (make-recursive-lock))
+(defvar *parent-window-handle* (null-pointer))
+
+(defmacro with-parent-window ((parent-window-name-or-handle &key (class-name parent-window-name-or-handle)) &body body)
+  `(with-recursive-lock-held (*parent-window-handle-lock*)
+     (let ((*parent-window-handle* (window-p ,parent-window-name-or-handle :class-name ,class-name)))
+       (when *parent-window-handle*
+	 ,@body))))
+
 (defcallback MainWndProc LRESULT
     ((hWnd   HWND)
      (Msg    :unsigned-int)
@@ -25,7 +34,6 @@
   (with-recursive-lock-held (*create-window-lock*)
     (let ((proc (gethash (pointer-address hWnd) *create-window-owned-procedures*)))
       (if proc (funcall proc hWnd Msg wParam lParam))))
-  (print (window-message-p Msg))
   (cond ((eq (window-message-p Msg) :DESTROY)
   	 (post-quit-message 0) 0)
 	((eq (window-message-p Msg) :CLOSE)
@@ -65,42 +73,65 @@
 			(x +CW_USEDEFAULT+)
 			(y +CW_USEDEFAULT+)
 			(width +CW_USEDEFAULT+)
-			(height +CW_USEDEFAULT+))
-  (when (null-pointer-p (FindWindowExA (null-pointer) (null-pointer) class-name window-name))
-    (let* ((atom (register-class class-name))
-	   (hWnd (CreateWindowExA extended-style
-				  class-name
-				  window-name
-				  style
-				  x
-				  y
-				  width
-				  height
-				  (null-pointer)
-				  (null-pointer)
-				  (GetModuleHandleA (null-pointer))
-				  (null-pointer))))
-      (with-recursive-lock-held (*create-window-lock*)
-	(unless (eq atom 0)
-	  (if (null-pointer-p hWnd)
-	      (unregister-class class-name)
-	      (setf (gethash (pointer-address hWnd) *create-window-owned-classes*) class-name)))
-	(unless (null-pointer-p hWnd)
-	  (when procedure-p
-	    (setf (gethash (pointer-address hWnd) *create-window-owned-procedures*) procedure))
-	  hWnd)))))
+			(height +CW_USEDEFAULT+)
+			(parent-name-or-handle (null-pointer) parent-name-or-handle-p)
+			(parent-class-name parent-name-or-handle))
+  (let ((hParentWnd (if parent-name-or-handle-p
+			(window-p parent-name-or-handle :class-name parent-class-name)
+			parent-name-or-handle)))
+    (when hParentWnd
+      (when (null-pointer-p (FindWindowExA hParentWnd (null-pointer) class-name window-name))
+	(let* ((atom (register-class class-name))
+	       (style (if (null-pointer-p hParentWnd) style
+			  (remove :POPUP (push :CHILD style))))
+	       (hWnd (CreateWindowExA extended-style
+				      class-name
+				      window-name
+				      style
+				      x
+				      y
+				      width
+				      height
+				      hParentWnd
+				      (null-pointer)
+				      (GetModuleHandleA (null-pointer))
+				      (null-pointer))))
+	  (with-recursive-lock-held (*create-window-lock*)
+	    (unless (eq atom 0)
+	      (if (null-pointer-p hWnd)
+		  (unregister-class class-name)
+		  (setf (gethash (pointer-address hWnd) *create-window-owned-classes*) class-name)))
+	    (unless (null-pointer-p hWnd)
+	      (when procedure-p
+		(setf (gethash (pointer-address hWnd) *create-window-owned-procedures*) procedure))
+	      hWnd)))))))
 
-(defun get-window (window-name &key (class-name window-name))
-  (let ((hWnd (FindWindowExA (null-pointer) (null-pointer) class-name window-name)))
-    (unless (null-pointer-p hWnd)
-      hWnd)))
+(defun get-window (window-name-or-handle &key (class-name window-name-or-handle))
+  (window-p window-name-or-handle :class-name class-name))
+
+(defun set-parent-window (window-name-or-handle parent-window-name-or-handle &key (class-name window-name-or-handle) (parent-class-name parent-window-name-or-handle))
+  (let ((hWnd (window-p window-name-or-handle :class-name class-name))
+	(hParentWnd (window-p parent-window-name-or-handle :class-name parent-class-name)))
+    (when (and hWnd hParentWnd)
+      (SetParent hWnd hParentWnd))))
+
+(defun get-parent-window (window-name-or-handle &key (class-name window-name-or-handle))
+  (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
+    (when hWnd
+      (GetParent hWnd))))
+
+(defun get-ancestor-window (window-name-or-handle ga &key (class-name window-name-or-handle))
+  (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
+    (when hWnd
+      (GetAncestor hWnd ga))))
 
 (defun window-p (window-name-or-handle &key (class-name window-name-or-handle))
-  (when (and window-name-or-handle class-name)
+  (when window-name-or-handle
     (if (pointerp window-name-or-handle) 
 	(when (IsWindow window-name-or-handle) window-name-or-handle)
-	(let ((hWnd (get-window window-name-or-handle :class-name class-name)))
-	  (when (and hWnd (not (null-pointer-p hWnd))) hWnd)))))
+	(when class-name
+	  (let ((hWnd (FindWindowExA *parent-window-handle* (null-pointer) class-name window-name-or-handle)))
+	    (when (and hWnd (not (null-pointer-p hWnd))) hWnd))))))
 
 (defun get-window-class-name (window-handle)
   (when (window-p window-handle)
@@ -118,7 +149,7 @@
 (defun set-window-title (window-name-or-handle title &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
     (when hWnd (stringp title)
-      (SetWindowTextA hWnd title))))
+	  (SetWindowTextA hWnd title))))
 
 (defun destroy-window (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
@@ -166,7 +197,13 @@
 (defun foreground-window (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
     (when hWnd
-      (SetForegroundWindow hWnd ))))
+      (SetForegroundWindow hWnd))))
+
+(defun select-window (window-name-or-handle &key (class-name window-name-or-handle))
+  (let ((hWnd (window-p window-name-or-handle :class-name class-name)))
+    (when hWnd
+      (SwitchToThisWindow hWnd t)
+      t)))
 
 (defun focus-window (window-name-or-handle &key (class-name window-name-or-handle))
   (let ((hWnd (window-p window-name-or-handle :class-name class-name)))

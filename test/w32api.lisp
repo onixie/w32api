@@ -198,6 +198,18 @@
   (with-fixture window ((string (gensym "WIN")))
     (is (equal t (active-window <window-name>)))))
 
+(test |(select-window <new-name>) = nil|
+  (with-fixture window-name ((string (gensym "WIN")))
+    (is (equal nil (select-window <window-name>)))))
+
+(test |(select-window <exist-name>) = t and should set window active and focused|
+  (with-fixture window ((string (gensym "WIN")))
+    (is (equal t (select-window <window-name>)))
+    (is (equal t (window-focused-p <window-name>)))
+    (is (equal t (window-active-p <window-name>)))
+					;(is (equal t (window-foregrounded-p <window-name>)))
+    ))
+
 (test |(focus-window <new-name>) = nil|
   (with-fixture window-name ((string (gensym "WIN")))
     (is (equal nil (focus-window <window-name>)))))

@@ -6,6 +6,8 @@
 ;;	   CreateWindowA
 	   CreateWindowExA
 	   SetParent
+	   GetParent
+	   GetAncestor
 	   SetWindowLongPtr
 	   AnimateWindow
 	   EnableWindow
@@ -15,6 +17,7 @@
 	   IsChild
 	   IsIconic
 	   IsZoomed
+	   SwitchToThisWindow
 	   SetFocus
 	   GetFocus
 	   SetActiveWindow
@@ -107,6 +110,13 @@
   (hWndChild HWND)
   (hWndNewParent HWND))
 
+(defcfun "GetParent" HWND
+  (hWnd HWND))
+
+(defcfun "GetAncestor" HWND
+  (hWnd HWND)
+  (gaFlags GA_ENUM))
+
 (defcfun "SetWindowLongPtrA" LONG_PTR
   (hWnd     HWND)
   (nIndex   :int)
@@ -124,6 +134,10 @@
 (defcfun "EnableWindow" :boolean
   (hWnd HWND)
   (bEnable :boolean))
+
+(defcfun "SwitchToThisWindow" :void
+  (hWnd HWND)
+  (fAltTab :boolean))
 
 (defcfun "SetFocus" :boolean
   (hWnd HWND))
