@@ -10,13 +10,15 @@
 	   print-error
 	   register-class
 	   unregister-class
+	   with-class
 	   create-window
+	   window-p
 	   get-window
+	   with-window
 	   set-parent-window
 	   get-parent-window
 	   get-ancestor-window
 	   with-parent-window
-	   window-p
 	   get-window-class-name
 	   get-window-title
 	   set-window-title
