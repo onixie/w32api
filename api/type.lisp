@@ -143,6 +143,37 @@
   (:SAVEBITS #x0800); Saves, as a bitmap, the portion of the screen image obscured by a window of this class. When the window is removed, the system uses the saved bitmap to restore the screen image, including other windows that were obscured. Therefore, the system does not send WM_PAINT messages to windows that were obscured if the memory used by the bitmap has not been discarded and if other screen actions have not invalidated the stored image.This style is useful for small windows (for example, menus or dialog boxes) that are displayed briefly and then removed before other screen activity takes place. This style increases the time required to display the window, because the system must first allocate memory to store the bitmap.
   (:VREDRAW #x0001)); Redraws the entire window if a movement or size adjustment changes the height of the client area.
 
+(defbitfield (BS_FLAG DWORD)
+  (:PUSHBUTTON       #x00000000)
+  (:DEFPUSHBUTTON    #x00000001)
+  (:CHECKBOX         #x00000002)
+  (:AUTOCHECKBOX     #x00000003)
+  (:RADIOBUTTON      #x00000004)
+  (:3STATE           #x00000005)
+  (:AUTO3STATE       #x00000006)
+  (:GROUPBOX         #x00000007)
+  (:USERBUTTON       #x00000008)
+  (:AUTORADIOBUTTON  #x00000009)
+  (:PUSHBOX          #x0000000A)
+  (:OWNERDRAW        #x0000000B)
+  (:TYPEMASK         #x0000000F)
+  (:LEFTTEXT         #x00000020)
+
+  (:TEXT             #x00000000);;below is for winver > 4
+  (:ICON             #x00000040)
+  (:BITMAP           #x00000080)
+  (:LEFT             #x00000100)
+  (:RIGHT            #x00000200)
+  (:CENTER           #x00000300)
+  (:TOP              #x00000400)
+  (:BOTTOM           #x00000800)
+  (:VCENTER          #x00000C00)
+  (:PUSHLIKE         #x00001000)
+  (:MULTILINE        #x00002000)
+  (:NOTIFY           #x00004000)
+  (:FLAT             #x00008000)
+  )
+
 ;;; SetClassLongPtr nIndex
 (defcenum (GCL_ENUM :int)
   (:CBCLSEXTRA -20);Sets the size, in bytes, of the extra memory associated with the class. Setting this value does not change the number of extra bytes already allocated.

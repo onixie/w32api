@@ -292,3 +292,20 @@
 	      (progn (show-window hWnd)
 		     (process-message))
 	   (destroy-window hWnd)))))))
+
+;;; Button
+
+(defun create-button (name window &key
+				    (x 0)
+				    (y 0)
+				    (width 200)
+				    (height 50))
+  (create-window name
+		 :class-name "BUTTON"
+		 :style '(:TABSTOP :VISIBLE :CHILD ;:DEFPUSHBUTTON
+			  )
+		 :parent window
+		 :x x
+		 :y y
+		 :width width
+		 :height height))
