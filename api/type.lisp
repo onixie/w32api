@@ -1,6 +1,7 @@
 (defpackage #:w32api.type
-  (:use #:common-lisp #:cffi)
-  (:export LONG_PTR
+  (:use #:common-lisp #:cffi #:w32api.util)
+  (:export bitfield-union
+	   LONG_PTR
 	   ULONG_PTR
 	   INT_PTR
 	   UINT_PTR
@@ -59,7 +60,8 @@
 	   +WS_TILEDWINDOW+
 	   +WS_POPUPWINDOW+
 	   +WS_OVERLAPPEDWINDOW+
-	   
+
+	   BS_FLAG
 	   GWLP_ENUM
 	   +DWLP_MSGRESULT+
 	   +DWLP_DLGPROC+
@@ -82,6 +84,8 @@
 	   POINT
 	   x
 	   y
+	   RECT
+	   PAINTSTRUCT
 
 	   +HWND_BROADCAST+	   
 
@@ -353,7 +357,7 @@
   (:VIRTKEY #x01);The key member specifies a virtual-key code. If this flag is not specified, key is assumed to specify a character code.
   )
 
-(defcstruct POINT 
+(defcstruct POINT
   (x :long)
   (y :long))
 
@@ -628,3 +632,18 @@
   (:ROOT 2);Retrieves the root window by walking the chain of parent windows.
   (:ROOTOWNER 3);Retrieves the owned root window by walking the chain of parent and owner windows returned by GetParent.
   )
+
+;;; 
+(defcstruct RECT
+  (left :long)
+  (top :long)
+  (right :long)
+  (bottom :long))
+
+(defcstruct PAINTSTRUCT
+  (hdc  HDC)
+  (fErase :boolean)
+  (rcPaint (:struct RECT))
+  (fRestore :boolean)
+  (fIncUpdate :boolean)
+  (rgbReserved C_BYTE :count 32))

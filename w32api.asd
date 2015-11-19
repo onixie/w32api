@@ -7,7 +7,10 @@
 		:serial t
 		:in-order-to ((test-op (test-op "w32api/test")))
 		:depends-on (#:cffi #:bordeaux-threads #:lparallel)
-		:components ((:module "api"
+		:components ((:module "util"
+				      :components ((:file "package")
+						   (:file "cffi-extra")))
+			     (:module "api"
 				      :serial t
 				      :components ((:file "type")
 						   (:file "kernel32")

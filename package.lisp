@@ -45,4 +45,12 @@
 	   process-message
 	   post-quit-message
 	   window-message-p
-	   start-window))
+	   window-message-eq
+	   start-window
+
+	   update-window
+	   create-button
+	   with-drawing-context
+	   get-drawing-context
+	   get-drawing-context-window
+	   ))

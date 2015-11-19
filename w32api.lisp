@@ -61,25 +61,28 @@
 		       &key
 			 (procedure (callback MainWndProc))
 			 (style '(:HREDRAW :VREDRAW)))
-  (with-foreign-object (wnd-class '(:struct WNDCLASSEX))
-    
-    (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'cbSize) (foreign-type-size '(:struct WNDCLASSEX)))
-    (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'style) style)
-    (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'lpfnWndProc) procedure)
-    (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'cbClsExtra) 0)
-    (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'cbWndExtra) 0)
-    (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hInstance) (GetModuleHandleA (null-pointer)))
-    (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hIcon) (null-pointer))
-    (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hCursor) (null-pointer))
-    (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hbrBackground) (null-pointer))
-    (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'lpszMenuName) (null-pointer))
-    (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'lpszClassName) name)
-    (setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hIconSm) (null-pointer))
+  (if (stringp name)
+      (with-foreign-object (wnd-class '(:struct WNDCLASSEX))
+	
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'cbSize) (foreign-type-size '(:struct WNDCLASSEX)))
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'style) style)
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'lpfnWndProc) procedure)
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'cbClsExtra) 0)
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'cbWndExtra) 0)
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hInstance) (GetModuleHandleA (null-pointer)))
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hIcon) (null-pointer))
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hCursor) (null-pointer))
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hbrBackground) (null-pointer))
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'lpszMenuName) (null-pointer))
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'lpszClassName) name)
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hIconSm) (null-pointer))
 
-    (RegisterClassExA wnd-class)))
+	(RegisterClassExA wnd-class))
+      0))
 
 (defun unregister-class (name)
-  (UnregisterClassA name (GetModuleHandleA (null-pointer))))
+  (when (stringp name)
+    (UnregisterClassA name (GetModuleHandleA (null-pointer)))))
 
 (defun create-window (name
 		      &key
@@ -98,7 +101,7 @@
 		      (remove :POPUP (push :CHILD style))
 		      style))
 	   (hWnd (CreateWindowExA extended-style
-				  class-name
+				  (string class-name)
 				  name
 				  style
 				  x
@@ -130,7 +133,7 @@
   (let ((hWnd (FindWindowExA
 	       (or (window-p parent) (null-pointer))
 	       (null-pointer)
-	       class-name
+	       (string class-name)
 	       name)))
     (unless (null-pointer-p hWnd) hWnd)))
 
@@ -230,6 +233,10 @@
     (and (not (window-minimized-p window))
 	 (not (window-maximized-p window)))))
 
+(defun update-window (window)
+  (when (window-p window)
+    (UpdateWindow window)))
+
 (defun window-enabled-p (window)
   (and (window-p window)
        (IsWindowEnabled window)))
@@ -283,6 +290,9 @@
 	message)
       (foreign-enum-keyword 'WM_ENUM message :errorp nil)))
 
+(defun window-message-eq (rmessage lmessage)
+  (eq (window-message-p rmessage) (window-message-p lmessage)))
+
 (defun start-window (&rest args)
   (make-thread
    (lambda ()
@@ -301,11 +311,48 @@
 				    (width 200)
 				    (height 50))
   (create-window name
-		 :class-name "BUTTON"
-		 :style '(:TABSTOP :VISIBLE :CHILD ;:DEFPUSHBUTTON
-			  )
+		 :class-name :BUTTON
+		 :style '(:TABSTOP :VISIBLE :CHILD :DEFPUSHBUTTON)
 		 :parent window
 		 :x x
 		 :y y
 		 :width width
 		 :height height))
+
+;;; DC and Drawing
+
+(defun get-drawing-context (window &key (full nil))
+  (when (window-p window)
+    (if full
+	(GetDC window)
+	(GetWindowDC window))))
+
+(defun get-drawing-context-window (dc)
+  (and dc
+       (pointerp dc)
+       (not (null-pointer-p dc))
+       (WindowFromDC dc)))
+
+;; (defun begin-drawing-context (window)
+;;   (when (window-p window)
+;;     (let ((paint (foreign-alloc '(:struct PAINTSTRUCT))))
+;;       (values (BeginPaint window paint) paint))))
+
+;; (defun end-drawing-context (window paint)
+;;   (when (and (window-p window)
+;; 	     (pointerp paint)
+;; 	     (not (null-pointer-p paint)))
+;;     (and (EndPaint window paint)
+;; 	 (foreign-free paint))))
+
+(defun do-with-drawing-context (window &optional draw-func)
+  (when (and (functionp draw-func) (window-p window))
+    (with-foreign-object (paint '(:struct PAINTSTRUCT))
+      (let ((dc (BeginPaint window paint)))
+	(unless (null-pointer-p dc)
+	  (unwind-protect
+	       (funcall draw-func dc)
+	    (EndPaint window paint)))))))
+
+(defmacro with-drawing-context ((var window) &body draws)
+  `(do-with-drawing-context ,window (lambda (,var) ,@draws)))

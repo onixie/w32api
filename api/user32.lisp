@@ -35,10 +35,14 @@
 	   SetWindowTextA
 	   DefWindowProcA
 
+	   UpdateWindow
 	   GetDC
 	   GetWindowDC
 	   ReleaseDC
-
+	   WindowFromDC
+	   BeginPaint
+	   EndPaint
+	   
 	   PostQuitMessage
 	   CreateAcceleratorTableA
 	   TranslateAcceleratorA
@@ -96,7 +100,7 @@
   (dwExStyle     WS_EX_FLAG)
   (lpClassName   :string)
   (lpWindowName   :string)
-  (dwStyle     WS_FLAG)
+  (dwStyle (bitfield-union DWORD WS_FLAG BS_FLAG))
   (x :int)
   (y :int)
   (nWidth       :int)
@@ -245,7 +249,13 @@
 (defcfun "DispatchMessageA" LRESULT
   (lpMsg (:pointer (:struct MSG))))
 
+(defcfun "PostQuitMessage" :void
+  (id :int))
+
 ;;; 
+(defcfun "UpdateWindow" :boolean
+  (hWnd HWND))
+
 (defcfun "GetDC" HDC
   (hWnd HWND))
 
@@ -256,5 +266,13 @@
   (hWnd HWND)
   (hDC  HDC))
 
-(defcfun "PostQuitMessage" :void
-  (id :int))
+(defcfun "WindowFromDC" HWND
+  (hDC  HDC))
+
+(defcfun "BeginPaint" HDC
+  (hwnd          HWND)
+  (lpPaint (:pointer (:struct PAINTSTRUCT))))
+
+(defcfun "EndPaint" :boolean
+  (hwnd          HWND)
+  (lpPaint (:pointer (:struct PAINTSTRUCT))))
