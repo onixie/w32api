@@ -9,6 +9,7 @@
 		:depends-on (#:cffi #:bordeaux-threads #:lparallel)
 		:components ((:module "util"
 				      :components ((:file "package")
+						   (:file "helper")
 						   (:file "cffi-extra")))
 			     (:module "api"
 				      :serial t

@@ -5,7 +5,8 @@
 	#:w32api.type
 	#:w32api.kernel32
 	#:w32api.user32
-	#:w32api.gdi32)
+	#:w32api.gdi32
+	#:w32api.util)
   (:export get-error
 	   print-error
 	   register-class
@@ -20,6 +21,8 @@
 	   get-ancestor-window
 	   with-parent-window
 	   get-window-class-name
+	   get-window-style
+	   set-window-style
 	   get-window-title
 	   set-window-title
 	   show-window
@@ -36,7 +39,7 @@
 	   destroy-window
 	   window-enabled-p
 	   window-visible-p
-	   child-window-p
+	   parent-window-p
 	   window-focused-p
 	   window-active-p
 	   window-foregrounded-p

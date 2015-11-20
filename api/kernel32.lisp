@@ -1,8 +1,8 @@
 (defpackage #:w32api.kernel32
   (:use #:common-lisp #:cffi #:w32api.type)
-  (:export GetModuleHandleA
+  (:export GetModuleHandleW
 	   GetLastError
-	   FormatMessageA))
+	   FormatMessageW))
 
 (in-package #:w32api.kernel32)
 
@@ -11,12 +11,12 @@
 
 (use-foreign-library kernel32)
 
-(defcfun "GetModuleHandleA" HMODULE
+(defcfun "GetModuleHandleW" HMODULE
   (lpModuleName :string))
 
 (defcfun "GetLastError" DWORD)
 
-(defcfun "FormatMessageA" DWORD
+(defcfun "FormatMessageW" DWORD
   (dwFlags   DWORD)
   (lpSource (:pointer :void))
   (dwMessageId   DWORD)
@@ -24,3 +24,4 @@
   (lpBuffer  :string)
   (nSize   DWORD)
   (va_Arguments (:pointer :pointer)))
+

@@ -9,7 +9,7 @@
 (defun print-error (error-code)
   (let ((dwFLAGS (logior  #X00001000 #X00000200 #X00000100)))
     (with-foreign-object (strptr :pointer)
-      (FormatMessageA dwFLAGS (null-pointer) error-code 0 strptr 0 (null-pointer))
+      (FormatMessageW dwFLAGS (null-pointer) error-code 0 strptr 0 (null-pointer))
       (foreign-string-to-lisp (mem-ref strptr :pointer)))))
 
 ;;; user32
@@ -52,7 +52,7 @@
 			  (post-quit-message 0))
 			 ((eq (window-message-p Msg) :CLOSE)
 			  (destroy-window hWnd))
-			 (t (DefWindowProcA hWnd Msg wParam lParam)))))
+			 (t (DefWindowProcW hWnd Msg wParam lParam)))))
 	   (proc (gethash (pointer-address hWnd) *create-window-owned-procedures* cont)))
       (let ((result (funcall proc hWnd Msg wParam lParam (lambda () (funcall cont hWnd Msg wParam lParam nil)))))
 	(if (numberp result) result 0)))))
@@ -69,7 +69,7 @@
 	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'lpfnWndProc) procedure)
 	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'cbClsExtra) 0)
 	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'cbWndExtra) 0)
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hInstance) (GetModuleHandleA (null-pointer)))
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hInstance) (GetModuleHandleW (null-pointer)))
 	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hIcon) (null-pointer))
 	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hCursor) (null-pointer))
 	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hbrBackground) (null-pointer))
@@ -77,12 +77,12 @@
 	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'lpszClassName) name)
 	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hIconSm) (null-pointer))
 
-	(RegisterClassExA wnd-class))
+	(RegisterClassExW wnd-class))
       0))
 
 (defun unregister-class (name)
   (when (stringp name)
-    (UnregisterClassA name (GetModuleHandleA (null-pointer)))))
+    (UnregisterClassW name (GetModuleHandleW (null-pointer)))))
 
 (defun create-window (name
 		      &key
@@ -98,9 +98,9 @@
   (unless (get-window name :class-name class-name :parent parent)
     (let* ((atom (register-class class-name))
 	   (style (if (window-p parent)
-		      (remove :POPUP (push :CHILD style))
+		      (remove :POPUP (cons :CHILD style))
 		      style))
-	   (hWnd (CreateWindowExA extended-style
+	   (hWnd (CreateWindowExW extended-style
 				  (string class-name)
 				  name
 				  style
@@ -110,7 +110,7 @@
 				  height
 				  (or (window-p parent) (null-pointer))
 				  (null-pointer)
-				  (GetModuleHandleA (null-pointer))
+				  (GetModuleHandleW (null-pointer))
 				  (null-pointer))))
       (with-recursive-lock-held (*create-window-lock*)
 	(unless (eq atom 0)
@@ -122,6 +122,7 @@
 	    (setf (gethash (pointer-address hWnd) *create-window-owned-procedures*) procedure))
 	  hWnd)))))
 
+
 (defun window-p (window)
   (when (and window
 	     (pointerp window)
@@ -130,15 +131,27 @@
     window))
 
 (defun get-window (name &key (class-name name) (parent *parent-window*))
-  (let ((hWnd (FindWindowExA
+  (let ((hWnd (FindWindowExW
 	       (or (window-p parent) (null-pointer))
 	       (null-pointer)
 	       (string class-name)
 	       name)))
     (unless (null-pointer-p hWnd) hWnd)))
 
-(defun set-parent-window (window parent)
-  (when (and (window-p window) (window-p parent))
+(defun set-window-style (window &optional (styles w32api.type:+WS_OVERLAPPEDWINDOW+))
+  (when (window-p window)
+    (SetWindowStyle window (ensure-list styles))))
+
+(defun get-window-style (window)
+  (when (window-p window)
+    (GetWindowStyle window)))
+
+(defun set-parent-window (window &optional (parent (null-pointer)))
+  (when (and (window-p window) (or (window-p parent) (null-pointer-p parent)))
+    (cond ((window-p parent)
+	   (set-window-style window (remove :POPUP (cons :CHILD (get-window-style window)))))
+	  ((null-pointer-p parent)
+	   (set-window-style window (remove :CHILD (cons :POPUP (get-window-style window))))))
     (SetParent window parent)))
 
 (defun get-parent-window (window)
@@ -154,19 +167,19 @@
 (defun get-window-class-name (window)
   (when (window-p window)
     (string-trim " " (with-foreign-pointer-as-string
-			 ((class-name class-name-length) 256)
-		       (GetClassNameA window class-name class-name-length)))))
+			 ((class-name class-name-length) 1024)
+		       (GetClassNameW window class-name class-name-length)))))
 
 (defun get-window-title (window)
   (when (window-p window)
-    (let ((length (GetWindowTextLengthA window)))
+    (let ((length (GetWindowTextLengthW window)))
       (unless (eq 0 length)
-	(with-foreign-pointer-as-string (title (incf length))
-	  (GetWindowTextA window title length))))))
+	(with-foreign-pointer-as-string (title (* 2 (incf length)))
+	  (GetWindowTextW window title length))))))
 
 (defun set-window-title (window title)
   (when (and (window-p window) (stringp title))
-    (SetWindowTextA window title)))
+    (SetWindowTextW window title)))
 
 (defun destroy-window (window)
   (when (window-p window)
@@ -265,7 +278,7 @@
   (and (window-p window)
        (IsZoomed window)))
 
-(defun child-window-p (window parent)
+(defun parent-window-p (window parent)
   (and (window-p window)
        (window-p parent)
        (IsChild parent window)))
@@ -273,13 +286,13 @@
 (defun process-message (&optional (window (null-pointer)) (extra-process-func nil extra-process-func-p))
   (with-foreign-object (msg '(:struct MSG))
     (with-foreign-object (accelerator-table '(:struct ACCEL))
-      (let ((hAccel (CreateAcceleratorTableA accelerator-table 1)))
+      (let ((hAccel (CreateAcceleratorTableW accelerator-table 1)))
 	(unless (null-pointer-p hAccel)
-	  (loop while (eq 1 (GetMessageA msg (or (window-p window) (null-pointer)) 0 0))
-	     do (unless (TranslateAcceleratorA (foreign-slot-value msg '(:struct MSG) 'hWnd) hAccel msg)
+	  (loop while (eq 1 (GetMessageW msg (or (window-p window) (null-pointer)) 0 0))
+	     do (unless (TranslateAcceleratorW (foreign-slot-value msg '(:struct MSG) 'hWnd) hAccel msg)
 		  (when extra-process-func-p (funcall extra-process-func (foreign-slot-value msg '(:struct MSG) 'hWnd) msg))
 		  (TranslateMessage msg)
-		  (DispatchMessageA msg))))))))
+		  (DispatchMessageW msg))))))))
 
 (defun post-quit-message (exit-code)
   (PostQuitMessage exit-code))
@@ -345,7 +358,7 @@
 ;;     (and (EndPaint window paint)
 ;; 	 (foreign-free paint))))
 
-(defun do-with-drawing-context (window &optional draw-func)
+(defun call-with-drawing-context (window &optional draw-func)
   (when (and (functionp draw-func) (window-p window))
     (with-foreign-object (paint '(:struct PAINTSTRUCT))
       (let ((dc (BeginPaint window paint)))
@@ -355,4 +368,4 @@
 	    (EndPaint window paint)))))))
 
 (defmacro with-drawing-context ((var window) &body draws)
-  `(do-with-drawing-context ,window (lambda (,var) ,@draws)))
+  `(call-with-drawing-context ,window (lambda (,var) ,@draws)))

@@ -78,7 +78,7 @@
     (with-fixture window-name ((string (gensym "WIN")))
       (let ((<child-window> (create-window <window-name> :parent <window>)))
 	(is-true (window-p <child-window>))
-	(is-true (child-window-p <child-window> <window>))
+	(is-true (parent-window-p <child-window> <window>))
 	(destroy-window <child-window>)))))
 
 (test |(create-window <exist-name>) = nil| 
@@ -99,7 +99,7 @@
       (with-fixture window ((string (gensym "WIN")) :parent <parent-window>)
 	(is (window-p <parent-window>))
 	(is (window-p <window>))
-	(is (child-window-p <window> <parent-window>))
+	(is (parent-window-p <window> <parent-window>))
 	(is (eq nil (get-window <window-name>)))
 	(is (pointer-eq <window> (get-window <window-name> :parent <parent-window>)))
 	))))
@@ -107,6 +107,10 @@
 (test |call on <invalid-window> should return nil| 
   (dolist (func (list
 		 #'window-p
+		 #'get-parent-window
+		 (lambda (window)
+		   (with-fixture window ((string (gensym "PWIN")))
+		     (set-parent-window window <window>)))
 		 #'get-window-class-name
 		 #'destroy-window
 		 #'foreground-window
@@ -117,11 +121,20 @@
 		 #'active-window
 		 #'select-window
 		 #'focus-window
-		 (lambda (window) (set-window-title window "Title"))
+		 (lambda (window)
+		   (set-window-title window "Title"))
 		 #'get-window-title
+		 #'get-window-style
+		 (lambda (invalid-window)
+		   (set-window-style invalid-window))
 		 #'maximize-window
 		 #'minimize-window
 		 #'restore-window
+		 (lambda (invalid-window)
+		   (with-window (valid-window (string (gensym "WIN")))
+		     (and
+		      (parent-window-p valid-window invalid-window)
+		      (parent-window-p invalid-window valid-window))))
 		 #'window-visible-p
 		 #'window-enabled-p
 		 #'window-active-p
@@ -136,6 +149,53 @@
       (is (equal nil (funcall func invalid)))))
   )
 
+(test |(get-window-style <window>) = (list <style> ...)|
+  (with-fixture window ((string (gensym "WIN")))
+    (is (equal (list :OVERLAPPED) (set-difference w32api.type:+WS_OVERLAPPEDWINDOW+ (get-window-style <window>)))))
+  (with-fixture window ((string (gensym "WIN")))
+    (set-window-style <window> :OVERLAPPED)
+    (is (equal (list :CLIPSIBLINGS) (get-window-style <window>))))
+  (with-fixture window ((string (gensym "WIN")))
+    (set-window-style <window> :CHILD)
+    (is (member :CHILD (get-window-style <window>))))
+  )
+
+(test |(set-window-style <window>) will set default style to <window>|
+  (with-fixture window ((string (gensym "WIN")))
+    (set-window-style <window> :CHILD)
+    (set-window-style <window>)
+    (is (not (member :CHILD (get-window-style <window>))))
+    (is (equal (list :OVERLAPPED) (set-difference w32api.type:+WS_OVERLAPPEDWINDOW+ (get-window-style <window>)))))
+  )
+
+(test |(set-window-style <window> <style>) will set <style> to <window>|
+  (with-fixture window ((string (gensym "WIN")))
+    (set-window-style <window> :CHILD)
+    (is (member :CHILD (get-window-style <window>))))
+  )
+
+(test |(set-window-style <window> <style>) will set <style> to <window>|
+  (with-fixture window ((string (gensym "WIN")))
+    (set-window-style <window> (list :CHILD :CHECKBOX))
+    (is (member :CHILD (get-window-style <window>)))
+    (is (member :CHECKBOX (get-window-style <window>))))
+  )
+
+(test |(get-parent-window <window>) will return parent of <window>|
+  (with-fixture window ((string (gensym "WIN")))
+    (with-fixture window ((string (gensym "WIN")) :parent <window>)
+      (is (pointer-eq <parent-window> (get-parent-window <window>))))))
+
+(test |(set-parent-window <window> <parent>) will set <parent> as parent of <window>|
+  (with-fixture window ((string (gensym "WIN")))
+    (let ((<parent> <window>))		;Notice <parent-window> is a dynamic binding in with-fixture
+      (with-fixture window ((string (gensym "WIN")))
+	(is (not (parent-window-p <window> <parent>)))
+	(set-parent-window <window> <parent>)
+	(is (parent-window-p <window> <parent>))
+	(set-parent-window <window>)
+	(is (not (parent-window-p <window> <parent>)))))))
+
 (test |(window-p <window>) = <window>|
   (with-fixture window ((string (gensym "WIN")))
     (is (equal <window> (window-p <window>)))))
@@ -143,7 +203,7 @@
 (test |(get-window-class-name <window>) = <class-name>|
   (with-fixture class ((string (gensym "WINCLASS")))
     (with-fixture window ((string (gensym "WIN")) :class-name <class-name>)
-      (is (equal <class-name> (get-window-class-name (get-window <window-name> :class-name <class-name>)))))))
+      (is (equal <class-name> (get-window-class-name <window>))))))
 
 (test |(destroy-window <window> = t| 
   (with-fixture window-name ((string (gensym "WIN")))
@@ -352,7 +412,7 @@
 
 (test |multithread window creation/destroy test|
   (let ((*kernel* (lparallel:make-kernel 100)))
-    (pmapc (lambda (index)		; fixme: when the worker will be freed?
+    (pmapc (lambda (index)
 	     (let ((name (format nil "WIN~d" index))
 		   (parent-name (format nil "PWIN~d" index)))
 	       (with-class (parent-name)
@@ -362,14 +422,19 @@
 					 :parent <parent-window>
 					 :procedure
 					 (lambda (hWnd Msg lParam wParam cont)
-					   (declare (ignore hWnd Msg lParam wParam cont))
+					   (declare (ignore Msg lParam wParam cont))
+					   (with-drawing-context (dc hWnd)
+					     (declare (ignore dc)))
 					   (post-quit-message 0)))))
 		     (show-window <parent-window>)
 		     (show-window <window>)
+		     (set-window-title <window> (format nil "CWIN~d" index))
 		     (get-window-title <parent-window>)
 		     (get-window-class-name <window>)
+		     (window-active-p <window>)
+		     (get-parent-window <window>)
 		     (process-message)
 		     (destroy-window <window>))))))
-	   (loop for x from 1 to 100 collect x)))
+	   (loop for x from 1 to 300 collect x)))
   (is (equal 0 (hash-table-count w32api::*create-window-owned-classes*)))
   (is (equal 0 (hash-table-count w32api::*create-window-owned-procedures*))))

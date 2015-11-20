@@ -95,6 +95,8 @@
 
 (in-package #:w32api.type)
 
+(setf *default-foreign-encoding* :utf-16le)
+
 #+x86-64
 (progn
   (defctype INT_PTR :int64)
@@ -330,9 +332,9 @@
 ;;; SetWindowLongPtr nIndex
 (defcenum (GWLP_ENUM :int)
   (:EXSTYLE -20)	      ;Sets a new extended window style.
-  (:HINSTAN -6);Sets a new application instance handle.
+  (:HINSTANCE -6);Sets a new application instance handle.
   (:ID -12) ;Sets a new identifier of the child window. The window cannot be a top-level window.
-  (:STY -1);Sets a new window style.
+  (:STYLE -16);Sets a new window style.
   (:USERDATA -21);Sets the user data associated with the window. This data is intended for use by the application that created the window. Its value is initially zero.
   (:GWLP_WNDPROC -4));Sets a new address for the window procedure.
 

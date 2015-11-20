@@ -1,6 +1,6 @@
 (defpackage #:w32api.gdi32
   (:use #:common-lisp #:cffi #:w32api.type)
-  (:export TextOutA))
+  (:export TextOutW))
 
 (in-package #:w32api.gdi32)
 
@@ -9,7 +9,7 @@
 
 (use-foreign-library gdi32)
 
-(defcfun "TextOutA" :boolean
+(defcfun "TextOutW" :boolean
   (hdc HDC)
   (nXStart :int)
   (nYStart :int)

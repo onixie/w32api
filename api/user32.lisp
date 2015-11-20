@@ -1,14 +1,17 @@
 (defpackage #:w32api.user32
   (:use #:common-lisp #:cffi #:w32api.type)
-  (:export RegisterClassExA
-	   UnregisterClassA
-	   GetClassNameA
-;;	   CreateWindowA
-	   CreateWindowExA
+  (:export RegisterClassExW
+	   UnregisterClassW
+	   GetClassNameW
+	   ;;	   CreateWindowA
+	   CreateWindowExW
 	   SetParent
 	   GetParent
 	   GetAncestor
-	   SetWindowLongPtr
+	   SetWindowLongPtrW
+	   GetWindowLongPtrW
+	   SetWindowStyle
+	   GetWindowStyle
 	   AnimateWindow
 	   EnableWindow
 	   IsWindow
@@ -27,13 +30,13 @@
 	   LockSetForegroundWindow
 	   CloseWindow
 	   OpenIcon
-	   FindWindowExA
+	   FindWindowExW
 	   ShowWindow
 	   DestroyWindow
-	   GetWindowTextLengthA
-	   GetWindowTextA
-	   SetWindowTextA
-	   DefWindowProcA
+	   GetWindowTextLengthW
+	   GetWindowTextW
+	   SetWindowTextW
+	   DefWindowProcW
 
 	   UpdateWindow
 	   GetDC
@@ -44,14 +47,14 @@
 	   EndPaint
 	   
 	   PostQuitMessage
-	   CreateAcceleratorTableA
-	   TranslateAcceleratorA
-	   GetMessageA
-	   PostMessageA
-	   PostThreadMessageA
+	   CreateAcceleratorTableW
+	   TranslateAcceleratorW
+	   GetMessageW
+	   PostMessageW
+	   PostThreadMessageW
 	   WaitMessage
 	   TranslateMessage
-	   DispatchMessageA
+	   DispatchMessageW
 	   ))
 
 (in-package #:w32api.user32)
@@ -61,29 +64,29 @@
 
 (use-foreign-library user32)
 
-(defcfun "RegisterClassExA" C_ATOM
+(defcfun "RegisterClassExW" C_ATOM
   (lpwcx (:pointer (:struct WNDCLASSEX))))
 
-(defcfun "UnregisterClassA" :boolean
+(defcfun "UnregisterClassW" :boolean
   (lpClassName :string)
   (hInstance HINSTANCE))
 
-(defcfun "GetClassInfoExA" :boolean
+(defcfun "GetClassInfoExW" :boolean
   (hinst    HINSTANCE)
   (lpszClass      :string)
   (lpwcx (:pointer (:struct WNDCLASSEX))))
 
-(defcfun "GetClassNameA" :boolean
+(defcfun "GetClassNameW" :boolean
   (hWnd HWND)
   (lpClassName :pointer)
   (nMaxCount :int))
 
-(defcfun "SetClassLongPtrA" ULONG_PTR
+(defcfun "SetClassLongPtrW" ULONG_PTR
   (hWnd     HWND)
   (nIndex      :int)
   (dwNewLong   LONG_PTR))
 
-;; (defcfun "CreateWindowA" HWND
+;; (defcfun "CreateWindowW" HWND
 ;;   (lpClassName   :string)
 ;;   (lpWindowName   :string)
 ;;   (dwStyle     WS_FLAG)
@@ -96,7 +99,7 @@
 ;;   (hInstance HINSTANCE)
 ;;   (lpParam    (:pointer :void)))
 
-(defcfun "CreateWindowExA" HWND
+(defcfun "CreateWindowExW" HWND
   (dwExStyle     WS_EX_FLAG)
   (lpClassName   :string)
   (lpWindowName   :string)
@@ -121,10 +124,27 @@
   (hWnd HWND)
   (gaFlags GA_ENUM))
 
-(defcfun "SetWindowLongPtrA" LONG_PTR
+(defcfun "SetWindowLongPtrW" LONG_PTR
   (hWnd     HWND)
   (nIndex   :int)
   (dwNewLong LONG_PTR))
+
+(defcfun "GetWindowLongPtrW" LONG_PTR
+  (hWnd     HWND)
+  (nIndex   :int))
+
+(defun SetWindowStyle (hWnd styles)
+  (foreign-funcall "SetWindowLongPtrW"
+		   HWND hWnd
+		   GWLP_ENUM :STYLE
+		   (bitfield-union DWORD WS_FLAG BS_FLAG) styles
+		   (bitfield-union DWORD WS_FLAG BS_FLAG)))
+
+(defun GetWindowStyle (hWnd)
+  (foreign-funcall "GetWindowLongPtrW"
+		   HWND hWnd
+		   GWLP_ENUM :STYLE
+		   (bitfield-union DWORD WS_FLAG BS_FLAG)))
 
 (defcfun "ShowWindow" :boolean
   (hWnd HWND)
@@ -167,7 +187,7 @@
 (defcfun "OpenIcon" :boolean
   (hWnd HWND))
 
-(defcfun "FindWindowExA" HWND
+(defcfun "FindWindowExW" HWND
   (hwndParent    HWND)
   (hwndChildAfter    HWND)
   (lpszClass :string)
@@ -195,47 +215,47 @@
 (defcfun "DestroyWindow" :boolean
   (hWnd HWND))
 
-(defcfun "DefWindowProcA" LRESULT
+(defcfun "DefWindowProcW" LRESULT
   (hWnd   HWND)
   (Msg   :unsigned-int)
   (wParam WPARAM)
   (lParam LPARAM))
 
-(defcfun "GetWindowTextLengthA" :int
+(defcfun "GetWindowTextLengthW" :int
   (hWnd HWND))
 
-(defcfun "GetWindowTextA" :boolean
+(defcfun "GetWindowTextW" :boolean
   (hWnd HWND)
   (lpString :string)
   (nMaxCount :int))
 
-(defcfun "SetWindowTextA" :boolean
+(defcfun "SetWindowTextW" :boolean
   (hWnd HWND)
   (lpString :string))
 
 
-(defcfun "CreateAcceleratorTableA" HACCEL
+(defcfun "CreateAcceleratorTableW" HACCEL
   (lpaccl (:pointer (:struct ACCEL)))
   (cEntries :int))
 
-(defcfun "TranslateAcceleratorA" :boolean
+(defcfun "TranslateAcceleratorW" :boolean
   (hWnd   HWND)
   (hAccTable HACCEL)
   (lpMsg (:pointer (:struct MSG))))
 
-(defcfun "GetMessageA" :int 		;be aware of return -1 when attached window destroyed
+(defcfun "GetMessageW" :int 		;be aware of return -1 when attached window destroyed
   (lpMsg (:pointer (:struct MSG)))
   (hWnd  HWND)
   (wMsgFilterMin :unsigned-int)
   (wMsgFilterMax :unsigned-int))
 
-(defcfun "PostMessageA" :boolean
+(defcfun "PostMessageW" :boolean
   (hWnd   HWND)
   (Msg   :unsigned-int)
   (wParam WPARAM)
   (lParam LPARAM))
 
-(defcfun "PostThreadMessageA" :boolean
+(defcfun "PostThreadMessageW" :boolean
   (idThread  DWORD)
   (Msg   :unsigned-int)
   (wParam WPARAM)
@@ -246,7 +266,7 @@
 (defcfun "TranslateMessage" :boolean
   (lpMsg (:pointer (:struct MSG))))
 
-(defcfun "DispatchMessageA" LRESULT
+(defcfun "DispatchMessageW" LRESULT
   (lpMsg (:pointer (:struct MSG))))
 
 (defcfun "PostQuitMessage" :void

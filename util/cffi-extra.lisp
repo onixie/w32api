@@ -12,7 +12,9 @@
 
 (defun bitfield-union-symbols (value bitfield-types)
   (mapcan (lambda (bitfield-type)
-	    (foreign-bitfield-symbols bitfield-type value))
+	    (set-difference
+	     (foreign-bitfield-symbols bitfield-type value)
+	     (foreign-bitfield-symbols bitfield-type 0)))
 	  bitfield-types))
 
 (define-foreign-type bitfield-union-type ()
