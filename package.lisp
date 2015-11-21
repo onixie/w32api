@@ -19,7 +19,10 @@
 	   set-parent-window
 	   get-parent-window
 	   get-ancestor-window
+	   get-desktop-window
 	   with-parent-window
+	   get-child-window
+	   get-children-windows
 	   get-window-class-name
 	   get-window-style
 	   set-window-style

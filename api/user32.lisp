@@ -2,25 +2,27 @@
   (:use #:common-lisp #:cffi #:w32api.type)
   (:export RegisterClassExW
 	   UnregisterClassW
+	   DefWindowProcW
 	   GetClassNameW
 	   ;;	   CreateWindowA
 	   CreateWindowExW
+	   FindWindowExW
+	   GetDesktopWindow
 	   SetParent
 	   GetParent
 	   GetAncestor
+	   GetWindow
+	   EnumChildWindows
+	   EnumWindows
+	   EnumDesktopWindows
+	   GetTopWindow
+	   GetWindowTextLengthW
+	   GetWindowTextW
+	   SetWindowTextW
 	   SetWindowLongPtrW
 	   GetWindowLongPtrW
 	   SetWindowStyle
 	   GetWindowStyle
-	   AnimateWindow
-	   EnableWindow
-	   IsWindow
-	   IsWindowEnabled
-	   IsWindowVisible
-	   IsChild
-	   IsIconic
-	   IsZoomed
-	   SwitchToThisWindow
 	   SetFocus
 	   GetFocus
 	   SetActiveWindow
@@ -30,15 +32,23 @@
 	   LockSetForegroundWindow
 	   CloseWindow
 	   OpenIcon
-	   FindWindowExW
 	   ShowWindow
+	   AnimateWindow
+	   EnableWindow
+	   SwitchToThisWindow
+	   BringWindowToTop
 	   DestroyWindow
-	   GetWindowTextLengthW
-	   GetWindowTextW
-	   SetWindowTextW
-	   DefWindowProcW
+
 
 	   UpdateWindow
+
+	   IsWindow
+	   IsWindowEnabled
+	   IsWindowVisible
+	   IsChild
+	   IsIconic
+	   IsZoomed
+
 	   GetDC
 	   GetWindowDC
 	   ReleaseDC
@@ -113,6 +123,15 @@
   (hInstance HINSTANCE)
   (lpParam    (:pointer :void)))
 
+(defcfun "GetWindow" HWND
+  (hWnd HWND)
+  (uCmd GW_ENUM))
+
+(defcfun "GetTopWindow" HWND ; = (GetWindow ... :CHILD)
+  (hWnd HWND))
+
+(defcfun "GetDesktopWindow" HWND)
+
 (defcfun "SetParent" HWND
   (hWndChild HWND)
   (hWndNewParent HWND))
@@ -123,6 +142,22 @@
 (defcfun "GetAncestor" HWND
   (hWnd HWND)
   (gaFlags GA_ENUM))
+
+(defcfun "EnumDesktopWindows" :boolean
+  (hDesktop       HDESK)
+  (lpfn :pointer)
+  (lParam      LPARAM)
+  )
+
+(defcfun "EnumWindows" :boolean
+  (lpEnumFunc :pointer)
+  (lParam      LPARAM)
+  )
+
+(defcfun "EnumChildWindows" :boolean
+  (hWndParent HWND)
+  (lpEnumFunc :pointer)
+  (lParam      LPARAM))
 
 (defcfun "SetWindowLongPtrW" LONG_PTR
   (hWnd     HWND)
@@ -162,6 +197,9 @@
 (defcfun "SwitchToThisWindow" :void
   (hWnd HWND)
   (fAltTab :boolean))
+
+(defcfun "BringWindowToTop" :void
+  (hWnd HWND))
 
 (defcfun "SetFocus" :boolean
   (hWnd HWND))

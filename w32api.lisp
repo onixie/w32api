@@ -156,13 +156,34 @@
 
 (defun get-parent-window (window)
   (when (window-p window)
-    (let ((hParentWnd (GetParent window)))
-      (unless (null-pointer-p hParentWnd) hParentWnd))))
+    (let ((parent (GetParent window)))
+      (unless (null-pointer-p parent) parent))))
 
 (defun get-ancestor-window (window ga)
   (when (window-p window)
-    (let ((hAncestorWnd (GetAncestor window ga)))
-      (unless (null-pointer-p hAncestorWnd) hAncestorWnd))))
+    (let ((ancestor (GetAncestor window ga)))
+      (unless (null-pointer-p ancestor) ancestor))))
+
+(defun get-child-window (window &key (nth 1) (reverse nil))
+  (when (and (window-p window) (> nth 0))
+    (let* ((child (GetWindow window :CHILD))
+	   (child (if reverse (GetWindow child :HWNDLAST) child))
+	   (next (if reverse :HWNDPREV :HWNDNEXT)))
+      (loop repeat (1- nth)
+	 when (and child (not (null-pointer-p child)))
+	 do (setf child (GetWindow child next)))
+      (unless (null-pointer-p child) child))))
+
+(defun get-children-windows (window)
+  (when (window-p window)
+    (let* ((child (GetWindow window :CHILD)))
+      (loop while (and child (not (null-pointer-p child)))
+	 collect (prog1 child
+		   (setf child (GetWindow child :HWNDNEXT)))))))
+
+(defun get-desktop-window ()
+  (let ((window (GetDesktopWindow)))
+    (unless (null-pointer-p window) window)))
 
 (defun get-window-class-name (window)
   (when (window-p window)
@@ -322,10 +343,11 @@
 				    (x 0)
 				    (y 0)
 				    (width 200)
-				    (height 50))
+				    (height 50)
+				    (style nil))
   (create-window name
 		 :class-name :BUTTON
-		 :style '(:TABSTOP :VISIBLE :CHILD :DEFPUSHBUTTON)
+		 :style (append '(:TABSTOP :VISIBLE :CHILD :DEFPUSHBUTTON) style)
 		 :parent window
 		 :x x
 		 :y y

@@ -111,6 +111,8 @@
 		 (lambda (window)
 		   (with-fixture window ((string (gensym "PWIN")))
 		     (set-parent-window window <window>)))
+		 (lambda (window)
+		   (get-ancestor-window window :parent))
 		 #'get-window-class-name
 		 #'destroy-window
 		 #'foreground-window
@@ -195,6 +197,56 @@
 	(is (parent-window-p <window> <parent>))
 	(set-parent-window <window>)
 	(is (not (parent-window-p <window> <parent>)))))))
+
+(test |(get-ancestor-window <window> :parent) = (get-parent-window <window>|
+  (with-fixture window ((string (gensym "WIN")))
+    (with-fixture window ((string (gensym "WIN")) :parent <window>)
+      (is (pointer-eq <parent-window> (get-ancestor-window <window> :parent))))))
+
+(test |(get-ancestor-window <window> :root) = (get-parent-window ...(get-parent-window <window>))|
+  (with-fixture window ((string (gensym "WIN")))
+    (with-fixture window ((string (gensym "WIN")) :parent <window>)
+      (with-fixture window ((string (gensym "WIN")) :parent <window>)
+	(is (pointer-eq (get-parent-window <parent-window>) (get-ancestor-window <window> :root)))))))
+
+(test |(get-desktop-window) will return desktop window in current screen|
+  (is (not (null-pointer-p (get-desktop-window)))))
+
+(test |(get-child-window <window>) will return first child, :reverse t will return last child|
+  (with-fixture window ((string (gensym "WIN")))
+    (let ((children (loop repeat 10 collect (create-window (string (gensym "WIN")) :parent <window>))))
+      (is (pointer-eq (first children) (get-child-window <window>)))
+      (is (pointer-eq (first (last children)) (get-child-window <window> :reverse t)))
+      (mapc #'destroy-window children))))
+
+(test |(get-child-window <window> :nth <n>) will return nth child if n < child count|
+  (with-fixture window ((string (gensym "WIN")))
+    (let ((children (loop repeat 10 collect (create-window (string (gensym "WIN")) :parent <window>))))
+      (is (pointer-eq (third children) (get-child-window <window> :nth 3)))
+      (is (pointer-eq (third children) (get-child-window <window> :nth 8 :reverse t)))
+      (mapc #'destroy-window children))))
+
+(test |(get-child-window <window> :nth <n>) will return nil if n > child count or < 1|
+  (with-fixture window ((string (gensym "WIN")))
+    (is (eq nil (get-child-window <window>)))
+    (let ((children (loop repeat 10 collect (create-window (string (gensym "WIN")) :parent <window>))))
+      (is (eq nil (get-child-window <window> :nth 11)))
+      (is (eq nil (get-child-window <window> :nth 11 :reverse t)))
+      (is (eq nil (get-child-window <window> :nth 0)))
+      (is (eq nil (get-child-window <window> :nth 0 :reverse t)))
+      (mapc #'destroy-window children))))
+
+(test |(get-children-window <window>) will return all children windows|
+  (with-fixture window ((string (gensym "WIN")))
+    (is (eq nil (get-children-windows <window>)))
+    (let ((children (loop repeat 10 collect (create-window (string (gensym "WIN")) :parent <window>))))
+      (is (eq 10 (length (get-children-windows <window>))))
+      (is (eq nil (set-exclusive-or
+		   children
+		   (get-children-windows <window>)
+		   :key #'pointer-address)))
+      (mapc #'destroy-window children)
+      )))
 
 (test |(window-p <window>) = <window>|
   (with-fixture window ((string (gensym "WIN")))
