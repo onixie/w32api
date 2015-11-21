@@ -13,6 +13,25 @@
       (foreign-string-to-lisp (mem-ref strptr :pointer)))))
 
 ;;; user32
+(defun create-desktop (name)
+  (when (stringp name)
+    (let ((desktop (CreateDesktopW name
+				   (null-pointer)
+				   (null-pointer)
+				   0
+				   w32api.type::+DESKTOP_GENERIC_ALL+
+				   (null-pointer))))
+      (unless (null-pointer-p desktop)
+	desktop))))
+
+(defun select-desktop (desktop)
+  (when (pointerp desktop)
+    (SwitchDesktop desktop)))
+
+(defun destroy-desktop (desktop)
+  (when (pointerp desktop)
+    (CloseDesktop desktop)))
+
 (defvar *create-window-owned-classes* (make-hash-table))
 (defvar *create-window-owned-procedures* (make-hash-table))
 (defvar *create-window-lock* (make-recursive-lock))

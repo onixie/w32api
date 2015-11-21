@@ -1,6 +1,12 @@
 (defpackage #:w32api.user32
   (:use #:common-lisp #:cffi #:w32api.type)
-  (:export RegisterClassExW
+  (:export CreateDesktopW
+	   OpenDesktopW
+	   OpenInputDesktop
+	   SwitchDesktop
+	   CloseDesktop
+	   
+	   RegisterClassExW
 	   UnregisterClassW
 	   DefWindowProcW
 	   GetClassNameW
@@ -16,6 +22,7 @@
 	   EnumWindows
 	   EnumDesktopWindows
 	   GetTopWindow
+	   
 	   GetWindowTextLengthW
 	   GetWindowTextW
 	   SetWindowTextW
@@ -37,12 +44,11 @@
 	   EnableWindow
 	   SwitchToThisWindow
 	   BringWindowToTop
+	   UpdateWindow
 	   DestroyWindow
 
-
-	   UpdateWindow
-
 	   IsWindow
+	   IsWindowUnicode
 	   IsWindowEnabled
 	   IsWindowVisible
 	   IsChild
@@ -73,6 +79,32 @@
   (:win32 "user32.dll"))
 
 (use-foreign-library user32)
+
+(defcfun "CreateDesktopW"  HDESK
+  (lpszDesktop               :string)
+  (lpszDevice               :string)
+  (pDevmode               (:pointer (:struct DEVMODE)))
+  (dwFlags                 DF_FLAG)
+  (dwDesiredAccess         DA_FLAG)
+  (lpsa (:pointer (:struct SECURITY_ATTRIBUTES)))
+  )
+
+(defcfun "OpenDesktopW" HDESK
+  (lpszDesktop      :string)
+  (dwFlags       DF_FLAG)
+  (fInherit        :boolean)
+  (dwDesiredAccess DA_FLAG))
+
+(defcfun "OpenInputDesktop" HDESK
+  (dwFlags       DF_FLAG)
+  (fInherit        :boolean)
+  (dwDesiredAccess DA_FLAG))
+
+(defcfun "SwitchDesktop" :boolean
+  (hDesktop HDESK))
+
+(defcfun "CloseDesktop" :boolean
+  (hDesktop HDESK))
 
 (defcfun "RegisterClassExW" C_ATOM
   (lpwcx (:pointer (:struct WNDCLASSEX))))
@@ -236,6 +268,9 @@
   (hWnd HWND))
 
 (defcfun "IsWindow" :boolean
+  (hWnd HWND))
+
+(defcfun "IsWindowUnicode" :boolean
   (hWnd HWND))
 
 (defcfun "IsWindowVisible" :boolean

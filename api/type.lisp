@@ -20,7 +20,11 @@
 	   HBRUSH
 	   HMENU
 	   HACCEL
-	   
+
+	   DF_FLAG
+	   DA_FLAG
+	   SECURITY_ATTRIBUTES
+
 	   DLGPROC
 
 	   LRESULT
@@ -94,6 +98,8 @@
 
 	   WM_ENUM
 	   GA_ENUM
+
+	   DEVMODE
 	   ))
 
 (in-package #:w32api.type)
@@ -133,6 +139,75 @@
 (defctype WPARAM UINT_PTR)
 (defctype C_ATOM WORD)
 
+(defctype ACCESS_MASK DWORD)
+
+;;; CreateDesktop dwFlags
+
+(defbitfield (DF_FLAG DWORD)
+  (:ALLOWOTHERACCOUNTHOOK #x0001));Enables processes running in other accounts on the desktop to set hooks in this process.
+
+(defbitfield (DA_FLAG ACCESS_MASK)
+  (:DELETE #x00010000);	Required to delete the object.
+  (:READ_CONTROL #x00020000) ;Required to read information in the security descriptor for the object, not including the information in the SACL. To read or write the SACL, you must request the ACCESS_SYSTEM_SECURITY access right. For more information, see SACL Access Right.
+  (:SYNCHRONIZE #x00100000)  ;Not supported for desktop objects.
+  (:WRITE_DAC #x00040000);Required to modify the DACL in the security descriptor for the object.
+  (:WRITE_OWNER #x00080000);Required to change the owner in the security descriptor for the object.
+  (:CREATEMENU #x0004)	;Required to create a menu on the desktop.
+  (:CREATEWINDOW #x0002) ;Required to create a window on the desktop.
+  (:ENUMERATE #x0040)	;Required for the desktop to be enumerated.
+  (:HOOKCONTROL #x0008)	;Required to establish any of the window hooks.
+  (:JOURNALPLAYBACK #x0020) ;Required to perform journal playback on a desktop.
+  (:JOURNALRECORD #x0010) ;Required to perform journal recording on a desktop.
+  (:READOBJECTS #x0001)	;Required to read objects on the desktop.
+  (:SWITCHDESKTOP #x0100) ;Required to activate the desktop using the SwitchDesktop function.
+  (:WRITEOBJECTS #x0080) ;Required to write objects on the desktop.
+  ) 
+
+(defparameter +STANDARD_RIGHTS_ALL+
+  '(:DELETE :READ_CONTROL :WRITE_DAC :WRITE_OWNER :SYNCHRONIZE))
+(defparameter +STANDARD_RIGHTS_EXECUTE+
+  :READ_CONTROL)
+(defparameter +STANDARD_RIGHTS_READ+
+  :READ_CONTROL)
+(defparameter +STANDARD_RIGHTS_REQUIRED+
+  '(:DELETE :READ_CONTROL :WRITE_DAC :WRITE_OWNER))
+(defparameter +STANDARD_RIGHTS_WRITE+
+  :READ_CONTROL)
+
+(defparameter +DESKTOP_GENERIC_READ+	
+  '(:ENUMERATE
+    :READOBJECTS
+    +STANDARD_RIGHTS_READ+))
+(defparameter +DESKTOP_GENERIC_WRITE+	
+  '(:CREATEMENU
+    :CREATEWINDOW
+    :HOOKCONTROL
+    :JOURNALPLAYBACK
+    :JOURNALRECORD
+    :WRITEOBJECTS
+    +STANDARD_RIGHTS_WRITE+))
+(defparameter +DESKTOP_GENERIC_EXECUTE+	
+  '(:SWITCHDESKTOP +STANDARD_RIGHTS_EXECUTE+))
+(defparameter +DESKTOP_GENERIC_ALL+	
+  (append '(:CREATEMENU
+	    :CREATEWINDOW
+	    :ENUMERATE
+	    :HOOKCONTROL
+	    :JOURNALPLAYBACK
+	    :JOURNALRECORD
+	    :READOBJECTS
+	    :SWITCHDESKTOP
+	    :WRITEOBJECTS
+	    ) +STANDARD_RIGHTS_REQUIRED+))
+
+
+(defcstruct SECURITY_ATTRIBUTES
+  (nLength  DWORD)
+  (lpSecurityDescriptor (:pointer :void))
+  (bInheritHandle   :boolean)
+  )
+
+;;; 
 (defctype DLGPROC :pointer)
 
 (defparameter +CW_USEDEFAULT+ (- 0 #x80000000))
@@ -490,7 +565,7 @@
   (:SYSDEADCHAR                  #x0107)
   (:UNICHAR                      #x0109)
   (:KEYLAST                      #x0109)
-;  (:KEYLAST                      #x0108)
+					;  (:KEYLAST                      #x0108)
   (:IME_STARTCOMPOSITION         #x010D)
   (:IME_ENDCOMPOSITION           #x010E)
   (:IME_COMPOSITION              #x010F)
@@ -540,9 +615,9 @@
   (:XBUTTONDBLCLK                #x020D)
   (:MOUSEHWHEEL                  #x020E)
   (:MOUSELAST                    #x020E)
-;  (:MOUSELAST                    #x020D)
-;  (:MOUSELAST                    #x020A)
-;  (:MOUSELAST                    #x0209)
+					;  (:MOUSELAST                    #x020D)
+					;  (:MOUSELAST                    #x020A)
+					;  (:MOUSELAST                    #x0209)
   (:PARENTNOTIFY                 #x0210)
   (:ENTERMENULOOP                #x0211)
   (:EXITMENULOOP                 #x0212)
@@ -662,3 +737,61 @@
   (fRestore :boolean)
   (fIncUpdate :boolean)
   (rgbReserved C_BYTE :count 32))
+
+(defcstruct POINTL
+  (x :long)
+  (y :long))
+
+(defcstruct DM_DISPLAY
+  (dmPosition (:struct POINTL))
+  (dmDisplayOrientation  DWORD)
+  (dmDisplayFixedOutput  DWORD))
+
+(defcstruct DM_PRINTER
+  (dmOrientation :short)
+  (dmPaperSize :short)
+  (dmPaperLength :short)
+  (dmPaperWidth :short)
+  (dmScale :short)
+  (dmCopies :short)
+  (dmDefaultSource :short)
+  (dmPrintQuality :short))
+
+(defcunion DM_DEVICE
+  (dmPrinter (:struct DM_PRINTER))
+  (dmDisplay (:struct DM_DISPLAY)))
+
+(defcunion DM_MISC
+  (dmDisplayFlags DWORD)
+  (dmNup DWORD))
+
+(defcstruct DEVMODE 
+  (dmDeviceName WORD :count 32)		;wchar_t[32]
+  (dmSpecVersion  WORD)
+  (dmDriverVersion  WORD)
+  (dmSize  WORD) 
+  (dmDriverExtra  WORD) 
+  (dmFields DWORD) 
+  (dmDevice (:union DM_DEVICE)) 
+  (dmColor :short)
+  (dmDuplex :short)
+  (dmYResolution :short)
+  (dmTTOption :short)
+  (dmCollate :short)
+  (dmFormName WORD :count 32)		;wchar_t[32]
+  (dmLogPixels  WORD)
+  (dmBitsPerPel DWORD)
+  (dmPelsWidth DWORD)
+  (dmPelsHeight DWORD)
+  (dmMisc (:union DM_MISC))
+  (dmDisplayFrequency DWORD)
+  ;; (WINVER >= 0x0400)
+  (dmICMMethod DWORD)
+  (dmICMIntent DWORD)
+  (dmMediaType DWORD)
+  (dmDitherType DWORD)
+  (dmReserved1 DWORD)
+  (dmReserved2 DWORD)
+  ;; (WINVER >= 0x0500) || (_WIN32_WINNT >= 0x0400)
+  (dmPanningWidth DWORD)
+  (dmPanningHeight DWORD))

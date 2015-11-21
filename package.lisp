@@ -9,6 +9,9 @@
 	#:w32api.util)
   (:export get-error
 	   print-error
+	   create-desktop
+	   select-desktop
+	   destroy-desktop
 	   register-class
 	   unregister-class
 	   with-class
