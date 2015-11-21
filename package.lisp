@@ -61,6 +61,8 @@
 
 	   update-window
 	   create-button
+	   create-input
+	   create-editor
 	   with-drawing-context
 	   get-drawing-context
 	   get-drawing-context-window

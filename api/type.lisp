@@ -73,6 +73,7 @@
 	   +WS_OVERLAPPEDWINDOW+
 
 	   BS_FLAG
+	   ES_FLAG
 	   GWLP_ENUM
 	   +DWLP_MSGRESULT+
 	   +DWLP_DLGPROC+
@@ -264,6 +265,24 @@
   (:FLAT             #x00008000)
   )
 
+(defbitfield (ES_FLAG DWORD)
+  (:ES_LEFT             #x0000)
+  (:ES_CENTER           #x0001)
+  (:ES_RIGHT            #x0002)
+  (:ES_MULTILINE        #x0004)
+  (:ES_UPPERCASE        #x0008)
+  (:ES_LOWERCASE        #x0010)
+  (:ES_PASSWORD         #x0020)
+  (:ES_AUTOVSCROLL      #x0040)
+  (:ES_AUTOHSCROLL      #x0080)
+  (:ES_NOHIDESEL        #x0100)
+  (:ES_OEMCONVERT       #x0400)
+  (:ES_READONLY         #x0800)
+  (:ES_WANTRETURN       #x1000)
+					;>=0x0400
+  (:ES_NUMBER           #x2000))
+
+
 ;;; SetClassLongPtr nIndex
 (defcenum (GCL_ENUM :int)
   (:CBCLSEXTRA -20);Sets the size, in bytes, of the extra memory associated with the class. Setting this value does not change the number of extra bytes already allocated.
@@ -429,7 +448,7 @@
   (:ID -12) ;Sets a new identifier of the child window. The window cannot be a top-level window.
   (:STYLE -16);Sets a new window style.
   (:USERDATA -21);Sets the user data associated with the window. This data is intended for use by the application that created the window. Its value is initially zero.
-  (:GWLP_WNDPROC -4));Sets a new address for the window procedure.
+  (:WNDPROC -4));Sets a new address for the window procedure.
 
 (defparameter +DWLP_MSGRESULT+ 0);Sets the return value of a message processed in the dialog box procedure.
 

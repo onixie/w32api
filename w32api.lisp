@@ -187,6 +187,11 @@
 	    (setf (gethash (pointer-address hWnd) *create-window-owned-procedures*) procedure))
 	  hWnd)))))
 
+(defun set-window-procedure (window procedure)
+  (when (and (window-p window) (functionp procedure))
+    (with-recursive-lock-held (*create-window-lock*)
+      (setf (gethash (pointer-address window) *create-window-owned-procedures*) procedure)
+      t)))
 
 (defun window-p (window)
   (when (and window
@@ -275,7 +280,8 @@
 
 (defun set-window-title (window title)
   (when (and (window-p window) (stringp title))
-    (SetWindowTextW window title)))
+    (SetWindowTextW window title)
+    (GetLastError)))
 
 (defun destroy-window (window)
   (when (window-p window)
@@ -417,17 +423,92 @@
 (defun create-button (name window &key
 				    (x 0)
 				    (y 0)
-				    (width 200)
-				    (height 50)
+				    (width 100)
+				    (height 30)
+				    (style nil)
+				    (on-click nil))
+  (let* ((button (create-window name
+				:class-name :BUTTON
+				:style (append '(:TABSTOP :VISIBLE :CHILD :DEFPUSHBUTTON) style)
+				:parent window
+				:x x
+				:y y
+				:width width
+				:height height))
+	 (BTNDEFPROC (make-pointer (GetWindowLongPtrW button :WNDPROC))))
+
+    ;; Subclassing
+    (set-window-procedure
+     button
+     (lambda (hWnd Msg wParam lParam cont)
+       (declare (ignore cont))
+       (case (window-message-p Msg)
+	 (:LBUTTONUP (when (functionp on-click)
+		       (funcall on-click)))
+	 )
+       (CallWindowProcW BTNDEFPROC hWnd Msg wParam lParam)))
+    
+    (SetWindowLongPtrW button :WNDPROC (pointer-address (callback MainWndProc)))
+    button))
+
+;;; Editbox
+(defun create-input (name window &key
+				    (x 0)
+				    (y 0)
+				    (width 100)
+				    (height 30)
 				    (style nil))
-  (create-window name
-		 :class-name :BUTTON
-		 :style (append '(:TABSTOP :VISIBLE :CHILD :DEFPUSHBUTTON) style)
-		 :parent window
-		 :x x
-		 :y y
-		 :width width
-		 :height height))
+  (let* ((editor (create-window name
+				:class-name :EDIT
+				:style (append '(:VISIBLE :CHILD :ES_LEFT) style)
+				:parent window
+				:x x
+				:y y
+				:width width
+				:height height))
+	 (EDITDEFPROC (make-pointer (GetWindowLongPtrW editor :WNDPROC))))
+
+    ;; Subclassing
+    (set-window-procedure
+     editor
+     (lambda (hWnd Msg wParam lParam cont)
+       (declare (ignore cont))
+       (case (window-message-p Msg)
+	 
+	 )
+       (CallWindowProcW EDITDEFPROC hWnd Msg wParam lParam)))
+    
+    (SetWindowLongPtrW editor :WNDPROC (pointer-address (callback MainWndProc)))
+    editor))
+
+(defun create-editor (name window &key
+				    (x 0)
+				    (y 0)
+				    (width 400)
+				    (height 300)
+				    (style nil))
+  (let* ((editor (create-window name
+				:class-name :EDIT
+				:style (append '(:VISIBLE :CHILD :VSCROLL :ES_LEFT :ES_MULTILINE :ES_AUTOVSCROLL) style)
+				:parent window
+				:x x
+				:y y
+				:width width
+				:height height))
+	 (EDITDEFPROC (make-pointer (GetWindowLongPtrW editor :WNDPROC))))
+
+    ;; Subclassing
+    (set-window-procedure
+     editor
+     (lambda (hWnd Msg wParam lParam cont)
+       (declare (ignore cont))
+       (case (window-message-p Msg)
+	 
+	 )
+       (CallWindowProcW EDITDEFPROC hWnd Msg wParam lParam)))
+    
+    (SetWindowLongPtrW editor :WNDPROC (pointer-address (callback MainWndProc)))
+    editor))
 
 ;;; DC and Drawing
 

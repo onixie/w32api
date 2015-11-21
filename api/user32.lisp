@@ -12,6 +12,7 @@
 	   RegisterClassExW
 	   UnregisterClassW
 	   DefWindowProcW
+	   CallWindowProcW
 	   GetClassNameW
 	   ;;	   CreateWindowA
 	   CreateWindowExW
@@ -162,7 +163,7 @@
   (dwExStyle     WS_EX_FLAG)
   (lpClassName   :string)
   (lpWindowName   :string)
-  (dwStyle (bitfield-union DWORD WS_FLAG BS_FLAG))
+  (dwStyle (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG))
   (x :int)
   (y :int)
   (nWidth       :int)
@@ -210,25 +211,25 @@
 
 (defcfun "SetWindowLongPtrW" LONG_PTR
   (hWnd     HWND)
-  (nIndex   :int)
+  (nIndex   GWLP_ENUM)
   (dwNewLong LONG_PTR))
 
 (defcfun "GetWindowLongPtrW" LONG_PTR
   (hWnd     HWND)
-  (nIndex   :int))
+  (nIndex   GWLP_ENUM))
 
 (defun SetWindowStyle (hWnd styles)
   (foreign-funcall "SetWindowLongPtrW"
 		   HWND hWnd
 		   GWLP_ENUM :STYLE
-		   (bitfield-union DWORD WS_FLAG BS_FLAG) styles
-		   (bitfield-union DWORD WS_FLAG BS_FLAG)))
+		   (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG) styles
+		   (bitfield-union DWORD WS_FLAG BS_FLAG FS_FLAG)))
 
 (defun GetWindowStyle (hWnd)
   (foreign-funcall "GetWindowLongPtrW"
 		   HWND hWnd
 		   GWLP_ENUM :STYLE
-		   (bitfield-union DWORD WS_FLAG BS_FLAG)))
+		   (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG)))
 
 (defcfun "ShowWindow" :boolean
   (hWnd HWND)
@@ -306,6 +307,13 @@
   (hWnd HWND))
 
 (defcfun "DefWindowProcW" LRESULT
+  (hWnd   HWND)
+  (Msg   :unsigned-int)
+  (wParam WPARAM)
+  (lParam LPARAM))
+
+(defcfun "CallWindowProcW" LRESULT
+  (lpPrevWndFunc :pointer)
   (hWnd   HWND)
   (Msg   :unsigned-int)
   (wParam WPARAM)
