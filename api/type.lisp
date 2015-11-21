@@ -10,6 +10,7 @@
 	   WORD
 	   DWORD
 
+	   HWINSTA
 	   HDESK
 	   HWND
 	   HDC
@@ -24,6 +25,9 @@
 	   DF_FLAG
 	   DA_FLAG
 	   SECURITY_ATTRIBUTES
+	   nLength
+	   lpSecurityDescriptor
+	   bInheritHandle
 
 	   DLGPROC
 
@@ -123,6 +127,7 @@
 (defctype WORD :unsigned-short)
 (defctype DWORD :unsigned-long)
 
+(defctype HWINSTA :pointer)
 (defctype HDESK :pointer)
 (defctype HWND :pointer)
 (defctype HDC  :pointer)

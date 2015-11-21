@@ -1,6 +1,8 @@
 (defpackage #:w32api.user32
   (:use #:common-lisp #:cffi #:w32api.type)
-  (:export CreateDesktopW
+  (:export GetProcessWindowStation
+	   EnumDesktopsW
+	   CreateDesktopW
 	   OpenDesktopW
 	   OpenInputDesktop
 	   SwitchDesktop
@@ -80,6 +82,14 @@
   (:win32 "user32.dll"))
 
 (use-foreign-library user32)
+
+(defcfun "GetProcessWindowStation" HWINSTA)
+
+(defcfun "EnumDesktopsW" :boolean
+  (hwinsta         HWINSTA)
+  (lpEnumFunc :pointer)
+  (lParam          LPARAM)
+  )
 
 (defcfun "CreateDesktopW"  HDESK
   (lpszDesktop               :string)

@@ -15,12 +15,27 @@
 ;;; user32
 (defun create-desktop (name)
   (when (stringp name)
-    (let ((desktop (CreateDesktopW name
-				   (null-pointer)
-				   (null-pointer)
-				   0
-				   w32api.type::+DESKTOP_GENERIC_ALL+
-				   (null-pointer))))
+    (with-foreign-object (sa '(:struct SECURITY_ATTRIBUTES))
+
+      (setf (foreign-slot-value sa '(:struct SECURITY_ATTRIBUTES) 'nLength) (foreign-type-size '(:struct SECURITY_ATTRIBUTES)))
+      (setf (foreign-slot-value sa '(:struct SECURITY_ATTRIBUTES) 'lpSecurityDescriptor) (null-pointer))
+      (setf (foreign-slot-value sa '(:struct SECURITY_ATTRIBUTES) 'bInheritHandle) t)
+
+      (let ((desktop (CreateDesktopW name
+				     (null-pointer)
+				     (null-pointer)
+				     0
+				     w32api.type::+DESKTOP_GENERIC_ALL+
+				     sa)))
+	(unless (null-pointer-p desktop)
+	  desktop)))))
+
+(defun open-desktop (name)
+  (when (stringp name)
+    (let ((desktop (OpenDesktopW name
+				 0
+				 t
+				 w32api.type::+DESKTOP_GENERIC_ALL+)))
       (unless (null-pointer-p desktop)
 	desktop))))
 
@@ -28,6 +43,16 @@
   (let ((desktop (GetThreadDesktop (GetCurrentThreadId))))
     (unless (null-pointer-p desktop)
       desktop)))
+
+(defun get-all-desktop ()
+  (let ((winsta (GetProcessWindowStation))
+	(desktops nil))
+    (unless (null-pointer-p winsta)
+      (with-callback (collect :boolean ((lpszDesktop :string) (lParam LPARAM))
+			      (declare (ignore lParam))
+			      (setf desktops (cons lpszDesktop desktops)))
+	(EnumDesktopsW winsta collect 0)))
+    desktops))
 
 (defun switch-desktop (desktop)
   (and (pointerp desktop)
@@ -41,14 +66,16 @@
 (defmacro with-desktop ((name) &body body)
   (let ((old (gensym))
 	(new (gensym)))
-    `(let ((,old (get-current-desktop))
-	   (,new (create-desktop ,name)))
+    `(let* ((,old (get-current-desktop))
+	    (,new (open-desktop ,name))
+	    (,new (or ,new (create-desktop ,name))))
        (when (and ,old ,new)
 	 (unwind-protect
 	      (progn
 		(switch-desktop ,new)
 		,@body)
-	   (switch-desktop ,old))))))
+	   (when (switch-desktop ,old)
+	     (destroy-desktop ,new)))))))
 
 (defvar *create-window-owned-classes* (make-hash-table))
 (defvar *create-window-owned-procedures* (make-hash-table))
