@@ -24,13 +24,31 @@
       (unless (null-pointer-p desktop)
 	desktop))))
 
-(defun select-desktop (desktop)
-  (when (pointerp desktop)
-    (SwitchDesktop desktop)))
+(defun get-current-desktop ()
+  (let ((desktop (GetThreadDesktop (GetCurrentThreadId))))
+    (unless (null-pointer-p desktop)
+      desktop)))
+
+(defun switch-desktop (desktop)
+  (and (pointerp desktop)
+       (SetThreadDesktop desktop)
+       (SwitchDesktop desktop)))
 
 (defun destroy-desktop (desktop)
   (when (pointerp desktop)
     (CloseDesktop desktop)))
+
+(defmacro with-desktop ((name) &body body)
+  (let ((old (gensym))
+	(new (gensym)))
+    `(let ((,old (get-current-desktop))
+	   (,new (create-desktop ,name)))
+       (when (and ,old ,new)
+	 (unwind-protect
+	      (progn
+		(switch-desktop ,new)
+		,@body)
+	   (switch-desktop ,old))))))
 
 (defvar *create-window-owned-classes* (make-hash-table))
 (defvar *create-window-owned-procedures* (make-hash-table))
@@ -40,11 +58,12 @@
 (defvar *parent-window-lock* (make-recursive-lock))
 
 (defmacro with-parent-window ((parent) &body body)
-  `(with-recursive-lock-held (*parent-window-handle-lock*)
-     (let ((p ,parent))
-       (when (window-p p)
-	 (let ((*parent-window-handle* p))
-	   ,@body)))))
+  (let ((p (gensym)))
+    `(with-recursive-lock-held (*parent-window-handle-lock*)
+       (let ((,p ,parent))
+	 (when (window-p ,p)
+	   (let ((*parent-window-handle* ,p))
+	     ,@body))))))
 
 (defmacro with-window ((var &rest args) &body body)
   `(let ((,var (create-window ,@args)))
@@ -272,7 +291,7 @@
   (when (window-p window)
     (SetForegroundWindow window)))
 
-(defun select-window (window)
+(defun switch-window (window)
   (when (window-p window)
     (SwitchToThisWindow window t)
     t))

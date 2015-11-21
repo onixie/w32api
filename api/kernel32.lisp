@@ -2,7 +2,11 @@
   (:use #:common-lisp #:cffi #:w32api.type)
   (:export GetModuleHandleW
 	   GetLastError
-	   FormatMessageW))
+	   FormatMessageW
+	   GetCurrentThreadId
+	   GetCurrentProcessId
+	   GetCurrentProcessorNumber
+	   GetCommandLineW))
 
 (in-package #:w32api.kernel32)
 
@@ -25,3 +29,10 @@
   (nSize   DWORD)
   (va_Arguments (:pointer :pointer)))
 
+(defcfun "GetCurrentThreadId" DWORD)
+
+(defcfun "GetCurrentProcessId" DWORD)
+
+(defcfun "GetCurrentProcessorNumber" DWORD)
+
+(defcfun "GetCommandLineW" :string)

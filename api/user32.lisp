@@ -5,7 +5,8 @@
 	   OpenInputDesktop
 	   SwitchDesktop
 	   CloseDesktop
-	   
+	   SetThreadDesktop
+	   GetThreadDesktop
 	   RegisterClassExW
 	   UnregisterClassW
 	   DefWindowProcW
@@ -105,6 +106,12 @@
 
 (defcfun "CloseDesktop" :boolean
   (hDesktop HDESK))
+
+(defcfun "SetThreadDesktop" :boolean
+  (hDesktop HDESK))
+
+(defcfun "GetThreadDesktop" HDESK
+  (dwThreadId DWORD))
 
 (defcfun "RegisterClassExW" C_ATOM
   (lpwcx (:pointer (:struct WNDCLASSEX))))

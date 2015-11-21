@@ -10,8 +10,9 @@
   (:export get-error
 	   print-error
 	   create-desktop
-	   select-desktop
+	   switch-desktop
 	   destroy-desktop
+	   get-current-desktop
 	   register-class
 	   unregister-class
 	   with-class
@@ -36,7 +37,7 @@
 	   hide-window
 	   enable-window
 	   disable-window
-	   select-window
+	   switch-window
 	   focus-window
 	   active-window
 	   foreground-window

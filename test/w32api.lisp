@@ -33,6 +33,43 @@
   (with-window (<window> <window-name> :class-name <class-name> :parent <parent-window>)
     (&body)))
 
+(test |(get-current-desktop) return current desktop|
+  (is (not (null-pointer-p (get-current-desktop)))))
+
+(test |(create-desktop <name>) return new created desktop|
+  (let ((desk (create-desktop (string (gensym "DESK")))))
+    (is (not (null-pointer-p desk)))
+    (is-true (destroy-desktop desk))))
+
+(test |(create-desktop <non-string>) = nil|
+  (is (eq nil (create-desktop 'non-string))))
+
+(test |(switch-desktop <desktop>) = t will switch current desktop|
+  (let ((old (get-current-desktop))
+	(new1 (create-desktop (string (gensym "DESK"))))
+	(new2 (create-desktop (string (gensym "DESK")))))
+
+    (is-true (switch-desktop new1))
+    (is (pointer-eq new1 (get-current-desktop)))
+    (is-true (switch-desktop new2))    
+    (is (pointer-eq new2 (get-current-desktop)))
+    (is-true (switch-desktop old))    
+    (is (pointer-eq old (get-current-desktop)))
+    
+    (destroy-desktop new1)
+    (destroy-desktop new2)))
+
+(test |call on <invalid-desktop> should return nil| 
+  (dolist (func (list
+		 #'switch-desktop
+		 #'destroy-desktop		 
+		 ))
+    (is (equal nil (funcall func (null-pointer))))
+    (is (equal nil (funcall func (make-pointer #x1))))
+    (with-foreign-object (invalid :int)
+      (is (equal nil (funcall func invalid)))))
+  )
+
 (test |(register-class <new-name>) /= 0 to indicate no errors|
   (with-fixture class-name ((string (gensym "WINCLASS")))
     (is (not (equal 0 (register-class <class-name>))))
@@ -113,6 +150,9 @@
 		     (set-parent-window window <window>)))
 		 (lambda (window)
 		   (get-ancestor-window window :parent))
+		 #'get-child-window
+		 #'get-children-windows
+		 #'get-descendant-windows
 		 #'get-window-class-name
 		 #'destroy-window
 		 #'foreground-window
@@ -121,7 +161,7 @@
 		 #'enable-window
 		 #'disable-window
 		 #'active-window
-		 #'select-window
+		 #'switch-window
 		 #'focus-window
 		 (lambda (window)
 		   (set-window-title window "Title"))
@@ -343,9 +383,9 @@
     (is (equal t (active-window <window>)))
     (is (equal t (active-window <window>)))))
 
-(test |(select-window <window>) = t and should set window active and focused|
+(test |(switch-window <window>) = t and should set window active and focused|
   (with-fixture window ((string (gensym "WIN")))
-    (is (equal t (select-window <window>)))
+    (is (equal t (switch-window <window>)))
     (is (equal t (window-focused-p <window>)))
     (is (equal t (window-active-p <window>)))
 					;(is (equal t (window-foregrounded-p <window-name>)))
