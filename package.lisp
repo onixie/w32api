@@ -23,6 +23,7 @@
 	   with-parent-window
 	   get-child-window
 	   get-children-windows
+	   get-descendant-windows
 	   get-window-class-name
 	   get-window-style
 	   set-window-style

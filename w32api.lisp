@@ -181,6 +181,16 @@
 	 collect (prog1 child
 		   (setf child (GetWindow child :HWNDNEXT)))))))
 
+(defun get-descendant-windows (window)
+  (when (window-p window)
+    (let ((descendant nil))
+      (with-callback
+	  (collect :boolean ((window HWND) (lparam LPARAM))
+		   (declare (ignore lparam))
+		   (setf descendant (cons window descendant)))
+	(EnumChildWindows window collect 0))
+      descendant)))
+
 (defun get-desktop-window ()
   (let ((window (GetDesktopWindow)))
     (unless (null-pointer-p window) window)))

@@ -30,23 +30,16 @@
 (defmethod translate-from-foreign (value (type bitfield-union-type))
   (bitfield-union-symbols value (bitfield-types type)))
 
-(define-foreign-library user32
-  (:win32 "user32.dll"))
-
-;; (use-foreign-library user32)
-
-;; (defbitfield (a :uint) (:a 1))
-
-;; (defcfun "CreateWindowExA" :pointer
-;;   (dwExStyle     :uint)
-;;   (lpClassName   :string)
-;;   (lpWindowName   :string)
-;;   (dwStyle     (bitfield-union :uint a))
-;;   (x :int)
-;;   (y :int)
-;;   (nWidth       :int)
-;;   (nHeight       :int)
-;;   (hWndParent      :pointer)
-;;   (hMenu     :pointer)
-;;   (hInstance :pointer)
-;;   (lpParam    (:pointer :void)))
+;;; dangerous!!!exposure cffi low level
+;;; create a temp callback,
+;;; notice cffi says that not all cl impl support non-top level defcallback
+(defvar *with-callback-lock* (make-recursive-lock))
+(defmacro with-callback ((name &rest args) &body body)
+  (let ((actual-name (gensym (string name))))
+    `(symbol-macrolet ((,name (callback ,actual-name)))
+       (with-recursive-lock-held (*with-callback-lock*)
+	 (unwind-protect
+	      (progn
+		(defcallback ,actual-name ,@args)
+		,@body)
+	   (remhash ',actual-name cffi-sys::*callbacks*))))))

@@ -1,4 +1,5 @@
 (defpackage #:w32api.util
-  (:use #:cl #:cffi)
+  (:use #:cl #:cffi #:bordeaux-threads)
   (:export bitfield-union
-	   ensure-list))
+	   ensure-list
+	   with-callback))
