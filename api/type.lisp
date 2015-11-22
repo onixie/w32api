@@ -5,7 +5,7 @@
 	   +DWLP_DLGPROC+
 	   +DWLP_MSGRESULT+
 	   +DWLP_USER+
-	   +HWND_BROADCAST+	   
+	   +HWND_BROADCAST+
 	   +HWND_MESSAGE+
 	   +WS_EX_OVERLAPPEDWINDOW+
 	   +WS_EX_PALETTEWINDOW+
@@ -58,11 +58,31 @@
 	   WPARAM
 	   WS_EX_FLAG
 	   WS_FLAG
+	   LOWORD
+	   HIWORD
+	   LOBYTE
+	   HIBYTE
 	   ))
 
 (in-package #:w32api.type)
 
 (setf *default-foreign-encoding* :utf-16le)
+
+(defmacro LOWORD (data)
+  `(ldb (byte 16 0)
+	(car (list ,data))))
+
+(defmacro HIWORD (data)
+  `(ldb (byte 16 16)
+	(car (list ,data))))
+
+(defmacro LOBYTE (data)
+  `(ldb (byte 8 0)
+	(car (list ,data))))
+
+(defmacro HIBYTE (data)
+  `(ldb (byte 8 8)
+	(car (list ,data))))
 
 #+x86-64
 (progn
@@ -120,7 +140,7 @@
   (:DESKTOP_READOBJECTS		#x0001)		;Required to read objects on the desktop.
   (:DESKTOP_SWITCHDESKTOP	#x0100)		;Required to activate the desktop using the SwitchDesktop function.
   (:DESKTOP_WRITEOBJECTS	#x0080)		;Required to write objects on the desktop.
-  ) 
+  )
 
 (defparameter +STANDARD_RIGHTS_ALL+
   '(:DELETE
@@ -144,12 +164,12 @@
 (defparameter +STANDARD_RIGHTS_WRITE+
   :READ_CONTROL)
 
-(defparameter +DESKTOP_GENERIC_READ+	
+(defparameter +DESKTOP_GENERIC_READ+
   '(:DESKTOP_ENUMERATE
     :DESKTOP_READOBJECTS
     +STANDARD_RIGHTS_READ+))
 
-(defparameter +DESKTOP_GENERIC_WRITE+	
+(defparameter +DESKTOP_GENERIC_WRITE+
   '(:DESKTOP_CREATEMENU
     :DESKTOP_CREATEWINDOW
     :DESKTOP_HOOKCONTROL
@@ -158,10 +178,10 @@
     :DESKTOP_WRITEOBJECTS
     +STANDARD_RIGHTS_WRITE+))
 
-(defparameter +DESKTOP_GENERIC_EXECUTE+	
+(defparameter +DESKTOP_GENERIC_EXECUTE+
   '(:DESKTOP_SWITCHDESKTOP +STANDARD_RIGHTS_EXECUTE+))
 
-(defparameter +DESKTOP_GENERIC_ALL+	
+(defparameter +DESKTOP_GENERIC_ALL+
   (append '(:DESKTOP_CREATEMENU
 	    :DESKTOP_CREATEWINDOW
 	    :DESKTOP_ENUMERATE
@@ -179,7 +199,7 @@
   (:bInheritHandle       :boolean)
   )
 
-;;; 
+;;;
 (defctype DLGPROC :pointer)
 
 (defparameter +CW_USEDEFAULT+ (- 0 #x80000000))
@@ -308,7 +328,7 @@
 
 (defparameter +WS_EX_OVERLAPPEDWINDOW+          ;The window is an overlapped window.
   '(:WS_EX_WINDOWEDGE
-    :WS_EX_CLIENTEDGE))		  
+    :WS_EX_CLIENTEDGE))
 
 (defparameter +WS_EX_PALETTEWINDOW+             ;The window is palette window, which is a modeless dialog box that presents an array of commands.
   '(:WS_EX_WINDOWEDGE
@@ -357,7 +377,7 @@
 
 (defparameter +WS_TILEDWINDOW+;The window is an overlapped window. Same as the WS_OVERLAPPEDWINDOW style.
   '(:WS_OVERLAPPED
-    :WS_CAPTION  
+    :WS_CAPTION
     :WS_SYSMENU
     :WS_THICKFRAME
     :WS_MINIMIZEBOX
@@ -379,10 +399,10 @@
   (:GW_HWNDPREV		3)	;The retrieved handle identifies the window above the specified window in the Z order.If the specified window is a topmost window, the handle identifies a topmost window. If the specified window is a top-level window, the handle identifies a top-level window. If the specified window is a child window, the handle identifies a sibling window.
   (:GW_OWNER		4))	;The retrieved handle identifies the specified window's owner window, if any. For more information, see Owned Windows.
 
-;;; ShowWindow nCmdShow 
+;;; ShowWindow nCmdShow
 (defcenum (SW_ENUM :int)
   (:SW_FORCEMINIMIZE	11)	;Minimizes a window, even if the thread that owns the window is not responding. This flag should only be used when minimizing windows from a different thread.
-  (:SW_HIDE		0)	;Hides the window and activates another 
+  (:SW_HIDE		0)	;Hides the window and activates another
   (:SW_MAXIMIZE		3)	;Maximizes the specified window.
   (:SW_MINIMIZE		6)	;Minimizes the specified window and activates the next top-level window in the Z order.
   (:SW_RESTORE		9)	;Activates and displays the window. If the window is minimized or maximized, the system restores it to its original size and position. An application should specify this flag when restoring a minimized window.
@@ -393,7 +413,7 @@
   (:SW_SHOWMINNOACTIVE	7)	;Displays the window as a minimized window. This value is similar to SW_SHOWMINIMIZED, except the window is not activated.
   (:SW_SHOWNA		8)	;Displays the window in its current size and position. This value is similar to SW_SHOW, except that the window is not activated.
   (:SW_SHOWNOACTIVATE	4)	;Displays a window in its most recent size and position. This value is similar to SW_SHOWNORMAL, except that the window is not activated.
-  (:SW_SHOWNORMAL	1))	;Activates and displays a window. If the window is minimized or maximized, the system restores it to its original size and position. An application should specify this flag when displaying the window for the first 
+  (:SW_SHOWNORMAL	1))	;Activates and displays a window. If the window is minimized or maximized, the system restores it to its original size and position. An application should specify this flag when displaying the window for the first
 
 (defbitfield (AW_FLAG DWORD)
   (:AW_ACTIVATE		#x00020000)	;Activates the window. Do not use this value with AW_HIDE.
@@ -418,7 +438,7 @@
 
 (defparameter +DWLP_MSGRESULT+ 0)	;Sets the return value of a message processed in the dialog box procedure.
 
-(defparameter +DWLP_DLGPROC+ 
+(defparameter +DWLP_DLGPROC+
   (+ +DWLP_MSGRESULT+
      (foreign-type-size :pointer)))	;Sets the new pointer to the dialog box procedure.
 
@@ -443,7 +463,7 @@
   (:x :long)
   (:y :long))
 
-(defcstruct MSG 
+(defcstruct MSG
   (:hwnd    HWND)
   (:message :unsigned-int)
   (:wParam  WPARAM)
@@ -715,7 +735,7 @@
   (:GA_ROOTOWNER	3);Retrieves the owned root window by walking the chain of parent and owner windows returned by GetParent.
   )
 
-;;; 
+;;;
 (defcstruct RECT
   (:left	:long)
   (:top		:long)
@@ -757,14 +777,14 @@
   (:dmDisplayFlags	DWORD)
   (:dmNup		DWORD))
 
-(defcstruct DEVMODE 
+(defcstruct DEVMODE
   (:dmDeviceName	WORD :count 32)		;wchar_t[32]
   (:dmSpecVersion	WORD)
   (:dmDriverVersion	WORD)
-  (:dmSize		WORD) 
-  (:dmDriverExtra	WORD) 
-  (:dmFields           DWORD) 
-  (:dmDevice (:union DM_DEVICE)) 
+  (:dmSize		WORD)
+  (:dmDriverExtra	WORD)
+  (:dmFields           DWORD)
+  (:dmDevice (:union DM_DEVICE))
   (:dmColor		:short)
   (:dmDuplex		:short)
   (:dmYResolution	:short)

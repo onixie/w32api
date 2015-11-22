@@ -26,7 +26,7 @@
 	   EnumWindows
 	   EnumDesktopWindows
 	   GetTopWindow
-	   
+
 	   GetWindowTextLengthW
 	   GetWindowTextW
 	   SetWindowTextW
@@ -66,7 +66,7 @@
 	   BeginPaint
 	   EndPaint
 	   GetWindowRect
-	   
+
 	   PostQuitMessage
 	   CreateAcceleratorTableW
 	   TranslateAcceleratorW
@@ -164,7 +164,7 @@
   (dwExStyle     WS_EX_FLAG)
   (lpClassName   :string)
   (lpWindowName   :string)
-  (dwStyle (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG))
+  (dwStyle WND_STYLE)
   (x :int)
   (y :int)
   (nWidth       :int)
@@ -219,18 +219,20 @@
   (hWnd     HWND)
   (nIndex   GWLP_ENUM))
 
+(defctype WND_STYLE (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG))
+
 (defun SetWindowStyle (hWnd styles)
   (foreign-funcall "SetWindowLongPtrW"
 		   HWND hWnd
 		   GWLP_ENUM :GWL_STYLE
-		   (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG) styles
-		   (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG)))
+		   WND_STYLE styles
+		   WND_STYLE))
 
 (defun GetWindowStyle (hWnd)
   (foreign-funcall "GetWindowLongPtrW"
 		   HWND hWnd
 		   GWLP_ENUM :GWL_STYLE
-		   (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG)))
+		   WND_STYLE))
 
 (defcfun "ShowWindow" :boolean
   (hWnd HWND)
@@ -371,7 +373,7 @@
 (defcfun "PostQuitMessage" :void
   (id :int))
 
-;;; 
+;;;
 (defcfun "UpdateWindow" :boolean
   (hWnd HWND))
 
