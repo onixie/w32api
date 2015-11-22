@@ -49,6 +49,7 @@
 	   SwitchToThisWindow
 	   BringWindowToTop
 	   UpdateWindow
+	   MoveWindow
 	   DestroyWindow
 
 	   IsWindow
@@ -83,7 +84,7 @@
 (define-foreign-library user32
   (:win32 "user32.dll"))
 
-(use-foreign-library user32)
+(use-foreign-library "user32")
 
 (defcfun "GetProcessWindowStation" HWINSTA)
 
@@ -147,18 +148,7 @@
   (nIndex      :int)
   (dwNewLong   LONG_PTR))
 
-;; (defcfun "CreateWindowW" HWND
-;;   (lpClassName   :string)
-;;   (lpWindowName   :string)
-;;   (dwStyle     WS_FLAG)
-;;   (x :int)
-;;   (y :int)
-;;   (nWidth       :int)
-;;   (nHeight       :int)
-;;   (hWndParent      HWND)
-;;   (hMenu     HMENU)
-;;   (hInstance HINSTANCE)
-;;   (lpParam    (:pointer :void)))
+(defctype WND_STYLE (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG))
 
 (defcfun "CreateWindowExW" HWND
   (dwExStyle     WS_EX_FLAG)
@@ -219,7 +209,7 @@
   (hWnd     HWND)
   (nIndex   GWLP_ENUM))
 
-(defctype WND_STYLE (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG))
+
 
 (defun SetWindowStyle (hWnd styles)
   (foreign-funcall "SetWindowLongPtrW"
@@ -416,7 +406,7 @@
 (defcfun "WindowFromPhysicalPoint" HWND
   (Point (:pointer (:struct POINT))))
 
-(defcfun "ChildWindowFromPoint" HWND
+(defcfun "ChildWindowFromPointEx" HWND
   (hWndParent  HWND)
   (Point (:pointer (:struct POINT)))
   (uFlags  :uint))

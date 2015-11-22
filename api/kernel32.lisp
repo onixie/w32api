@@ -13,7 +13,7 @@
 (define-foreign-library kernel32
   (:win32 "kernel32.dll"))
 
-(use-foreign-library kernel32)
+(use-foreign-library "kernel32")
 
 (defcfun "GetModuleHandleW" HMODULE
   (lpModuleName :string))
@@ -36,3 +36,11 @@
 (defcfun "GetCurrentProcessorNumber" DWORD)
 
 (defcfun "GetCommandLineW" :string)
+
+(defcfun "GetNativeSystemInfo" :void
+  (lpSystemInfo (:pointer (:struct SYSTEM_INFO))))
+
+(defcfun "GetSystemInfo" :void
+  (lpSystemInfo (:pointer (:struct SYSTEM_INFO))))
+
+

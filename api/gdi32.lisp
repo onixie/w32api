@@ -7,7 +7,7 @@
 (define-foreign-library gdi32
   (:win32 "gdi32.dll"))
 
-(use-foreign-library gdi32)
+(use-foreign-library "gdi32")
 
 (defcfun "TextOutW" :boolean
   (hdc HDC)

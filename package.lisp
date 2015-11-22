@@ -68,4 +68,5 @@
 	   get-drawing-context-window
 	   get-window-size
 	   get-window-rectangle
+	   move-window
 	   ))

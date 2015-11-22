@@ -347,6 +347,10 @@
     (and (not (window-minimized-p window))
 	 (not (window-maximized-p window)))))
 
+(defun move-window (window x y width height)
+  (when (window-p window)
+    (MoveWindow window x y width height t)))
+
 (defun update-window (window)
   (when (window-p window)
     (UpdateWindow window)))

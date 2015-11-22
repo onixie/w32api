@@ -24,6 +24,7 @@
 	   DF_FLAG
 	   DLGPROC
 	   DWORD
+	   DWORD_PTR
 	   ES_FLAG
 	   GA_ENUM
 	   GCL_ENUM
@@ -44,6 +45,7 @@
 	   LONG_PTR
 	   LPARAM
 	   LRESULT
+	   LPVOID
 	   MSG
 	   PAINTSTRUCT
 	   POINT
@@ -62,6 +64,9 @@
 	   HIWORD
 	   LOBYTE
 	   HIBYTE
+	   SYSTEM_INFO_ARCH
+	   SYSTEM_INFO_MISC
+	   SYSTEM_INFO
 	   ))
 
 (in-package #:w32api.type)
@@ -100,6 +105,8 @@
 (defctype C_BYTE	:unsigned-char)
 (defctype WORD		:unsigned-short)
 (defctype DWORD		:unsigned-long)
+(defctype LPVOID        (:pointer :void))
+(defctype DWORD_PTR     ULONG_PTR)
 
 (defctype HWINSTA	:pointer)
 (defctype HDESK		:pointer)
@@ -195,7 +202,7 @@
 
 (defcstruct SECURITY_ATTRIBUTES
   (:nLength              DWORD)
-  (:lpSecurityDescriptor (:pointer :void))
+  (:lpSecurityDescriptor LPVOID)
   (:bInheritHandle       :boolean)
   )
 
@@ -813,3 +820,32 @@
   (:CWP_SKIPDISABLED	#x0002)		;Skips disabled child windows
   (:CWP_SKIPINVISIBLE	#x0001)		;Skips invisible child windows
   (:CWP_SKIPTRANSPARENT #x0004))	;Skips transparent child windows
+
+;;; Kernel32
+(defcstruct SYSTEM_INFO_ARCH
+  (:wProcessorArchitecture	WORD)
+  (:wReserved			WORD)
+  )
+
+(defcunion SYSTEM_INFO_MISC
+  (:dwOemId  DWORD)
+  (:stArch   (:struct SYSTEM_INFO_ARCH))
+  )
+
+(defcstruct SYSTEM_INFO
+  (:unMisc  (:union SYSTEM_INFO_MISC))
+  (:dwPageSize			DWORD)
+  (:lpMinimumApplicationAddress LPVOID)
+  (:lpMaximumApplicationAddress LPVOID)
+  (:dwActiveProcessorMask	DWORD_PTR)
+  (:dwNumberOfProcessors	DWORD)
+  (:dwProcessorType		DWORD)
+  (:dwAllocationGranularity     DWORD)
+  (:wProcessorLevel             WORD)
+  (:wProcessorRevision          WORD))
+
+(defcenum FIRMWARE_TYPE
+  (:FirmwareTypeUnknown  0)
+  (:FirmwareTypeBios     1)
+  (:FirmwareTypeUefi     2)
+  (:FirmwareTypeMax      3))

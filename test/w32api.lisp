@@ -432,6 +432,21 @@
   (with-fixture window ((string (gensym "WIN")))
     (is (equal t (restore-window <window>)))))
 
+(test |(move-window <window> 10 20 100 200) = t and move window to (0, 10)|
+  (with-fixture window ((string (gensym "WIN")))
+    (is (equal t (move-window <window> 10 20 100 200)))
+    (is (equal 10 (first (multiple-value-list (get-window-rectangle <window>)))))
+    (is (equal 20 (second (multiple-value-list (get-window-rectangle <window>)))))))
+
+(test |(get-window-size <window>) = (values width height)|
+  (with-fixture window ((string (gensym "WIN")))
+    (multiple-value-bind (width height)
+	(get-window-size <window>)
+      (multiple-value-bind (x1 y1 x2 y2)
+	  (get-window-rectangle <window>)
+	(is (equal width (- x2 x1)))
+	(is (equal height (- y2 y1)))))))
+
 (test |(window-visible-p <window>) = t if the window is visible|
   (with-fixture window ((string (gensym "WIN")))
     (show-window <window>)
