@@ -65,6 +65,7 @@
 	   WindowFromDC
 	   BeginPaint
 	   EndPaint
+	   GetWindowRect
 	   
 	   PostQuitMessage
 	   CreateAcceleratorTableW
@@ -221,14 +222,14 @@
 (defun SetWindowStyle (hWnd styles)
   (foreign-funcall "SetWindowLongPtrW"
 		   HWND hWnd
-		   GWLP_ENUM :STYLE
+		   GWLP_ENUM :GWL_STYLE
 		   (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG) styles
-		   (bitfield-union DWORD WS_FLAG BS_FLAG FS_FLAG)))
+		   (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG)))
 
 (defun GetWindowStyle (hWnd)
   (foreign-funcall "GetWindowLongPtrW"
 		   HWND hWnd
-		   GWLP_ENUM :STYLE
+		   GWLP_ENUM :GWL_STYLE
 		   (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG)))
 
 (defcfun "ShowWindow" :boolean
@@ -394,3 +395,30 @@
 (defcfun "EndPaint" :boolean
   (hwnd          HWND)
   (lpPaint (:pointer (:struct PAINTSTRUCT))))
+
+(defcfun "GetWindowRect" :boolean
+  (hwnd          HWND)
+  (lpPaint (:pointer (:struct RECT))))
+
+(defcfun "MoveWindow" :boolean
+  (hwnd          HWND)
+  (X :int)
+  (Y :int)
+  (nWidth :int)
+  (nHeight :int)
+  (bRepaint :boolean))
+
+(defcfun "WindowFromPoint" HWND
+  (Point (:pointer (:struct POINT))))
+
+(defcfun "WindowFromPhysicalPoint" HWND
+  (Point (:pointer (:struct POINT))))
+
+(defcfun "ChildWindowFromPoint" HWND
+  (hWndParent  HWND)
+  (Point (:pointer (:struct POINT)))
+  (uFlags  :uint))
+
+(defcfun "RealChildWindowFromPoint" HWND
+  (hWndParent  HWND)
+  (ptParentClientCoords (:pointer (:struct POINT))))

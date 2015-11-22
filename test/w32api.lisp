@@ -149,7 +149,7 @@
 		   (with-fixture window ((string (gensym "PWIN")))
 		     (set-parent-window window <window>)))
 		 (lambda (window)
-		   (get-ancestor-window window :parent))
+		   (get-ancestor-window window :ga_parent))
 		 #'get-child-window
 		 #'get-children-windows
 		 #'get-descendant-windows
@@ -193,34 +193,34 @@
 
 (test |(get-window-style <window>) = (list <style> ...)|
   (with-fixture window ((string (gensym "WIN")))
-    (is (equal (list :OVERLAPPED) (set-difference w32api.type:+WS_OVERLAPPEDWINDOW+ (get-window-style <window>)))))
+    (is (equal (list :WS_OVERLAPPED) (set-difference w32api.type:+WS_OVERLAPPEDWINDOW+ (get-window-style <window>)))))
   (with-fixture window ((string (gensym "WIN")))
-    (set-window-style <window> :OVERLAPPED)
-    (is (equal (list :CLIPSIBLINGS) (get-window-style <window>))))
+    (set-window-style <window> :WS_OVERLAPPED)
+    (is (equal (list :WS_CLIPSIBLINGS) (get-window-style <window>))))
   (with-fixture window ((string (gensym "WIN")))
-    (set-window-style <window> :CHILD)
-    (is (member :CHILD (get-window-style <window>))))
+    (set-window-style <window> :WS_CHILD)
+    (is (member :WS_CHILD (get-window-style <window>))))
   )
 
 (test |(set-window-style <window>) will set default style to <window>|
   (with-fixture window ((string (gensym "WIN")))
-    (set-window-style <window> :CHILD)
+    (set-window-style <window> :WS_CHILD)
     (set-window-style <window>)
-    (is (not (member :CHILD (get-window-style <window>))))
-    (is (equal (list :OVERLAPPED) (set-difference w32api.type:+WS_OVERLAPPEDWINDOW+ (get-window-style <window>)))))
+    (is (not (member :WS_CHILD (get-window-style <window>))))
+    (is (equal (list :WS_OVERLAPPED) (set-difference w32api.type:+WS_OVERLAPPEDWINDOW+ (get-window-style <window>)))))
   )
 
 (test |(set-window-style <window> <style>) will set <style> to <window>|
   (with-fixture window ((string (gensym "WIN")))
-    (set-window-style <window> :CHILD)
-    (is (member :CHILD (get-window-style <window>))))
+    (set-window-style <window> :WS_CHILD)
+    (is (member :WS_CHILD (get-window-style <window>))))
   )
 
 (test |(set-window-style <window> <style>) will set <style> to <window>|
   (with-fixture window ((string (gensym "WIN")))
-    (set-window-style <window> (list :CHILD :CHECKBOX))
-    (is (member :CHILD (get-window-style <window>)))
-    (is (member :CHECKBOX (get-window-style <window>))))
+    (set-window-style <window> (list :WS_CHILD :BS_CHECKBOX))
+    (is (member :WS_CHILD (get-window-style <window>)))
+    (is (member :BS_CHECKBOX (get-window-style <window>))))
   )
 
 (test |(get-parent-window <window>) will return parent of <window>|
@@ -241,13 +241,13 @@
 (test |(get-ancestor-window <window> :parent) = (get-parent-window <window>|
   (with-fixture window ((string (gensym "WIN")))
     (with-fixture window ((string (gensym "WIN")) :parent <window>)
-      (is (pointer-eq <parent-window> (get-ancestor-window <window> :parent))))))
+      (is (pointer-eq <parent-window> (get-ancestor-window <window> :ga_parent))))))
 
 (test |(get-ancestor-window <window> :root) = (get-parent-window ...(get-parent-window <window>))|
   (with-fixture window ((string (gensym "WIN")))
     (with-fixture window ((string (gensym "WIN")) :parent <window>)
       (with-fixture window ((string (gensym "WIN")) :parent <window>)
-	(is (pointer-eq (get-parent-window <parent-window>) (get-ancestor-window <window> :root)))))))
+	(is (pointer-eq (get-parent-window <parent-window>) (get-ancestor-window <window> :ga_root)))))))
 
 (test |(get-desktop-window) will return desktop window in current screen|
   (is (not (null-pointer-p (get-desktop-window)))))

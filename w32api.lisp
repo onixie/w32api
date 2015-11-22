@@ -113,9 +113,9 @@
   (with-recursive-lock-held (*create-window-lock*)
     (let* ((cont (lambda (hWnd Msg wParam lParam cont)
 		   (declare (ignore cont))
-		   (cond ((eq (window-message-p Msg) :DESTROY)
+		   (cond ((eq (window-message-p Msg) :WM_DESTROY)
 			  (post-quit-message 0))
-			 ((eq (window-message-p Msg) :CLOSE)
+			 ((eq (window-message-p Msg) :WM_CLOSE)
 			  (destroy-window hWnd))
 			 (t (DefWindowProcW hWnd Msg wParam lParam)))))
 	   (proc (gethash (pointer-address hWnd) *create-window-owned-procedures* cont)))
@@ -125,7 +125,7 @@
 (defun register-class (name
 		       &key
 			 (procedure (callback MainWndProc))
-			 (style '(:HREDRAW :VREDRAW)))
+			 (style '(:CS_HREDRAW :CS_VREDRAW)))
   (if (stringp name)
       (with-foreign-object (wnd-class '(:struct WNDCLASSEX))
 	
@@ -163,7 +163,7 @@
   (unless (get-window name :class-name class-name :parent parent)
     (let* ((atom (register-class class-name))
 	   (style (if (window-p parent)
-		      (remove :POPUP (cons :CHILD style))
+		      (remove :WS_POPUP (cons :WS_CHILD style))
 		      style))
 	   (hWnd (CreateWindowExW extended-style
 				  (string class-name)
@@ -219,9 +219,9 @@
 (defun set-parent-window (window &optional (parent (null-pointer)))
   (when (and (window-p window) (or (window-p parent) (null-pointer-p parent)))
     (cond ((window-p parent)
-	   (set-window-style window (remove :POPUP (cons :CHILD (get-window-style window)))))
+	   (set-window-style window (remove :WS_POPUP (cons :WS_CHILD (get-window-style window)))))
 	  ((null-pointer-p parent)
-	   (set-window-style window (remove :CHILD (cons :POPUP (get-window-style window))))))
+	   (set-window-style window (remove :WS_CHILD (cons :WS_POPUP (get-window-style window))))))
     (SetParent window parent)))
 
 (defun get-parent-window (window)
@@ -236,9 +236,9 @@
 
 (defun get-child-window (window &key (nth 1) (reverse nil))
   (when (and (window-p window) (> nth 0))
-    (let* ((child (GetWindow window :CHILD))
-	   (child (if reverse (GetWindow child :HWNDLAST) child))
-	   (next (if reverse :HWNDPREV :HWNDNEXT)))
+    (let* ((child (GetWindow window :GW_CHILD))
+	   (child (if reverse (GetWindow child :GW_HWNDLAST) child))
+	   (next (if reverse :GW_HWNDPREV :GW_HWNDNEXT)))
       (loop repeat (1- nth)
 	 when (and child (not (null-pointer-p child)))
 	 do (setf child (GetWindow child next)))
@@ -246,10 +246,10 @@
 
 (defun get-children-windows (window)
   (when (window-p window)
-    (let* ((child (GetWindow window :CHILD)))
+    (let* ((child (GetWindow window :GW_CHILD)))
       (loop while (and child (not (null-pointer-p child)))
 	 collect (prog1 child
-		   (setf child (GetWindow child :HWNDNEXT)))))))
+		   (setf child (GetWindow child :GW_HWNDNEXT)))))))
 
 (defun get-descendant-windows (window)
   (when (window-p window)
@@ -280,8 +280,7 @@
 
 (defun set-window-title (window title)
   (when (and (window-p window) (stringp title))
-    (SetWindowTextW window title)
-    (GetLastError)))
+    (SetWindowTextW window title)))
 
 (defun destroy-window (window)
   (when (window-p window)
@@ -297,13 +296,13 @@
 (defun show-window (window)
   (when (window-p window)
     (or (window-visible-p window)
-	(and (not (ShowWindow window :SHOWNORMAL)) (window-visible-p window)) ; fixme: 1st call wont work right after system load or reload under SBCL
-	(not (ShowWindow window :SHOWNORMAL)))))
+	(and (not (ShowWindow window :SW_SHOWNORMAL)) (window-visible-p window)) ; fixme: 1st call wont work right after system load or reload under SBCL
+	(not (ShowWindow window :SW_SHOWNORMAL)))))
 
 (defun hide-window (window)
   (when (window-p window)
     (or (not (window-visible-p window))
-	(ShowWindow window :HIDE))))
+	(ShowWindow window :SW_HIDE))))
 
 (defun enable-window (window)
   (when (window-p window)
@@ -339,12 +338,12 @@
 
 (defun maximize-window (window)
   (when (window-p window)
-    (ShowWindow window :MAXIMIZE)
+    (ShowWindow window :SW_MAXIMIZE)
     (window-maximized-p window)))
 
 (defun restore-window (window)
   (when (window-p window)
-    (ShowWindow window :RESTORE)
+    (ShowWindow window :SW_RESTORE)
     (and (not (window-minimized-p window))
 	 (not (window-maximized-p window)))))
 
@@ -429,13 +428,13 @@
 				    (on-click nil))
   (let* ((button (create-window name
 				:class-name :BUTTON
-				:style (append '(:TABSTOP :VISIBLE :CHILD :DEFPUSHBUTTON) style)
+				:style (append '(:WS_TABSTOP :WS_VISIBLE :WS_CHILD :BS_DEFPUSHBUTTON) style)
 				:parent window
 				:x x
 				:y y
 				:width width
 				:height height))
-	 (BTNDEFPROC (make-pointer (GetWindowLongPtrW button :WNDPROC))))
+	 (BTNDEFPROC (make-pointer (GetWindowLongPtrW button :GWLP_WNDPROC))))
 
     ;; Subclassing
     (set-window-procedure
@@ -443,12 +442,12 @@
      (lambda (hWnd Msg wParam lParam cont)
        (declare (ignore cont))
        (case (window-message-p Msg)
-	 (:LBUTTONUP (when (functionp on-click)
+	 (:WM_LBUTTONUP (when (functionp on-click)
 		       (funcall on-click)))
 	 )
        (CallWindowProcW BTNDEFPROC hWnd Msg wParam lParam)))
     
-    (SetWindowLongPtrW button :WNDPROC (pointer-address (callback MainWndProc)))
+    (SetWindowLongPtrW button :GWLP_WNDPROC (pointer-address (callback MainWndProc)))
     button))
 
 ;;; Editbox
@@ -460,13 +459,13 @@
 				    (style nil))
   (let* ((editor (create-window name
 				:class-name :EDIT
-				:style (append '(:VISIBLE :CHILD :ES_LEFT) style)
+				:style (append '(:WS_VISIBLE :WS_CHILD :ES_LEFT) style)
 				:parent window
 				:x x
 				:y y
 				:width width
 				:height height))
-	 (EDITDEFPROC (make-pointer (GetWindowLongPtrW editor :WNDPROC))))
+	 (EDITDEFPROC (make-pointer (GetWindowLongPtrW editor :GWLP_WNDPROC))))
 
     ;; Subclassing
     (set-window-procedure
@@ -478,7 +477,7 @@
 	 )
        (CallWindowProcW EDITDEFPROC hWnd Msg wParam lParam)))
     
-    (SetWindowLongPtrW editor :WNDPROC (pointer-address (callback MainWndProc)))
+    (SetWindowLongPtrW editor :GWLP_WNDPROC (pointer-address (callback MainWndProc)))
     editor))
 
 (defun create-editor (name window &key
@@ -489,13 +488,13 @@
 				    (style nil))
   (let* ((editor (create-window name
 				:class-name :EDIT
-				:style (append '(:VISIBLE :CHILD :VSCROLL :ES_LEFT :ES_MULTILINE :ES_AUTOVSCROLL) style)
+				:style (append '(:WS_VISIBLE :WS_CHILD :WS_VSCROLL :ES_LEFT :ES_MULTILINE :ES_AUTOVSCROLL) style)
 				:parent window
 				:x x
 				:y y
 				:width width
 				:height height))
-	 (EDITDEFPROC (make-pointer (GetWindowLongPtrW editor :WNDPROC))))
+	 (EDITDEFPROC (make-pointer (GetWindowLongPtrW editor :GWLP_WNDPROC))))
 
     ;; Subclassing
     (set-window-procedure
@@ -507,7 +506,7 @@
 	 )
        (CallWindowProcW EDITDEFPROC hWnd Msg wParam lParam)))
     
-    (SetWindowLongPtrW editor :WNDPROC (pointer-address (callback MainWndProc)))
+    (SetWindowLongPtrW editor :GWLP_WNDPROC (pointer-address (callback MainWndProc)))
     editor))
 
 ;;; DC and Drawing
