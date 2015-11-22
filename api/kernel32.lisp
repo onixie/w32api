@@ -6,7 +6,11 @@
 	   GetCurrentThreadId
 	   GetCurrentProcessId
 	   GetCurrentProcessorNumber
-	   GetCommandLineW))
+	   GetCommandLineW
+	   GetFirmwareType
+	   GetVersionExW
+	   GetSystemInfo
+	   GetNativeSystemInfo))
 
 (in-package #:w32api.kernel32)
 
@@ -21,7 +25,7 @@
 (defcfun "GetLastError" DWORD)
 
 (defcfun "FormatMessageW" DWORD
-  (dwFlags   DWORD)
+  (dwFlags   FORMAT_MESSAGE_FLAG)
   (lpSource (:pointer :void))
   (dwMessageId   DWORD)
   (dwLanguageId   DWORD)
@@ -43,4 +47,8 @@
 (defcfun "GetSystemInfo" :void
   (lpSystemInfo (:pointer (:struct SYSTEM_INFO))))
 
+(defcfun "GetFirmwareType" :boolean
+  (FirmwareType (:pointer FIRMWARE_TYPE_ENUM)))
 
+(defcfun "GetVersionExW" :boolean
+  (lpVersionInfo (:pointer (:struct OSVERSIONINFOEX))))

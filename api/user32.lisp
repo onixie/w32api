@@ -1,6 +1,7 @@
 (defpackage #:w32api.user32
   (:use #:common-lisp #:cffi #:w32api.type)
-  (:export GetProcessWindowStation
+  (:export GetSystemMetrics
+	   GetProcessWindowStation
 	   EnumDesktopsW
 	   CreateDesktopW
 	   OpenDesktopW
@@ -417,3 +418,6 @@
 (defcfun "RealChildWindowFromPoint" HWND
   (hWndParent  HWND)
   (ptParentClientCoords (:pointer (:struct POINT))))
+
+(defcfun "GetSystemMetrics" :int
+  (nIndex SM_ENUM))

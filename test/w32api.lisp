@@ -9,7 +9,7 @@
   (is (equal 0 (get-error))))
 
 (test |(print-error 0) = string indicates no errors|
-  (is (search "The operation completed successfully." (print-error 0)))) ;fixme : suppose the locale is en by defualt.
+  (is (string-equal "The operation completed successfully." (print-error 0)))) ;fixme : suppose the locale is en by defualt.
 
 ;;; user32 api
 (def-fixture class-name (<class-name>)

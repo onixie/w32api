@@ -3,14 +3,69 @@
 ;;; "w32api" goes here. Hacks and glory await!
 
 ;;; kernel32
+(defmacro with-system-info ((&rest slot-name-and-var-list) &body body)
+  (let ((psi (gensym)))
+    `(with-foreign-object (,psi '(:struct SYSTEM_INFO))
+       (GetSystemInfo ,psi)
+       (symbol-macrolet
+	   (,@(loop for (slot-name var) in slot-name-and-var-list
+		 collect
+		   `(,var (foreign-slot-value ,psi '(:struct SYSTEM_INFO) ,slot-name))))
+	 ,@body))))
+
+(defun get-processor-type ()
+  (with-system-info ((:dwProcessorType type)) type))
+
+(defun get-processor-arch ()
+  (with-system-info ((:wProcessorArchitecture arch)) arch))
+
+(defun get-processor-count ()
+  (with-system-info ((:dwNumberOfProcessors count)) count))
+
+(defun get-firmware-type ()
+  (with-foreign-object (var 'FIRMWARE_TYPE_ENUM)
+    (when (GetFirmwareType var)
+      (mem-aref var 'FIRMWARE_TYPE_ENUM))))
+
+(defmacro with-version-info ((&rest slot-name-and-var-list) &body body)
+  (let ((pvi (gensym)))
+    `(with-foreign-object (,pvi '(:struct OSVERSIONINFOEX))
+       (setf (foreign-slot-value ,pvi '(:struct OSVERSIONINFOEX) :dwOSVersionInfoSize)
+	     (foreign-type-size '(:struct OSVERSIONINFOEX)))
+       (when (GetVersionExW ,pvi)
+	 (symbol-macrolet
+	     (,@(loop for (slot-name var) in slot-name-and-var-list
+		   collect
+		     `(,var (foreign-slot-value ,pvi '(:struct OSVERSIONINFOEX) ,slot-name))))
+	   ,@body)))))
+
+(defun get-os-version ()
+  (with-version-info ((:dwMajorVersion major)
+		      (:dwMinorVersion minor))
+    (values major minor)))
+
+(defun get-os-build-number ()
+  (with-version-info ((:dwBuildNumber build-number))
+    build-number))
+
+(defun get-os-service-pack ()
+  (with-version-info ((:szCSDVersion sp-version))
+    sp-version))
+
 (defun get-error ()
   (GetLastError))
 
 (defun print-error (error-code)
-  (let ((dwFLAGS (logior  #X00001000 #X00000200 #X00000100)))
+  (let ((dwFLAGS '(:FORMAT_MESSAGE_ALLOCATE_BUFFER
+		   :FORMAT_MESSAGE_ARGUMENT_ARRAY
+		   :FORMAT_MESSAGE_FROM_SYSTEM)))
     (with-foreign-object (strptr :pointer)
       (FormatMessageW dwFLAGS (null-pointer) error-code 0 strptr 0 (null-pointer))
-      (foreign-string-to-lisp (mem-ref strptr :pointer)))))
+      (string-trim (list #\Space
+			 #\Tab
+			 #\NewLine
+			 #\Return)
+		   (foreign-string-to-lisp (mem-ref strptr :pointer))))))
 
 ;;; user32
 (defun create-desktop (name)
