@@ -66,4 +66,6 @@
 	   with-drawing-context
 	   get-drawing-context
 	   get-drawing-context-window
+	   get-window-size
+	   get-window-rectangle
 	   ))

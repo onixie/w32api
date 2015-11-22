@@ -17,9 +17,9 @@
   (when (stringp name)
     (with-foreign-object (sa '(:struct SECURITY_ATTRIBUTES))
 
-      (setf (foreign-slot-value sa '(:struct SECURITY_ATTRIBUTES) 'nLength) (foreign-type-size '(:struct SECURITY_ATTRIBUTES)))
-      (setf (foreign-slot-value sa '(:struct SECURITY_ATTRIBUTES) 'lpSecurityDescriptor) (null-pointer))
-      (setf (foreign-slot-value sa '(:struct SECURITY_ATTRIBUTES) 'bInheritHandle) t)
+      (setf (foreign-slot-value sa '(:struct SECURITY_ATTRIBUTES) :nLength) (foreign-type-size '(:struct SECURITY_ATTRIBUTES)))
+      (setf (foreign-slot-value sa '(:struct SECURITY_ATTRIBUTES) :lpSecurityDescriptor) (null-pointer))
+      (setf (foreign-slot-value sa '(:struct SECURITY_ATTRIBUTES) :bInheritHandle) t)
 
       (let ((desktop (CreateDesktopW name
 				     (null-pointer)
@@ -129,18 +129,18 @@
   (if (stringp name)
       (with-foreign-object (wnd-class '(:struct WNDCLASSEX))
 	
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'cbSize) (foreign-type-size '(:struct WNDCLASSEX)))
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'style) style)
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'lpfnWndProc) procedure)
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'cbClsExtra) 0)
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'cbWndExtra) 0)
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hInstance) (GetModuleHandleW (null-pointer)))
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hIcon) (null-pointer))
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hCursor) (null-pointer))
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hbrBackground) (null-pointer))
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'lpszMenuName) (null-pointer))
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'lpszClassName) name)
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) 'hIconSm) (null-pointer))
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :cbSize) (foreign-type-size '(:struct WNDCLASSEX)))
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :style) style)
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :lpfnWndProc) procedure)
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :cbClsExtra) 0)
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :cbWndExtra) 0)
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hInstance) (GetModuleHandleW (null-pointer)))
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hIcon) (null-pointer))
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hCursor) (null-pointer))
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hbrBackground) (null-pointer))
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :lpszMenuName) (null-pointer))
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :lpszClassName) name)
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hIconSm) (null-pointer))
 
 	(RegisterClassExW wnd-class))
       0))
@@ -390,8 +390,8 @@
       (let ((hAccel (CreateAcceleratorTableW accelerator-table 1)))
 	(unless (null-pointer-p hAccel)
 	  (loop while (eq 1 (GetMessageW msg (or (window-p window) (null-pointer)) 0 0))
-	     do (unless (TranslateAcceleratorW (foreign-slot-value msg '(:struct MSG) 'hWnd) hAccel msg)
-		  (when extra-process-func-p (funcall extra-process-func (foreign-slot-value msg '(:struct MSG) 'hWnd) msg))
+	     do (unless (TranslateAcceleratorW (foreign-slot-value msg '(:struct MSG) :hWnd) hAccel msg)
+		  (when extra-process-func-p (funcall extra-process-func (foreign-slot-value msg '(:struct MSG) :hWnd) msg))
 		  (TranslateMessage msg)
 		  (DispatchMessageW msg))))))))
 
@@ -443,7 +443,7 @@
        (declare (ignore cont))
        (case (window-message-p Msg)
 	 (:WM_LBUTTONUP (when (functionp on-click)
-		       (funcall on-click)))
+			  (funcall on-click)))
 	 )
        (CallWindowProcW BTNDEFPROC hWnd Msg wParam lParam)))
     
@@ -452,11 +452,11 @@
 
 ;;; Editbox
 (defun create-input (name window &key
-				    (x 0)
-				    (y 0)
-				    (width 100)
-				    (height 30)
-				    (style nil))
+				   (x 0)
+				   (y 0)
+				   (width 100)
+				   (height 30)
+				   (style nil))
   (let* ((editor (create-window name
 				:class-name :EDIT
 				:style (append '(:WS_VISIBLE :WS_CHILD :ES_LEFT) style)
@@ -510,6 +510,26 @@
     editor))
 
 ;;; DC and Drawing
+(defun get-window-rectangle (window)
+  (when (window-p window)
+    (with-foreign-object (rect '(:struct RECT))
+      (GetWindowRect window rect)
+      (values
+       (foreign-slot-value rect '(:struct RECT) :left)
+       (foreign-slot-value rect '(:struct RECT) :top)
+       (foreign-slot-value rect '(:struct RECT) :right)
+       (foreign-slot-value rect '(:struct RECT) :bottom)
+       ))))
+
+(defun get-window-size (window)
+  (when (window-p window)
+    (with-foreign-object (rect '(:struct RECT))
+      (GetWindowRect window rect)
+      (values
+       (- (foreign-slot-value rect '(:struct RECT) :right)
+	  (foreign-slot-value rect '(:struct RECT) :left))
+       (- (foreign-slot-value rect '(:struct RECT) :bottom)
+	  (foreign-slot-value rect '(:struct RECT) :top))))))
 
 (defun get-drawing-context (window &key (full nil))
   (when (window-p window)
