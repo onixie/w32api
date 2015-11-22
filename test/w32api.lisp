@@ -447,6 +447,20 @@
 	(is (equal width (- x2 x1)))
 	(is (equal height (- y2 y1)))))))
 
+(test |(get-window-rectangle <window> t) is in area of (get-window-rectangle <window>)|
+  (with-fixture window ((string (gensym "WIN")))
+    (move-window <window> 100 100 200 200)
+    (multiple-value-bind (x1 y1 x2 y2)
+	  (get-window-rectangle <window> t)
+      (is (eq 0 x1))			;Client Area always start from (0,0)
+      (is (eq 0 y1))
+      (multiple-value-bind (xx1 yy1 xx2 yy2)
+	  (get-window-rectangle <window>)
+	(is (eq 100 xx1))			;Top window start from screen top left
+	(is (eq 100 yy1))
+	(is (< (- x2 x1) (- xx2 xx1)))
+	(is (< (- y2 y1) (- yy2 yy1)))))))
+
 (test |(window-visible-p <window>) = t if the window is visible|
   (with-fixture window ((string (gensym "WIN")))
     (show-window <window>)

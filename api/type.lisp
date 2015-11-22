@@ -1,6 +1,7 @@
 (defpackage #:w32api.type
   (:use #:common-lisp #:cffi #:w32api.util)
   (:export bitfield-union
+	   enum-union
 	   +CW_USEDEFAULT+
 	   +DWLP_DLGPROC+
 	   +DWLP_MSGRESULT+
@@ -60,6 +61,8 @@
 	   WPARAM
 	   WS_EX_FLAG
 	   WS_FLAG
+	   WND_STYLE
+	   WND_MESSAGE
 	   LOWORD
 	   HIWORD
 	   LOBYTE
@@ -102,9 +105,9 @@
   (defctype LONG_PTR	:int32)
   (defctype ULONG_PTR	:uint32))
 
-(defctype C_BYTE	:unsigned-char)
-(defctype WORD		:unsigned-short)
-(defctype DWORD		:unsigned-long)
+(defctype C_BYTE	:uchar)
+(defctype WORD		:ushort)
+(defctype DWORD		:ulong)
 (defctype LPVOID        (:pointer :void))
 (defctype DWORD_PTR     ULONG_PTR)
 
@@ -213,7 +216,7 @@
 
 (defparameter +HWND_MESSAGE+ -3)
 
-(defbitfield (CS_FLAG :unsigned-int)
+(defbitfield (CS_FLAG :uint)
   (:CS_BYTEALIGNCLIENT	#x1000)		; Aligns the window's client area on a byte boundary (in the x direction). This style affects the width of the window and its horizontal placement on the display.
   (:CS_BYTEALIGNWINDOW	#x2000)		; Aligns the window on a byte boundary (in the x direction). This style affects the width of the window and its horizontal placement on the display.
   (:CS_CLASSDC		#x0040)		; Allocates one device context to be shared by all windows in the class. Because window classes are process specific, it is possible for multiple threads of an application to create a window of the same class. It is also possible for the threads to attempt to use the device context simultaneously. When this happens, the system allows only one thread to successfully finish its drawing operation.
@@ -275,6 +278,7 @@
 					;>=0x0400
   (:ES_NUMBER           #x2000))
 
+(defctype WND_STYLE (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG))
 
 ;;; SetClassLongPtr nIndex
 (defcenum (GCL_ENUM :int)
@@ -290,7 +294,7 @@
   (:GCLP_WNDPROC	-24))	;Replaces the pointer to the window procedure associated with the class.
 
 (defcstruct WNDCLASSEX
-  (:cbSize        :unsigned-int)
+  (:cbSize        :uint)
   (:style         CS_FLAG)
   (:lpfnWndProc   :pointer)
   (:cbClsExtra    :int)
@@ -472,7 +476,7 @@
 
 (defcstruct MSG
   (:hwnd    HWND)
-  (:message :unsigned-int)
+  (:message :uint)
   (:wParam  WPARAM)
   (:lParam  LPARAM)
   (:time    DWORD)
@@ -480,7 +484,7 @@
 
 (defparameter +HWND_BROADCAST+ #xffff);The message is posted to all top-level windows in the system, including disabled or invisible unowned windows, overlapped windows, and pop-up windows. The message is not posted to child windows.
 
-(defcenum (WM_ENUM :unsigned-int)
+(defcenum (WM_ENUM :uint)
   (:WM_NULL						#x0000)
   (:WM_CREATE						#x0001)
   (:WM_DESTROY						#x0002)
@@ -736,7 +740,22 @@
   (:WM_USER						#x0400)
   )
 
-(defcenum (GA_ENUM :unsigned-int)
+(defcenum (BM_ENUM :uint)
+  (:BM_GETCHECK        #x00F0)
+  (:BM_SETCHECK        #x00F1)
+  (:BM_GETSTATE        #x00F2)
+  (:BM_SETSTATE        #x00F3)
+  (:BM_SETSTYLE        #x00F4)
+					;(WINVER >= 0x0400)
+  (:BM_CLICK           #x00F5)
+  (:BM_GETIMAGE        #x00F6)
+  (:BM_SETIMAGE        #x00F7)
+					;(WINVER >= 0x0600)
+  (:BM_SETDONTCLICK    #x00F8))
+
+(defctype WND_MESSAGE (enum-union :uint WM_ENUM BM_ENUM))
+
+(defcenum (GA_ENUM :uint)
   (:GA_PARENT		1);Retrieves the parent window. This does not include the owner, as it does with the GetParent function.
   (:GA_ROOT		2);Retrieves the root window by walking the chain of parent windows.
   (:GA_ROOTOWNER	3);Retrieves the owned root window by walking the chain of parent and owner windows returned by GetParent.

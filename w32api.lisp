@@ -107,17 +107,16 @@
 
 (defcallback MainWndProc LRESULT
     ((hWnd   HWND)
-     (Msg    :unsigned-int)
+     (Msg    WND_MESSAGE)
      (wParam WPARAM)
      (lParam LPARAM))
   (with-recursive-lock-held (*create-window-lock*)
     (let* ((cont (lambda (hWnd Msg wParam lParam cont)
 		   (declare (ignore cont))
-		   (cond ((eq (window-message-p Msg) :WM_DESTROY)
-			  (post-quit-message 0))
-			 ((eq (window-message-p Msg) :WM_CLOSE)
-			  (destroy-window hWnd))
-			 (t (DefWindowProcW hWnd Msg wParam lParam)))))
+		   (case Msg
+		     (:WM_DESTROY (post-quit-message 0))
+		     (:WM_CLOSE   (destroy-window hWnd))
+		     (t (DefWindowProcW hWnd Msg wParam lParam)))))
 	   (proc (gethash (pointer-address hWnd) *create-window-owned-procedures* cont)))
       (let ((result (funcall proc hWnd Msg wParam lParam (lambda () (funcall cont hWnd Msg wParam lParam nil)))))
 	(if (numberp result) result 0)))))
@@ -402,15 +401,6 @@
 (defun post-quit-message (exit-code)
   (PostQuitMessage exit-code))
 
-(defun window-message-p (message)
-  (if (keywordp message)
-      (when (foreign-enum-value 'WM_ENUM message :errorp nil)
-	message)
-      (foreign-enum-keyword 'WM_ENUM message :errorp nil)))
-
-(defun window-message-eq (rmessage lmessage)
-  (eq (window-message-p rmessage) (window-message-p lmessage)))
-
 (defun start-window (&rest args)
   (make-thread
    (lambda ()
@@ -429,10 +419,11 @@
 				    (width 100)
 				    (height 30)
 				    (style nil)
-				    (on-click nil))
+				    (on-click nil)
+				    (default-p nil))
   (let* ((button (create-window name
 				:class-name :BUTTON
-				:style (append '(:WS_TABSTOP :WS_VISIBLE :WS_CHILD :BS_DEFPUSHBUTTON) style)
+				:style (append '(:WS_TABSTOP :WS_VISIBLE :WS_CHILD :BS_PUSHBUTTON) style (when default-p '(:BS_DEFPUSHBUTTON)))
 				:parent window
 				:x x
 				:y y
@@ -445,20 +436,38 @@
      button
      (lambda (hWnd Msg wParam lParam cont)
        (declare (ignore cont))
-       (case (window-message-p Msg)
-	 (:WM_LBUTTONUP (when (functionp on-click)
-			  (funcall on-click)))
-	 )
+       (print Msg)
+       (case Msg
+       	 (:WM_LBUTTONDOWN (and (functionp on-click) (funcall on-click)))
+	 (t))
        (CallWindowProcW BTNDEFPROC hWnd Msg wParam lParam)))
     
     (SetWindowLongPtrW button :GWLP_WNDPROC (pointer-address (callback MainWndProc)))
     button))
 
+(defun create-checkbox (name window &key
+				      (x 0)
+				      (y 0)
+				      (width 100)
+				      (height 30)
+				      (style nil)
+				      (on-check nil)
+				      (default-p nil))
+  (declare (inline))
+  (create-button name window
+		 :x x
+		 :y y
+		 :width width
+		 :height height
+		 :style (append '(:BS_AUTOCHECKBOX) style)
+		 :on-click on-check
+		 :default-p default-p))
+
 ;;; Editbox
 (defun create-input (name window &key
 				   (x 0)
 				   (y 0)
-				   (width 100)
+				   (width 150)
 				   (height 30)
 				   (style nil))
   (let* ((editor (create-window name
@@ -476,9 +485,8 @@
      editor
      (lambda (hWnd Msg wParam lParam cont)
        (declare (ignore cont))
-       (case (window-message-p Msg)
-	 
-	 )
+       (case Msg
+	 (t))
        (CallWindowProcW EDITDEFPROC hWnd Msg wParam lParam)))
     
     (SetWindowLongPtrW editor :GWLP_WNDPROC (pointer-address (callback MainWndProc)))
@@ -490,50 +498,33 @@
 				    (width 400)
 				    (height 300)
 				    (style nil))
-  (let* ((editor (create-window name
-				:class-name :EDIT
-				:style (append '(:WS_VISIBLE :WS_CHILD :WS_VSCROLL :ES_LEFT :ES_MULTILINE :ES_AUTOVSCROLL) style)
-				:parent window
-				:x x
-				:y y
-				:width width
-				:height height))
-	 (EDITDEFPROC (make-pointer (GetWindowLongPtrW editor :GWLP_WNDPROC))))
-
-    ;; Subclassing
-    (set-window-procedure
-     editor
-     (lambda (hWnd Msg wParam lParam cont)
-       (declare (ignore cont))
-       (case (window-message-p Msg)
-	 
-	 )
-       (CallWindowProcW EDITDEFPROC hWnd Msg wParam lParam)))
-    
-    (SetWindowLongPtrW editor :GWLP_WNDPROC (pointer-address (callback MainWndProc)))
-    editor))
+  (declare (inline))
+  (create-input name window
+		:x x
+		:y y
+		:width width
+		:height height
+		:style (append '(:WS_VISIBLE :WS_CHILD :WS_VSCROLL :ES_MULTILINE :ES_AUTOVSCROLL) style)))
 
 ;;; DC and Drawing
-(defun get-window-rectangle (window)
+(defun get-window-rectangle (window &optional client-area-p)
   (when (window-p window)
     (with-foreign-object (rect '(:struct RECT))
-      (GetWindowRect window rect)
+      (if client-area-p
+	  (GetClientRect window rect)
+	  (GetWindowRect window rect))
       (values
        (foreign-slot-value rect '(:struct RECT) :left)
        (foreign-slot-value rect '(:struct RECT) :top)
        (foreign-slot-value rect '(:struct RECT) :right)
-       (foreign-slot-value rect '(:struct RECT) :bottom)
-       ))))
+       (foreign-slot-value rect '(:struct RECT) :bottom)))))
 
-(defun get-window-size (window)
+(defun get-window-size (window &optional client-area-p)
   (when (window-p window)
-    (with-foreign-object (rect '(:struct RECT))
-      (GetWindowRect window rect)
-      (values
-       (- (foreign-slot-value rect '(:struct RECT) :right)
-	  (foreign-slot-value rect '(:struct RECT) :left))
-       (- (foreign-slot-value rect '(:struct RECT) :bottom)
-	  (foreign-slot-value rect '(:struct RECT) :top))))))
+    (multiple-value-bind (left top right bottom)
+	(get-window-rectangle window client-area-p)
+      (values (- right left)
+	      (- bottom top)))))
 
 (defun get-drawing-context (window &key (full nil))
   (when (window-p window)

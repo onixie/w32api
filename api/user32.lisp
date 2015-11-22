@@ -67,6 +67,7 @@
 	   BeginPaint
 	   EndPaint
 	   GetWindowRect
+	   GetClientRect
 
 	   PostQuitMessage
 	   CreateAcceleratorTableW
@@ -147,8 +148,6 @@
   (hWnd     HWND)
   (nIndex      :int)
   (dwNewLong   LONG_PTR))
-
-(defctype WND_STYLE (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG))
 
 (defcfun "CreateWindowExW" HWND
   (dwExStyle     WS_EX_FLAG)
@@ -260,7 +259,7 @@
 (defcfun "GetForegroundWindow" HWND)
 
 (defcfun "LockSetForegroundWindow" :boolean
-  (uLockCode :unsigned-int))
+  (uLockCode :uint))
 
 (defcfun "CloseWindow" :boolean
   (hWnd HWND))
@@ -301,14 +300,14 @@
 
 (defcfun "DefWindowProcW" LRESULT
   (hWnd   HWND)
-  (Msg   :unsigned-int)
+  (Msg    WND_MESSAGE)
   (wParam WPARAM)
   (lParam LPARAM))
 
 (defcfun "CallWindowProcW" LRESULT
   (lpPrevWndFunc :pointer)
   (hWnd   HWND)
-  (Msg   :unsigned-int)
+  (Msg    WND_MESSAGE)
   (wParam WPARAM)
   (lParam LPARAM))
 
@@ -337,20 +336,20 @@
 (defcfun "GetMessageW" :int 		;be aware of return -1 when attached window destroyed
   (lpMsg (:pointer (:struct MSG)))
   (hWnd  HWND)
-  (wMsgFilterMin :unsigned-int)
-  (wMsgFilterMax :unsigned-int))
+  (wMsgFilterMin :uint)
+  (wMsgFilterMax :uint))
 
 (defcfun "PostMessageW" :boolean
   (hWnd   HWND)
-  (Msg   :unsigned-int)
+  (Msg    WND_MESSAGE)
   (wParam WPARAM)
   (lParam LPARAM))
 
 (defcfun "PostThreadMessageW" :boolean
-  (idThread  DWORD)
-  (Msg   :unsigned-int)
-  (wParam WPARAM)
-  (lParam LPARAM))
+  (idThread DWORD)
+  (Msg      WND_MESSAGE)
+  (wParam   WPARAM)
+  (lParam   LPARAM))
 
 (defcfun "WaitMessage" :boolean)
 
@@ -390,7 +389,11 @@
 
 (defcfun "GetWindowRect" :boolean
   (hwnd          HWND)
-  (lpPaint (:pointer (:struct RECT))))
+  (lpRect (:pointer (:struct RECT))))
+
+(defcfun "GetClientRect" :boolean
+  (hwnd          HWND)
+  (lpRect (:pointer (:struct RECT))))
 
 (defcfun "MoveWindow" :boolean
   (hwnd          HWND)

@@ -20,7 +20,7 @@
 (define-foreign-type bitfield-union-type ()
   ((bitfield-types :reader bitfield-types :initarg :bitfield-types)))
 
-(define-parse-method w32api.util::bitfield-union (base-type &rest bitfield-types)
+(define-parse-method bitfield-union (base-type &rest bitfield-types)
   (make-instance 'bitfield-union-type :actual-type base-type :bitfield-types bitfield-types)
   )
 
@@ -29,6 +29,33 @@
 
 (defmethod translate-from-foreign (value (type bitfield-union-type))
   (bitfield-union-symbols value (bitfield-types type)))
+
+;;; Union type of enum-types
+(defun enum-union-value (keyword-or-value enum-types)
+  (if (keywordp keyword-or-value)
+      (loop for enum-type in enum-types
+	 do (let ((value (foreign-enum-value enum-type keyword-or-value :errorp nil)))
+	      (when value (return value)))
+	 finally (return 0))
+      keyword-or-value))
+
+(defun enum-union-keyword-or-value (value enum-types)
+  (loop for enum-type in enum-types
+     do (let ((keyword (foreign-enum-keyword enum-type value :errorp nil)))
+	  (when keyword (return keyword)))
+     finally (return value)))
+
+(define-foreign-type enum-union-type ()
+  ((enum-types :reader enum-types :initarg :enum-types)))
+
+(define-parse-method enum-union (base-type &rest enum-types)
+  (make-instance 'enum-union-type :actual-type base-type :enum-types enum-types))
+
+(defmethod translate-to-foreign (keyword-or-value (type enum-union-type))
+  (enum-union-value keyword-or-value (enum-types type)))
+
+(defmethod translate-from-foreign (value (type enum-union-type))
+  (enum-union-keyword-or-value value (enum-types type)))
 
 ;;; dangerous!!!exposure cffi low level
 ;;; create a temp callback,

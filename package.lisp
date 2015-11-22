@@ -55,8 +55,6 @@
 	   window-maximized-p
 	   process-message
 	   post-quit-message
-	   window-message-p
-	   window-message-eq
 	   start-window
 
 	   update-window
