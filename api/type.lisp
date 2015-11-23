@@ -1,7 +1,6 @@
 (defpackage #:w32api.type
   (:use #:common-lisp #:cffi #:w32api.util)
   (:export bitfield-union
-	   enum-union
 	   +CW_USEDEFAULT+
 	   +DWLP_DLGPROC+
 	   +DWLP_MSGRESULT+
@@ -17,6 +16,7 @@
 	   ACCEL_VIRT_FLAG
 	   AW_FLAG
 	   BS_FLAG
+	   COMPUTER_NAME_FORMAT_ENUM
 	   CS_FLAG
 	   C_ATOM
 	   C_BYTE
@@ -27,11 +27,9 @@
 	   DWORD
 	   DWORD_PTR
 	   ES_FLAG
-	   FORMAT_MESSAGE_FLAG
+	   EXTENDED_NAME_FORMAT_ENUM
 	   FIRMWARE_TYPE_ENUM
-	   SM_ENUM
-	   VER_NT_FLAG
-	   VER_SUITE_FLAG
+	   FORMAT_MESSAGE_FLAG
 	   GA_ENUM
 	   GCL_ENUM
 	   GWLP_ENUM
@@ -41,41 +39,46 @@
 	   HCURSOR
 	   HDC
 	   HDESK
+	   HIBYTE
 	   HICON
 	   HINSTANCE
+	   HIWORD
 	   HMENU
 	   HMODULE
 	   HWINSTA
 	   HWND
 	   INT_PTR
+	   LOBYTE
 	   LONG_PTR
+	   LOWORD
 	   LPARAM
-	   LRESULT
 	   LPVOID
+	   LRESULT
 	   MSG
 	   OSVERSIONINFOEX
 	   PAINTSTRUCT
 	   POINT
+	   PRODUCT_ENUM
 	   RECT
 	   SECURITY_ATTRIBUTES
+	   SM_ENUM
 	   SW_ENUM
+	   SYSTEM_INFO
+	   SYSTEM_INFO_ARCH
+	   SYSTEM_INFO_MISC
 	   UINT_PTR
 	   ULONG_PTR
+	   VER_NT_FLAG
+	   VER_SUITE_FLAG
 	   WM_ENUM
 	   WNDCLASSEX
+	   WND_MESSAGE
+	   WND_STYLE
 	   WORD
 	   WPARAM
 	   WS_EX_FLAG
 	   WS_FLAG
-	   WND_STYLE
-	   WND_MESSAGE
-	   LOWORD
-	   HIWORD
-	   LOBYTE
-	   HIBYTE
-	   SYSTEM_INFO_ARCH
-	   SYSTEM_INFO_MISC
-	   SYSTEM_INFO
+	   enum-union
 	   ))
 
 (in-package #:w32api.type)
@@ -948,6 +951,98 @@
   (:wProductType	VER_NT_FLAG)
   (:wReserved		C_BYTE))
 
+(defcenum (PRODUCT_ENUM DWORD)
+  (:PRODUCT_BUSINESS #x00000006)	   ;Business
+  (:PRODUCT_BUSINESS_N #x00000010);Business N
+  (:PRODUCT_CLUSTER_SERVER #x00000012);HPC Edition
+  (:PRODUCT_CLUSTER_SERVER_V #x00000040);Server Hyper Core V
+  (:PRODUCT_CORE #x00000065);Windows 10 Home
+  (:PRODUCT_CORE_COUNTRYSPECIFIC #x00000063);Windows 10 Home China
+  (:PRODUCT_CORE_N #x00000062);Windows 10 Home N
+  (:PRODUCT_CORE_SINGLELANGUAGE #x00000064);Windows 10 Home Single Language
+  (:PRODUCT_EDUCATION #x00000079);Windows 10 Education
+  (:PRODUCT_EDUCATION_N #x0000007A);Windows 10 Education N
+  (:PRODUCT_DATACENTER_EVALUATION_SERVER #x00000050);Server Datacenter (evaluation installation)
+  (:PRODUCT_DATACENTER_SERVER #x00000008);Server Datacenter (full installation)
+  (:PRODUCT_DATACENTER_SERVER_CORE #x0000000C);Server Datacenter (core installation)
+  (:PRODUCT_DATACENTER_SERVER_CORE_V #x00000027);Server Datacenter without Hyper-V (core installation)
+  (:PRODUCT_DATACENTER_SERVER_V #x00000025);Server Datacenter without Hyper-V (full installation)
+  (:PRODUCT_ENTERPRISE #x00000004);Windows 10 Enterprise
+  (:PRODUCT_ENTERPRISE_E #x00000046);Windows 10 Enterprise E
+  (:PRODUCT_ENTERPRISE_EVALUATION #x00000048);Windows 10 Enterprise Evaluation
+  (:PRODUCT_ENTERPRISE_N #x0000001B);Windows 10 Enterprise N
+  (:PRODUCT_ENTERPRISE_N_EVALUATION #x00000054);Windows 10 Enterprise N Evaluation
+  (:PRODUCT_ENTERPRISE_S #x0000007D);Windows 10 Enterprise 2015 LTSB
+  (:PRODUCT_ENTERPRISE_S_EVALUATION #x00000081);Windows 10 Enterprise 2015 LTSB Evaluation
+  (:PRODUCT_ENTERPRISE_S_N #x0000007E);Windows 10 Enterprise 2015 LTSB N
+  (:PRODUCT_ENTERPRISE_S_N_EVALUATION #x00000082);Windows 10 Enterprise 2015 LTSB N Evaluation
+  (:PRODUCT_ENTERPRISE_SERVER #x0000000A);Server Enterprise (full installation)
+  (:PRODUCT_ENTERPRISE_SERVER_CORE #x0000000E);Server Enterprise (core installation)
+  (:PRODUCT_ENTERPRISE_SERVER_CORE_V #x00000029);Server Enterprise without Hyper-V (core installation)
+  (:PRODUCT_ENTERPRISE_SERVER_IA64 #x0000000F);Server Enterprise for Itanium-based Systems
+  (:PRODUCT_ENTERPRISE_SERVER_V #x00000026);Server Enterprise without Hyper-V (full installation)
+  (:PRODUCT_ESSENTIALBUSINESS_SERVER_ADDL #x0000003C);Windows Essential Server Solution Additional
+  (:PRODUCT_ESSENTIALBUSINESS_SERVER_ADDLSVC #x0000003E);Windows Essential Server Solution Additional SVC
+  (:PRODUCT_ESSENTIALBUSINESS_SERVER_MGMT #x0000003B);Windows Essential Server Solution Management
+  (:PRODUCT_ESSENTIALBUSINESS_SERVER_MGMTSVC #x0000003D);Windows Essential Server Solution Management SVC
+  (:PRODUCT_HOME_BASIC #x00000002);Home Basic
+  (:PRODUCT_HOME_BASIC_E #x00000043);Not supported
+  (:PRODUCT_HOME_BASIC_N #x00000005);Home Basic N
+  (:PRODUCT_HOME_PREMIUM #x00000003);Home Premium
+  (:PRODUCT_HOME_PREMIUM_E #x00000044);Not supported
+  (:PRODUCT_HOME_PREMIUM_N #x0000001A);Home Premium N
+  (:PRODUCT_HOME_PREMIUM_SERVER #x00000022);Windows Home Server 2011
+  (:PRODUCT_HOME_SERVER #x00000013);Windows Storage Server 2008 R2 Essentials
+  (:PRODUCT_HYPERV #x0000002A);Microsoft Hyper-V Server
+  (:PRODUCT_MEDIUMBUSINESS_SERVER_MANAGEMENT #x0000001E);Windows Essential Business Server Management Server
+  (:PRODUCT_MEDIUMBUSINESS_SERVER_MESSAGING #x00000020);Windows Essential Business Server Messaging Server
+  (:PRODUCT_MEDIUMBUSINESS_SERVER_SECURITY #x0000001F);Windows Essential Business Server Security Server
+  (:PRODUCT_MOBILE_CORE #x00000068);Windows 10 Mobile
+  (:PRODUCT_MOBILE_ENTERPRISE #x00000085);Windows 10 Mobile Enterprise
+  (:PRODUCT_MULTIPOINT_PREMIUM_SERVER #x0000004D);Windows MultiPoint Server Premium (full installation)
+  (:PRODUCT_MULTIPOINT_STANDARD_SERVER #x0000004C);Windows MultiPoint Server Standard (full installation)
+  (:PRODUCT_PROFESSIONAL #x00000030);Windows 10 Pro
+  (:PRODUCT_PROFESSIONAL_E #x00000045);Not supported
+  (:PRODUCT_PROFESSIONAL_N #x00000031);Windows 10 Pro N
+  (:PRODUCT_PROFESSIONAL_WMC #x00000067);Professional with Media Center
+  (:PRODUCT_SB_SOLUTION_SERVER #x00000032);Windows Small Business Server 2011 Essentials
+  (:PRODUCT_SB_SOLUTION_SERVER_EM #x00000036);Server For SB Solutions EM
+  (:PRODUCT_SERVER_FOR_SB_SOLUTIONS #x00000033);Server For SB Solutions
+  (:PRODUCT_SERVER_FOR_SB_SOLUTIONS_EM #x00000037);Server For SB Solutions EM
+  (:PRODUCT_SERVER_FOR_SMALLBUSINESS #x00000018);Windows Server 2008 for Windows Essential Server Solutions
+  (:PRODUCT_SERVER_FOR_SMALLBUSINESS_V #x00000023);Windows Server 2008 without Hyper-V for Windows Essential Server Solutions
+  (:PRODUCT_SERVER_FOUNDATION #x00000021);Server Foundation
+  (:PRODUCT_SMALLBUSINESS_SERVER #x00000009);Windows Small Business Server
+  (:PRODUCT_SMALLBUSINESS_SERVER_PREMIUM #x00000019);Small Business Server Premium
+  (:PRODUCT_SMALLBUSINESS_SERVER_PREMIUM_CORE #x0000003F);Small Business Server Premium (core installation)
+  (:PRODUCT_SOLUTION_EMBEDDEDSERVER #x00000038);Windows MultiPoint Server
+  (:PRODUCT_STANDARD_EVALUATION_SERVER #x0000004F);Server Standard (evaluation installation)
+  (:PRODUCT_STANDARD_SERVER #x00000007);Server Standard
+  (:PRODUCT_STANDARD_SERVER_CORE #x0000000D);Server Standard (core installation)
+  (:PRODUCT_STANDARD_SERVER_CORE_V #x00000028);Server Standard without Hyper-V (core installation)
+  (:PRODUCT_STANDARD_SERVER_V #x00000024);Server Standard without Hyper-V
+  (:PRODUCT_STANDARD_SERVER_SOLUTIONS #x00000034);Server Solutions Premium
+  (:PRODUCT_STANDARD_SERVER_SOLUTIONS_CORE #x00000035);Server Solutions Premium (core installation)
+  (:PRODUCT_STARTER #x0000000B);Starter
+  (:PRODUCT_STARTER_E #x00000042);Not supported
+  (:PRODUCT_STARTER_N #x0000002F);Starter N
+  (:PRODUCT_STORAGE_ENTERPRISE_SERVER #x00000017);Storage Server Enterprise
+  (:PRODUCT_STORAGE_ENTERPRISE_SERVER_CORE #x0000002E);Storage Server Enterprise (core installation)
+  (:PRODUCT_STORAGE_EXPRESS_SERVER #x00000014);Storage Server Express
+  (:PRODUCT_STORAGE_EXPRESS_SERVER_CORE #x0000002B);Storage Server Express (core installation)
+  (:PRODUCT_STORAGE_STANDARD_EVALUATION_SERVER #x00000060);Storage Server Standard (evaluation installation)
+  (:PRODUCT_STORAGE_STANDARD_SERVER #x00000015);Storage Server Standard
+  (:PRODUCT_STORAGE_STANDARD_SERVER_CORE #x0000002C);Storage Server Standard (core installation)
+  (:PRODUCT_STORAGE_WORKGROUP_EVALUATION_SERVER #x0000005F);Storage Server Workgroup (evaluation installation)
+  (:PRODUCT_STORAGE_WORKGROUP_SERVER #x00000016);Storage Server Workgroup
+  (:PRODUCT_STORAGE_WORKGROUP_SERVER_CORE #x0000002D);Storage Server Workgroup (core installation)
+  (:PRODUCT_ULTIMATE #x00000001);Ultimate
+  (:PRODUCT_ULTIMATE_E #x00000047);Not supported
+  (:PRODUCT_ULTIMATE_N #x0000001C);Ultimate N
+  (:PRODUCT_UNDEFINED #x00000000);An unknown product
+  (:PRODUCT_WEB_SERVER #x00000011);Web Server (full installation)
+  (:PRODUCT_WEB_SERVER_CORE #x0000001D));Web Server (core installation)
+
 (defcenum (SM_ENUM :int)
   (:SM_ARRANGE 56)			;The flags that specify how the system arranged minimized windows. For more information, see the Remarks section in this topic.
   (:SM_CLEANBOOT 67)			;The value that specifies how the system is started:
@@ -1065,3 +1160,27 @@
   (:SM_XVIRTUALSCREEN 76)		;The coordinates for the left side of the virtual screen. The virtual screen is the bounding rectangle of all display monitors. The SM_CXVIRTUALSCREEN metric is the width of the virtual screen.
   (:SM_YVIRTUALSCREEN 77)		;The coordinates for the top of the virtual screen. The virtual screen is the bounding rectangle of all display monitors. The SM_CYVIRTUALSCREEN metric is the height of the virtual screen.
   )
+
+(defcenum (COMPUTER_NAME_FORMAT_ENUM :uint)
+  :ComputerNameNetBIOS
+  :ComputerNameDnsHostname
+  :ComputerNameDnsDomain
+  :ComputerNameDnsFullyQualified
+  :ComputerNamePhysicalNetBIOS
+  :ComputerNamePhysicalDnsHostname
+  :ComputerNamePhysicalDnsDomain
+  :ComputerNamePhysicalDnsFullyQualified
+  :ComputerNameMax)
+
+
+(defcenum (EXTENDED_NAME_FORMAT_ENUM :uint)
+  (:NameUnknown           0)
+  (:NameFullyQualifiedDN  1)
+  (:NameSamCompatible     2)
+  (:NameDisplay           3)
+  (:NameUniqueId          6)
+  (:NameCanonical         7)
+  (:NameUserPrincipal     8)
+  (:NameCanonicalEx       9)
+  (:NameServicePrincipal  10)
+  (:NameDnsDomain         12))

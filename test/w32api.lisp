@@ -5,6 +5,62 @@
 (in-suite test/w32api)
 
 ;;;; kernel32 api
+(test |(get-processor-type) return keyword for processor type|
+  (is (keywordp (get-processor-type))))
+
+(test |(get-processor-arch) return keyword for processor arch|
+  (is (keywordp (get-processor-arch))))
+
+(test |(get-processor-arch) confirms (get-processor-type)| ;checkme: loosely checked
+  (when (eq (get-processor-arch) :PROCESSOR_ARCHITECTURE_AMD64)
+    (is (eq (get-processor-type) :PROCESSOR_AMD_X8664)))
+  (when (or (eq (get-processor-arch) :PROCESSOR_ARCHITECTURE_IA64)
+	    (eq (get-processor-arch) :PROCESSOR_ARCHITECTURE_IA32_ON_WIN64)
+	    (eq (get-processor-arch) :PROCESSOR_ARCHITECTURE_INTEL))
+    (is (member (get-processor-type) '(:PROCESSOR_INTEL_386
+				       :PROCESSOR_INTEL_486
+				       :PROCESSOR_INTEL_PENTIUM
+				       :PROCESSOR_INTEL_IA64))))
+  (when (or (eq (get-processor-arch) :PROCESSOR_ARCHITECTURE_ARM)
+	    (eq (get-processor-arch) :PROCESSOR_ARCHITECTURE_ARM64))
+    (is (member (get-processor-type) '(:PROCESSOR_STRONGARM
+				       :PROCESSOR_ARM720
+				       :PROCESSOR_ARM820
+				       :PROCESSOR_ARM920
+				       :PROCESSOR_ARM_7TDMI))))
+  (skip (format nil "Processor Type: ~s, Processor Arch: ~s"
+		(get-processor-type)
+		(get-processor-arch))))
+
+(test |(get-processor-count) return number of logical processors|
+  (is (numberp (get-processor-count)))
+  (skip (format nil "The Number Of Processors: ~d" (get-processor-count))))
+
+(test |(get-firmware-type) return keyword for firmware type|
+  (is (keywordp (get-firmware-type)))
+  (skip (format nil "Firmware Type: ~a" (get-firmware-type))))
+
+(test |(get-product-type) return keyword for product type|
+  (is (keywordp (get-product-type)))
+  (skip (format nil "Product Type: ~a" (get-product-type))))
+
+(test |(get-computer-name) return current computer name|
+  (is (stringp (get-computer-name)))
+  (skip (format nil "Computer Name: ~a" (get-computer-name))))
+
+(test |(get-user-name) return current user name|
+  (is (stringp (get-user-name)))
+  (skip (format nil "User Name: ~a" (get-user-name))))
+
+(test |(get-os-version) = (values major minor sp-major sp-minor)|
+  (multiple-value-bind (major minor sp-major sp-minor)
+      (get-os-version)
+    (is (<= 5 major 10))
+    (skip (format nil "OS Version: ~d.~d, SP Version: ~d.~d" major minor sp-major sp-minor))))
+
+(test |(get-os-buile-number) return build numbers|
+  (skip (format nil "OS Build Number: ~d" (get-os-build-number))))
+
 (test |(get-error) = 0 if no errors|
   (is (equal 0 (get-error))))
 

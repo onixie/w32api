@@ -41,16 +41,46 @@
 
 (defun get-os-version ()
   (with-version-info ((:dwMajorVersion major)
-		      (:dwMinorVersion minor))
-    (values major minor)))
+		      (:dwMinorVersion minor)
+		      (:wServicePackMajor sp-major)
+		      (:wServicePackMinor sp-minor))
+    (values major minor sp-major sp-minor)))
 
 (defun get-os-build-number ()
   (with-version-info ((:dwBuildNumber build-number))
     build-number))
 
-(defun get-os-service-pack ()
-  (with-version-info ((:szCSDVersion sp-version))
-    sp-version))
+(defun get-product-type ()
+  (multiple-value-bind (major minor sp-major sp-minor)
+      (get-os-version)
+    (if (>= major 6)
+	(with-foreign-object (type 'PRODUCT_ENUM)
+	  (when (GetProductInfo major minor sp-major sp-minor type)
+	    (mem-ref type 'PRODUCT_ENUM)))
+	(with-version-info ((:wProductType type))
+	  type))))
+
+(defmacro with-name (api (&rest slot-name-and-var-list) &body body)
+  `(let (,@(loop for (slot-name var) in slot-name-and-var-list
+	      collect `(,var nil)))
+     ,@(loop for (slot-name var) in slot-name-and-var-list
+	  collect
+	    `(with-foreign-pointer (try 0)
+	       (with-foreign-object (size 'DWORD)
+		 (setf (mem-ref size 'DWORD) 0)
+		 (,api ,slot-name try size)
+		 (with-foreign-pointer (try (* 2 (1+ (mem-ref size 'DWORD))))
+		   (when (,api ,slot-name try size)
+		     (setf ,var (foreign-string-to-lisp try)))))))
+     ,@body))
+
+(defun get-computer-name (&optional (type :ComputerNameNetBIOS))
+  (with-name GetComputerNameExW ((type name))
+    name))
+
+(defun get-user-name (&optional (type :NameDisplay))
+  (with-name GetUserNameExW ((type name))
+    name))
 
 (defun get-error ()
   (GetLastError))

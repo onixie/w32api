@@ -4,10 +4,21 @@
   (:use #:cl #:cffi #:bordeaux-threads #:lparallel
 	#:w32api.type
 	#:w32api.kernel32
+	#:w32api.secur32	
 	#:w32api.user32
 	#:w32api.gdi32
 	#:w32api.util)
-  (:export get-error
+  (:export get-processor-type
+	   get-processor-arch
+	   get-processor-count
+	   get-firmware-type
+	   get-product-type
+	   get-os-version
+	   get-os-build-number
+	   get-computer-name
+	   get-user-name
+	   
+	   get-error
 	   print-error
 	   create-desktop
 	   switch-desktop

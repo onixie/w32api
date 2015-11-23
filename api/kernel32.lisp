@@ -10,7 +10,9 @@
 	   GetFirmwareType
 	   GetVersionExW
 	   GetSystemInfo
-	   GetNativeSystemInfo))
+	   GetNativeSystemInfo
+	   GetComputerNameExW
+	   GetProductInfo))
 
 (in-package #:w32api.kernel32)
 
@@ -52,3 +54,15 @@
 
 (defcfun "GetVersionExW" :boolean
   (lpVersionInfo (:pointer (:struct OSVERSIONINFOEX))))
+
+(defcfun "GetProductInfo" :boolean;;; Winver > 6.0
+  (dwOSMajorVersion  DWORD)
+  (dwOSMinorVersion  DWORD)
+  (dwSpMajorVersion  DWORD)
+  (dwSpMinorVersion  DWORD)
+  (pdwReturnedProductType (:pointer PRODUCT_ENUM)))
+
+(defcfun "GetComputerNameExW" :boolean
+  (NameType COMPUTER_NAME_FORMAT_ENUM)
+  (lpBuffer :string)
+  (lpnSize (:pointer DWORD)))

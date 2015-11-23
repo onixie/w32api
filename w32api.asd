@@ -15,6 +15,7 @@
 				      :serial t
 				      :components ((:file "type")
 						   (:file "kernel32")
+						   (:file "secur32")
 						   (:file "user32")
 						   (:file "gdi32")))
 			     (:file "package")
