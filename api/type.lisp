@@ -34,6 +34,7 @@
 	   GCL_ENUM
 	   GWLP_ENUM
 	   GW_ENUM
+	   GWR_RESULT_ENUM
 	   HACCEL
 	   HBRUSH
 	   HCURSOR
@@ -43,6 +44,7 @@
 	   HICON
 	   HINSTANCE
 	   HIWORD
+	   HRGN
 	   HMENU
 	   HMODULE
 	   HWINSTA
@@ -131,6 +133,7 @@
 (defctype HBRUSH	:pointer)
 (defctype HMENU		:pointer)
 (defctype HACCEL	:pointer)
+(defctype HRGN          :pointer)
 
 (defctype LRESULT LONG_PTR)
 (defctype LPARAM  LONG_PTR)
@@ -1184,3 +1187,9 @@
   (:NameCanonicalEx       9)
   (:NameServicePrincipal  10)
   (:NameDnsDomain         12))
+
+(defcenum (GWR_RESULT_ENUM :int)
+  (:ERROR               0)
+  (:NULLREGION          1)
+  (:SIMPLEREGION        2)
+  (:COMPLEXREGION       3))

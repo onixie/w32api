@@ -69,6 +69,12 @@
 	   EndPaint
 	   GetWindowRect
 	   GetClientRect
+	   InvalidateRect
+	   ValidateRect
+	   InvalidateRgn
+	   ValidateRgn
+	   GetWindowRgn
+	   SetWindowRgn
 
 	   PostQuitMessage
 	   CreateAcceleratorTableW
@@ -403,6 +409,33 @@
   (nWidth :int)
   (nHeight :int)
   (bRepaint :boolean))
+
+(defcfun "InvalidateRect" :boolean
+  (hWnd HWND)
+  (lpRect (:pointer (:struct RECT)))
+  (bErase :boolean))
+
+(defcfun "ValidateRect" :boolean
+  (hWnd HWND)
+  (lpRect (:pointer (:struct RECT))))
+
+(defcfun "InvalidateRgn" :boolean
+  (hWnd HWND)
+  (hRgn HRGN)
+  (bErase :boolean))
+
+(defcfun "ValidateRgn" :boolean
+  (hWnd HWND)
+  (hRgn HRGN))
+
+(defcfun "GetWindowRgn" GWR_RESULT_ENUM
+  (hWnd HWND)
+  (hRgn HRGN))
+
+(defcfun "SetWindowRgn" :boolean
+  (hWnd HWND)
+  (hRgn HRGN)
+  (bRedraw :boolean))
 
 (defcfun "WindowFromPoint" HWND
   (Point (:pointer (:struct POINT))))
