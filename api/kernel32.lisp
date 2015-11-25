@@ -49,13 +49,15 @@
 (defcfun "GetSystemInfo" :void
   (lpSystemInfo (:pointer (:struct SYSTEM_INFO))))
 
+;;; Win 8 or later
 (defcfun "GetFirmwareType" :boolean
   (FirmwareType (:pointer FIRMWARE_TYPE_ENUM)))
 
 (defcfun "GetVersionExW" :boolean
   (lpVersionInfo (:pointer (:struct OSVERSIONINFOEX))))
 
-(defcfun "GetProductInfo" :boolean;;; Winver > 6.0
+;;; Win Vista or later
+(defcfun "GetProductInfo" :boolean
   (dwOSMajorVersion  DWORD)
   (dwOSMinorVersion  DWORD)
   (dwSpMajorVersion  DWORD)

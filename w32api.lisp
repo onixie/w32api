@@ -22,11 +22,6 @@
 (defun get-processor-count ()
   (with-system-info ((:dwNumberOfProcessors count)) count))
 
-(defun get-firmware-type ()
-  (with-foreign-object (var 'FIRMWARE_TYPE_ENUM)
-    (when (GetFirmwareType var)
-      (mem-aref var 'FIRMWARE_TYPE_ENUM))))
-
 (defmacro with-version-info ((&rest slot-name-and-var-list) &body body)
   (let ((pvi (gensym)))
     `(with-foreign-object (,pvi '(:struct OSVERSIONINFOEX))
@@ -49,6 +44,15 @@
 (defun get-os-build-number ()
   (with-version-info ((:dwBuildNumber build-number))
     build-number))
+
+(defun get-firmware-type ()
+  (multiple-value-bind (major minor)
+      (get-os-version)
+    (if (and (>= major 6) (>= minor 2))
+	(with-foreign-object (var 'FIRMWARE_TYPE_ENUM)
+	  (when (GetFirmwareType var)
+	    (mem-aref var 'FIRMWARE_TYPE_ENUM)))
+	:FirmwareTypeBios)))
 
 (defun get-product-type ()
   (multiple-value-bind (major minor sp-major sp-minor)
@@ -85,16 +89,19 @@
 (defun get-error ()
   (GetLastError))
 
-(defun print-error (error-code)
+(defun print-error (error-code &key (lang :LANG_NEUTRAL) (sublang :SUBLANG_SYS_DEFAULT))
   (let ((dwFLAGS '(:FORMAT_MESSAGE_ALLOCATE_BUFFER
 		   :FORMAT_MESSAGE_ARGUMENT_ARRAY
 		   :FORMAT_MESSAGE_FROM_SYSTEM)))
     (with-foreign-object (strptr :pointer)
-      (FormatMessageW dwFLAGS (null-pointer) error-code 0 strptr 0 (null-pointer))
-      (string-trim (list #\Space
-			 #\Tab
-			 #\NewLine
-			 #\Return)
+      (FormatMessageW dwFLAGS
+		      (null-pointer)
+		      error-code
+		      (MAKELANGID lang sublang)
+		      strptr
+		      0
+		      (null-pointer))
+      (string-trim (list #\Space #\Tab #\NewLine #\Return)
 		   (foreign-string-to-lisp (mem-ref strptr :pointer))))))
 
 ;;; user32
