@@ -11,15 +11,19 @@
   (:export get-processor-type
 	   get-processor-arch
 	   get-processor-count
+	   processor-feature-present-p
 	   get-firmware-type
+	   boot-from-vhd-p
 	   get-product-type
 	   get-os-version
 	   get-os-build-number
 	   get-computer-name
 	   get-user-name
-	   
+	   get-windows-directory
+	   get-system-directory
 	   get-error
 	   print-error
+
 	   create-desktop
 	   switch-desktop
 	   destroy-desktop

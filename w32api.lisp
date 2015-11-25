@@ -22,6 +22,9 @@
 (defun get-processor-count ()
   (with-system-info ((:dwNumberOfProcessors count)) count))
 
+(defun processor-feature-present-p (feature)
+  (IsProcessorFeaturePresent feature))
+
 (defmacro with-version-info ((&rest slot-name-and-var-list) &body body)
   (let ((pvi (gensym)))
     `(with-foreign-object (,pvi '(:struct OSVERSIONINFOEX))
@@ -54,6 +57,14 @@
 	    (mem-aref var 'FIRMWARE_TYPE_ENUM)))
 	:FirmwareTypeBios)))
 
+(defun boot-from-vhd-p ()
+  (multiple-value-bind (major minor)
+      (get-os-version)
+    (when (and (>= major 6) (>= minor 2))
+      (with-foreign-object (res :boolean)
+	(IsNativeVhdBoot res)
+	(mem-ref res :boolean)))))
+
 (defun get-product-type ()
   (multiple-value-bind (major minor sp-major sp-minor)
       (get-os-version)
@@ -73,7 +84,7 @@
 	       (with-foreign-object (size 'DWORD)
 		 (setf (mem-ref size 'DWORD) 0)
 		 (,api ,slot-name try size)
-		 (with-foreign-pointer (try (* 2 (1+ (mem-ref size 'DWORD))))
+		 (with-foreign-pointer (try (* 2 (mem-ref size 'DWORD)))
 		   (when (,api ,slot-name try size)
 		     (setf ,var (foreign-string-to-lisp try)))))))
      ,@body))
@@ -103,6 +114,22 @@
 		      (null-pointer))
       (string-trim (list #\Space #\Tab #\NewLine #\Return)
 		   (foreign-string-to-lisp (mem-ref strptr :pointer))))))
+
+(defmacro get-sys-dir (api)
+  `(with-foreign-pointer (try 0)
+     (let ((size 0))
+       (setf size (,api try size))
+       (with-foreign-pointer (try (* 2 size))
+	 (,api try size)
+	 (foreign-string-to-lisp try)))))
+
+(defun get-windows-directory (&key (system-p nil))
+  (if system-p
+      (get-sys-dir GetSystemWindowsDirectoryW)
+      (get-sys-dir GetWindowsDirectoryW)))
+
+(defun get-system-directory ()
+  (get-sys-dir GetSystemDirectoryW))
 
 ;;; user32
 (defun create-desktop (name)

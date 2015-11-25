@@ -36,9 +36,15 @@
   (is (numberp (get-processor-count)))
   (skip (format nil "The Number Of Processors: ~d" (get-processor-count))))
 
+(test |(processor-feature-present-p :PF_SSE3_INSTRUCTIONS_AVAILABLE) return t if support SSE3|
+  (skip (format nil "Does processor support SSE3: ~a" (processor-feature-present-p :PF_SSE3_INSTRUCTIONS_AVAILABLE))))
+
 (test |(get-firmware-type) return keyword for firmware type|
   (is (keywordp (get-firmware-type)))
   (skip (format nil "Firmware Type: ~a" (get-firmware-type))))
+
+(test |(boot-from-vhd-p) return t if boot from vhd|
+  (skip (format nil "Is booted from VHD: ~a" (boot-from-vhd-p))))
 
 (test |(get-product-type) return keyword for product type|
   (is (keywordp (get-product-type)))
@@ -51,6 +57,18 @@
 (test |(get-user-name) return current user name|
   (is (stringp (get-user-name)))
   (skip (format nil "User Name: ~a" (get-user-name))))
+
+(test |(get-windows-directory) return current windows directory|
+  (is (stringp (get-windows-directory)))
+  (skip (format nil "Windows Directory: ~a" (get-windows-directory))))
+
+(test |(get-windows-directory :system-p t) return current system windows directory|
+  (is (stringp (get-windows-directory :system-p t)))
+  (skip (format nil "System Windows Directory: ~a" (get-windows-directory :system-p t))))
+
+(test |(get-system-directory) return current system directory|
+  (is (stringp (get-system-directory)))
+  (skip (format nil "System Directory: ~a" (get-system-directory))))
 
 (test |(get-os-version) = (values major minor sp-major sp-minor)|
   (multiple-value-bind (major minor sp-major sp-minor)

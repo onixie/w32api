@@ -12,7 +12,12 @@
 	   GetSystemInfo
 	   GetNativeSystemInfo
 	   GetComputerNameExW
-	   GetProductInfo))
+	   GetProductInfo
+	   IsProcessorFeaturePresent
+	   IsNativeVhdBoot
+	   GetSystemDirectoryW
+	   GetWindowsDirectoryW
+	   GetSystemWindowsDirectoryW))
 
 (in-package #:w32api.kernel32)
 
@@ -68,3 +73,22 @@
   (NameType COMPUTER_NAME_FORMAT_ENUM)
   (lpBuffer :string)
   (lpnSize (:pointer DWORD)))
+
+(defcfun "IsProcessorFeaturePresent" :boolean
+  (ProcessorFeature PF_ENUM))
+
+;;; Win 8 or later
+(defcfun "IsNativeVhdBoot"  :boolean
+  (NativeVhdBoot (:pointer :boolean)))
+
+(defcfun "GetSystemWindowsDirectoryW" :uint
+  (lpBuffer :string)
+  (uSize   :uint))
+
+(defcfun "GetWindowsDirectoryW" :uint
+  (lpBuffer :string)
+  (uSize   :uint))
+
+(defcfun "GetSystemDirectoryW" :uint
+  (lpBuffer :string)
+  (uSize   :uint))
