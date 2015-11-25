@@ -513,6 +513,16 @@
     (is (equal 10 (first (multiple-value-list (get-window-rectangle <window>)))))
     (is (equal 20 (second (multiple-value-list (get-window-rectangle <window>)))))))
 
+(test |(tile-windows <window>) = t and tile childrens in <windows>| 
+  (is-true (tile-windows))
+  (is-true (tile-windows :MDITILE_HORIZONTAL))
+  (is-true (tile-windows :MDITILE_VERTICAL)))
+
+(test |(cascade-windows <window>) = t and tile childrens in <windows>| 
+  (is-true (cascade-windows))
+  (is-true (cascade-windows :MDITILE_SKIPDISABLED))
+  (is-true (cascade-windows :MDITILE_ZORDER)))
+
 (test |(get-window-size <window>) = (values width height)|
   (with-fixture window ((string (gensym "WIN")))
     (multiple-value-bind (width height)

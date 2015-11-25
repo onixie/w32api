@@ -35,6 +35,7 @@
 	   window-p
 	   get-window
 	   with-window
+	   with-windows
 	   set-parent-window
 	   get-parent-window
 	   get-ancestor-window
@@ -60,6 +61,8 @@
 	   minimize-window
 	   restore-window
 	   destroy-window
+	   tile-windows
+	   cascade-windows
 	   window-enabled-p
 	   window-visible-p
 	   parent-window-p

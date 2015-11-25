@@ -218,6 +218,12 @@
 	    (progn ,@body)
 	 (destroy-window ,var)))))
 
+(defmacro with-windows ((&rest args) &body body)
+  (if args
+      `(with-window ,(car args)
+	 (with-windows ,(cdr args) ,@body))
+      `(progn ,@body)))
+
 (defmacro with-class ((name &rest args) &body body)
   `(unless (eq (register-class ,name ,@args) 0)
      (unwind-protect
@@ -472,6 +478,25 @@
 (defun update-window (window)
   (when (window-p window)
     (UpdateWindow window)))
+
+(defmacro arrange-window (api parent windows how range)
+  `(when (or (window-p ,parent) (null-pointer-p ,parent))
+     (let* ((count (length ,windows))
+	    (windows (remove-if-not #'window-p ,windows))
+	    (real-count (length ,windows)))
+       (when (/= 0 (if (= count 0)
+		       (print (,api (print ,parent) ,how ,range 0 (null-pointer)))
+		       (with-foreign-object (children :pointer real-count)
+			 (loop for index from 0 below real-count
+			    do (setf (mem-aref children :pointer index) (nth index ,windows)))
+			 (print (,api (print ,parent) ,how ,range real-count children)))))
+	 t))))
+
+(defun tile-windows (&optional (how :MDITILE_ZORDER) (parent (null-pointer)) windows)
+  (arrange-window TileWindows parent windows how (null-pointer)))
+
+(defun cascade-windows (&optional (how :MDITILE_HORIZONTAL) (parent (null-pointer)) windows)
+  (arrange-window CascadeWindows parent windows how (null-pointer)))
 
 (defun window-enabled-p (window)
   (and (window-p window)

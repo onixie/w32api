@@ -52,6 +52,8 @@
 	   UpdateWindow
 	   MoveWindow
 	   DestroyWindow
+	   CascadeWindows
+	   TileWindows
 
 	   IsWindow
 	   IsWindowUnicode
@@ -330,6 +332,19 @@
   (hWnd HWND)
   (lpString :string))
 
+(defcfun "TileWindows" WORD
+  (hwndParent HWND)
+  (wHow MDITILE_FLAG)
+  (lpRect (:pointer (:struct  RECT)))
+  (cKids :uint)
+  (lpKids (:pointer HWND)))
+
+(defcfun "CascadeWindows" WORD
+  (hwndParent HWND)
+  (wHow MDITILE_FLAG)
+  (lpRect (:pointer (:struct  RECT)))
+  (cKids :uint)
+  (lpKids (:pointer HWND)))
 
 (defcfun "CreateAcceleratorTableW" HACCEL
   (lpaccl (:pointer (:struct ACCEL)))
