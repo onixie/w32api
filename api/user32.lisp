@@ -78,12 +78,13 @@
 	   GetWindowRgn
 	   SetWindowRgn
 
-	   PostQuitMessage
 	   CreateAcceleratorTableW
 	   TranslateAcceleratorW
 	   GetMessageW
+	   PeekMessageW
 	   PostMessageW
 	   PostThreadMessageW
+	   PostQuitMessage
 	   WaitMessage
 	   TranslateMessage
 	   DispatchMessageW
@@ -360,6 +361,14 @@
   (hWnd  HWND)
   (wMsgFilterMin :uint)
   (wMsgFilterMax :uint))
+
+(defcfun "PeekMessageW" :boolean
+  (lpMsg (:pointer (:struct MSG)))
+  (hWnd  HWND)
+  (wMsgFilterMin :uint)
+  (wMsgFilterMax :uint)
+  (wRemoveMsg PM_FLAG)
+  )
 
 (defcfun "PostMessageW" :boolean
   (hWnd   HWND)

@@ -242,8 +242,8 @@
     (let* ((cont (lambda (hWnd Msg wParam lParam cont)
 		   (declare (ignore cont))
 		   (case Msg
-		     (:WM_DESTROY (post-quit-message 0))
-		     (:WM_CLOSE   (destroy-window hWnd))
+		     ;(:WM_DESTROY t)
+		     (:WM_CLOSE   (destroy-window hWnd) (post-quit-message 0))
 		     (t (DefWindowProcW hWnd Msg wParam lParam)))))
 	   (proc (gethash (pointer-address hWnd) *create-window-owned-procedures* cont)))
       (let ((result (funcall proc hWnd Msg wParam lParam (lambda () (funcall cont hWnd Msg wParam lParam nil)))))
@@ -535,6 +535,10 @@
   (and (window-p window)
        (window-p parent)
        (IsChild parent window)))
+
+(defun clear-message (&optional (window (null-pointer)))
+  (with-foreign-object (msg '(:struct MSG))
+    (loop while (PeekMessageW msg (or (window-p window) (null-pointer)) 0 0 :PM_REMOVE))))
 
 (defun process-message (&optional (window (null-pointer)) (extra-process-func nil extra-process-func-p))
   (with-foreign-object (msg '(:struct MSG))

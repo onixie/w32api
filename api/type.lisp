@@ -63,6 +63,7 @@
 	   PAINTSTRUCT
 	   POINT
 	   PRODUCT_ENUM
+	   PM_FLAG
 	   RECT
 	   SECURITY_ATTRIBUTES
 	   SM_ENUM
@@ -485,18 +486,6 @@
   (:ACCEL_VIRT_VIRTKEY	#x01)	;The key member specifies a virtual-key code. If this flag is not specified, key is assumed to specify a character code.
   )
 
-(defcstruct POINT
-  (:x :long)
-  (:y :long))
-
-(defcstruct MSG
-  (:hwnd    HWND)
-  (:message :uint)
-  (:wParam  WPARAM)
-  (:lParam  LPARAM)
-  (:time    DWORD)
-  (:pt      (:struct POINT)))
-
 (defparameter +HWND_BROADCAST+ #xffff);The message is posted to all top-level windows in the system, including disabled or invisible unowned windows, overlapped windows, and pop-up windows. The message is not posted to child windows.
 
 (defcenum (WM_ENUM :uint)
@@ -769,6 +758,18 @@
   (:BM_SETDONTCLICK    #x00F8))
 
 (defctype WND_MESSAGE (enum-union :uint WM_ENUM BM_ENUM))
+
+(defcstruct POINT
+  (:x :long)
+  (:y :long))
+
+(defcstruct MSG
+  (:hwnd    HWND)
+  (:message WND_MESSAGE)
+  (:wParam  WPARAM)
+  (:lParam  LPARAM)
+  (:time    DWORD)
+  (:pt      (:struct POINT)))
 
 (defcenum (GA_ENUM :uint)
   (:GA_PARENT		1);Retrieves the parent window. This does not include the owner, as it does with the GetParent function.
@@ -1621,3 +1622,9 @@
   (:MDITILE_ZORDER		#x0004)		;Arranges the windows in Z order. If this value is not specified, the windows are arranged using the order specified in the lpKids array.
   (:MDITILE_HORIZONTAL		#x0001)		;Tiles windows horizontally.
   (:MDITILE_VERTICAL		#x0000))	;Tiles windows vertically.
+
+(defbitfield (PM_FLAG :uint)
+    (:PM_NOREMOVE #x0000) ;Messages are not removed from the queue after processing by PeekMessage.
+  (:PM_REMOVE #x0001) ;Messages are removed from the queue after processing by PeekMessage.
+  (:PM_NOYIELD #x0002) ;Prevents the system from releasing any thread that is waiting for the caller to go idle (see WaitForInputIdle).Combine this value with either PM_NOREMOVE or PM_REMOVE.
+  )
