@@ -163,15 +163,18 @@
     (unless (null-pointer-p desktop)
       desktop)))
 
+(defcallback EnumDesktopsW :boolean
+    ((lpszDesktop :string)
+     (lParam LPARAM))
+  (declare (ignore lParam) (special desktops))
+  (setf desktops (cons lpszDesktop desktops)))
 (defun get-all-desktop ()
   (let ((winsta (GetProcessWindowStation))
 	(desktops nil))
+    (declare (special desktops))
     (unless (null-pointer-p winsta)
-      (with-callback (collect :boolean ((lpszDesktop :string) (lParam LPARAM))
-			      (declare (ignore lParam))
-			      (setf desktops (cons lpszDesktop desktops)))
-	(EnumDesktopsW winsta collect 0)))
-    desktops))
+      (EnumDesktopsW winsta (callback EnumDesktopsW) 0)
+      desktops)))
 
 (defun switch-desktop (desktop)
   (and (pointerp desktop)
@@ -375,14 +378,16 @@
 	 collect (prog1 child
 		   (setf child (GetWindow child :GW_HWNDNEXT)))))))
 
+(defcallback EnumChildWindows :boolean
+    ((window HWND)
+     (lparam LPARAM))
+  (declare (ignore lparam) (special descendant))
+  (setf descendant (cons window descendant)))
 (defun get-descendant-windows (window)
   (when (window-p window)
     (let ((descendant nil))
-      (with-callback
-	  (collect :boolean ((window HWND) (lparam LPARAM))
-		   (declare (ignore lparam))
-		   (setf descendant (cons window descendant)))
-	(EnumChildWindows window collect 0))
+      (declare (special descendant))
+      (EnumChildWindows window (callback EnumChildWindows) 0)
       descendant)))
 
 (defun get-desktop-window ()

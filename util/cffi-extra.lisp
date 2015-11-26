@@ -56,17 +56,3 @@
 
 (defmethod translate-from-foreign (value (type enum-union-type))
   (enum-union-keyword-or-value value (enum-types type)))
-
-;;; dangerous!!!exposure cffi low level
-;;; create a temp callback,
-;;; notice cffi says that not all cl impl support non-top level defcallback
-(defvar *with-callback-lock* (make-recursive-lock))
-(defmacro with-callback ((name &rest args) &body body)
-  (let ((actual-name (gensym (string name))))
-    `(symbol-macrolet ((,name (callback ,actual-name)))
-       (with-recursive-lock-held (*with-callback-lock*)
-	 (unwind-protect
-	      (progn
-		(defcallback ,actual-name ,@args)
-		,@body)
-	   (remhash ',actual-name cffi-sys::*callbacks*))))))
