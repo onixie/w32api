@@ -12,6 +12,7 @@
 	   +WS_OVERLAPPEDWINDOW+
 	   +WS_POPUPWINDOW+
 	   +WS_TILEDWINDOW+
+	   +window-class-name-max-length+
 	   ACCEL
 	   ACCEL_VIRT_FLAG
 	   AW_FLAG
@@ -89,6 +90,7 @@
 
 (in-package #:w32api.type)
 
+(defparameter +window-class-name-max-length+ 256)
 (setf *default-foreign-encoding* :utf-16le)
 
 (defmacro LOWORD (data)

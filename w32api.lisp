@@ -396,9 +396,9 @@
 
 (defun get-window-class-name (window)
   (when (window-p window)
-    (string-trim " " (with-foreign-pointer-as-string
-			 ((class-name class-name-length) 1024)
-		       (GetClassNameW window class-name class-name-length)))))
+    (with-foreign-pointer-as-string
+	(class-name (* 2 +window-class-name-max-length+))
+      (GetClassNameW window class-name +window-class-name-max-length+))))
 
 (defun get-window-title (window)
   (when (window-p window)
