@@ -19,6 +19,7 @@
 	   BS_FLAG
 	   COMPUTER_NAME_FORMAT_ENUM
 	   CS_FLAG
+	   COLOR_ENUM
 	   C_ATOM
 	   C_BYTE
 	   DA_FLAG
@@ -1626,7 +1627,46 @@
   (:MDITILE_VERTICAL		#x0000))	;Tiles windows vertically.
 
 (defbitfield (PM_FLAG :uint)
-    (:PM_NOREMOVE #x0000) ;Messages are not removed from the queue after processing by PeekMessage.
-  (:PM_REMOVE #x0001) ;Messages are removed from the queue after processing by PeekMessage.
-  (:PM_NOYIELD #x0002) ;Prevents the system from releasing any thread that is waiting for the caller to go idle (see WaitForInputIdle).Combine this value with either PM_NOREMOVE or PM_REMOVE.
+  (:PM_NOREMOVE #x0000) ;Messages are not removed from the queue after processing by PeekMessage.
+  (:PM_REMOVE	#x0001) ;Messages are removed from the queue after processing by PeekMessage.
+  (:PM_NOYIELD	#x0002) ;Prevents the system from releasing any thread that is waiting for the caller to go idle (see WaitForInputIdle).Combine this value with either PM_NOREMOVE or PM_REMOVE.
+  )
+
+(defcenum (COLOR_ENUM :int)
+  (:COLOR_3DDKSHADOW 21)		;Dark shadow for three-dimensional display elements.
+  (:COLOR_3DFACE 15)			;Face color for three-dimensional display elements and for dialog box backgrounds.
+  (:COLOR_3DHIGHLIGHT 20)		;Highlight color for three-dimensional display elements (for edges facing the light source.)
+  (:COLOR_3DHILIGHT 20)			;Highlight color for three-dimensional display elements (for edges facing the light source.)
+  (:COLOR_3DLIGHT 22)			;Light color for three-dimensional display elements (for edges facing the light source.)
+  (:COLOR_3DSHADOW 16)			;Shadow color for three-dimensional display elements (for edges facing away from the light source).
+  (:COLOR_ACTIVEBORDER 10)		;Active window border.
+  (:COLOR_ACTIVECAPTION 2)		;Active window title bar.Specifies the left side color in the color gradient of an active window's title bar if the gradient effect is enabled.
+  (:COLOR_APPWORKSPACE 12)		;Background color of multiple document interface (MDI) applications.
+  (:COLOR_BACKGROUND 1)			;Desktop.
+  (:COLOR_BTNFACE 15)			;Face color for three-dimensional display elements and for dialog box backgrounds.
+  (:COLOR_BTNHIGHLIGHT 20)		;Highlight color for three-dimensional display elements (for edges facing the light source.)
+  (:COLOR_BTNHILIGHT 20)		;Highlight color for three-dimensional display elements (for edges facing the light source.)
+  (:COLOR_BTNSHADOW 16)			;Shadow color for three-dimensional display elements (for edges facing away from the light source).
+  (:COLOR_BTNTEXT 18)			;Text on push buttons.
+  (:COLOR_CAPTIONTEXT 9)		;Text in caption, size box, and scroll bar arrow box.
+  (:COLOR_DESKTOP 1)			;Desktop.
+  (:COLOR_GRADIENTACTIVECAPTION 27)	;Right side color in the color gradient of an active window's title bar. COLOR_ACTIVECAPTION specifies the left side color. Use SPI_GETGRADIENTCAPTIONS with the SystemParametersInfo function to determine whether the gradient effect is enabled.
+  (:COLOR_GRADIENTINACTIVECAPTION 28)	;Right side color in the color gradient of an inactive window's title bar. COLOR_INACTIVECAPTION specifies the left side color.
+  (:COLOR_GRAYTEXT 17)			;Grayed (disabled) text. This color is set to 0 if the current display driver does not support a solid gray color.
+  (:COLOR_HIGHLIGHT 13)			;Item(s) selected in a control.
+  (:COLOR_HIGHLIGHTTEXT 14)		;Text of item(s) selected in a control.
+  (:COLOR_HOTLIGHT 26)			;Color for a hyperlink or hot-tracked item.
+  (:COLOR_INACTIVEBORDER 11)		;Inactive window border.
+  (:COLOR_INACTIVECAPTION 3)		;Inactive window caption.Specifies the left side color in the color gradient of an inactive window's title bar if the gradient effect is enabled.
+  (:COLOR_INACTIVECAPTIONTEXT 19)	;Color of text in an inactive caption.
+  (:COLOR_INFOBK 24)			;Background color for tooltip controls.
+  (:COLOR_INFOTEXT 23)			;Text color for tooltip controls.
+  (:COLOR_MENU 4)			;Menu background.
+  (:COLOR_MENUHILIGHT 29)		;The color used to highlight menu items when the menu appears as a flat menu (see SystemParametersInfo). The highlighted menu item is outlined with COLOR_HIGHLIGHT.Windows 2000:  This value is not supported.
+  (:COLOR_MENUBAR 30)			;The background color for the menu bar when menus appear as flat menus (see SystemParametersInfo). However, COLOR_MENU continues to specify the background color of the menu popup.Windows 2000:  This value is not supported.
+  (:COLOR_MENUTEXT 7)			;Text in menus.
+  (:COLOR_SCROLLBAR 0)			;Scroll bar gray area.
+  (:COLOR_WINDOW 5)			;Window background.
+  (:COLOR_WINDOWFRAME 6)		;Window frame.
+  (:COLOR_WINDOWTEXT 8)			;Text in windows.
   )

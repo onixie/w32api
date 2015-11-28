@@ -88,6 +88,9 @@
 	   WaitMessage
 	   TranslateMessage
 	   DispatchMessageW
+
+	   GetSysColor	   
+	   GetSysColorBrush
 	   ))
 
 (in-package #:w32api.user32)
@@ -478,3 +481,9 @@
 
 (defcfun "GetSystemMetrics" :int
   (nIndex SM_ENUM))
+
+(defcfun "GetSysColorBrush" HBRUSH
+  (nIndex COLOR_ENUM))
+
+(defcfun "GetSysColor" DWORD
+  (nIndex COLOR_ENUM))

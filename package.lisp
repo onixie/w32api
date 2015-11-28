@@ -73,9 +73,11 @@
 	   window-maximized-p
 	   process-message
 	   post-quit-message
-	   start-window
-
+	   create-window-thread
+	   with-window-thread
 	   update-window
+	   invalidate-rect
+	   validate-rect
 	   create-button
 	   create-input
 	   create-editor

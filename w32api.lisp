@@ -239,15 +239,11 @@
      (wParam WPARAM)
      (lParam LPARAM))
   (with-recursive-lock-held (*create-window-lock*)
-    (let* ((cont (lambda (hWnd Msg wParam lParam cont)
-		   (declare (ignore cont))
-		   (case Msg
-		     ;(:WM_DESTROY t)
-		     (:WM_CLOSE   (destroy-window hWnd) (post-quit-message 0))
-		     (t (DefWindowProcW hWnd Msg wParam lParam)))))
-	   (proc (gethash (pointer-address hWnd) *create-window-owned-procedures* cont)))
-      (let ((result (funcall proc hWnd Msg wParam lParam (lambda () (funcall cont hWnd Msg wParam lParam nil)))))
-	(if (numberp result) result 0)))))
+    (let* ((proc (gethash (pointer-address hWnd) *create-window-owned-procedures*))
+	   (res  (when proc (funcall proc hWnd Msg wParam lParam))))
+      (if (numberp res)
+	  res
+	  (DefWindowProcW hWnd Msg wParam lParam)))))
 
 (defun register-class (name
 		       &key
@@ -264,7 +260,7 @@
 	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hInstance) (GetModuleHandleW (null-pointer)))
 	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hIcon) (null-pointer))
 	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hCursor) (null-pointer))
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hbrBackground) (null-pointer))
+	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hbrBackground) (GetSysColorBrush :COLOR_WINDOW))
 	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :lpszMenuName) (null-pointer))
 	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :lpszClassName) name)
 	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hIconSm) (null-pointer))
@@ -480,6 +476,24 @@
   (when (window-p window)
     (MoveWindow window x y width height t)))
 
+(defun invalidate-rect (window x y width height &optional (erase-p t))
+  (when (window-p window)
+    (with-foreign-object (rect '(:struct RECT))
+      (setf (foreign-slot-value rect '(:struct RECT) :left) x)
+      (setf (foreign-slot-value rect '(:struct RECT) :top)  y)
+      (setf (foreign-slot-value rect '(:struct RECT) :right) (+ x width))
+      (setf (foreign-slot-value rect '(:struct RECT) :bottom) (+ y height))
+      (InvalidateRect window rect erase-p))))
+
+(defun validate-rect (window x y width height)
+  (when (window-p window)
+    (with-foreign-object (rect '(:struct RECT))
+      (setf (foreign-slot-value rect '(:struct RECT) :left) x)
+      (setf (foreign-slot-value rect '(:struct RECT) :top)  y)
+      (setf (foreign-slot-value rect '(:struct RECT) :right) (+ x width))
+      (setf (foreign-slot-value rect '(:struct RECT) :bottom) (+ y height))
+      (ValidateRect window rect))))
+
 (defun update-window (window)
   (when (window-p window)
     (UpdateWindow window)))
@@ -553,16 +567,6 @@
 
 (defun post-quit-message (exit-code)
   (PostQuitMessage exit-code))
-
-(defun start-window (&rest args)
-  (make-thread
-   (lambda ()
-     (let ((hWnd (apply #'create-window args)))
-       (when hWnd
-	 (unwind-protect
-	      (progn (show-window hWnd)
-		     (process-message))
-	   (destroy-window hWnd)))))))
 
 ;;; Button
 
@@ -714,3 +718,29 @@
 
 (defmacro with-drawing-context ((var window) &body draws)
   `(call-with-drawing-context ,window (lambda (,var) ,@draws)))
+
+;;;
+
+(defun create-window-thread (name &rest args)
+  (make-thread
+   (lambda ()
+     (let ((hWnd (apply #'create-window name :procedure
+			(lambda (hWnd Msg wParam lParam)
+			  (declare (ignore lParam wParam))
+			  (block nil
+			    (case Msg
+			      (:WM_PAINT (with-drawing-context (dc hWnd)
+					   (declare (ignore dc))))
+			      (:WM_DESTROY (post-quit-message 0))
+			      (:WM_CLOSE   (destroy-window hWnd))
+			      (t (return nil)))
+			    0))
+			args)))
+       (when hWnd
+	 (unwind-protect
+	      (progn (show-window hWnd)
+		     (process-message))
+	   (destroy-window hWnd)))))))
+
+(defmacro with-window-thread ((thread) &body body)
+  `(interrupt-thread ,thread (lambda () ,@body)))

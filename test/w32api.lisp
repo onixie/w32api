@@ -409,7 +409,7 @@
 
 (test |(destroy-window <window>) should remove procedure registered in *create-window-owned-procedures*| 
   (with-fixture window-name ((string (gensym "WIN")))
-    (let* ((<window> (create-window <window-name> :procedure (lambda (hWnd Msg lParam wParam cont) (declare (ignore hWnd Msg lParam wParam cont)) 0)))
+    (let* ((<window> (create-window <window-name> :procedure (lambda (hWnd Msg lParam wParam) (declare (ignore hWnd Msg lParam wParam cont)) 0)))
 	   (key (pointer-address <window>)))
       (is (functionp (gethash key w32api::*create-window-owned-procedures*)))
       (destroy-window <window>)
@@ -481,12 +481,12 @@
 	  (let ((<window> 
 		 (create-window <window-name>
 				:extended-style :topmost
-				:procedure (lambda (hWnd x y z c)
-					     (declare (ignore x y z c))
+				:procedure (lambda (hWnd x y z)
+					     (declare (ignore x y z))
 					     (cond ((foreground-window hWnd)
 						    (setq result (window-foregrounded-p hWnd))
-						    (post-quit-message 0))
-						   (t 0))))))
+						    (post-quit-message 0)))
+					     0))))
 	    (show-window <window>)
 	    (process-message <window>)
 	    (destroy-window <window>)))
@@ -644,11 +644,12 @@
 			  (create-window name
 					 :parent <parent-window>
 					 :procedure
-					 (lambda (hWnd Msg lParam wParam cont)
-					   (declare (ignore Msg lParam wParam cont))
+					 (lambda (hWnd Msg lParam wParam)
+					   (declare (ignore Msg lParam wParam))
 					   (with-drawing-context (dc hWnd)
 					     (declare (ignore dc)))
-					   (post-quit-message 0)))))
+					   (post-quit-message 0)
+					   0))))
 		     (show-window <parent-window>)
 		     (show-window <window>)
 		     (set-window-title <window> (format nil "CWIN~d" index))
