@@ -591,9 +591,7 @@
     ;; Subclassing
     (set-window-procedure
      button
-     (lambda (hWnd Msg wParam lParam cont)
-       (declare (ignore cont))
-       (print Msg)
+     (lambda (hWnd Msg wParam lParam)
        (case Msg
        	 (:WM_LBUTTONDOWN (and (functionp on-click) (funcall on-click)))
 	 (t))
