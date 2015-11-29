@@ -5,13 +5,9 @@
 ;;; kernel32
 (defmacro with-system-info ((&rest slot-name-and-var-list) &body body)
   (let ((psi (gensym)))
-    `(with-foreign-object (,psi '(:struct SYSTEM_INFO))
+    `(with-foreign-struct ((,psi SYSTEM_INFO) ,@(mapcar #'list slot-name-and-var-list))
        (GetSystemInfo ,psi)
-       (symbol-macrolet
-	   (,@(loop for (slot-name var) in slot-name-and-var-list
-		 collect
-		   `(,var (foreign-slot-value ,psi '(:struct SYSTEM_INFO) ,slot-name))))
-	 ,@body))))
+       ,@body)))
 
 (defun get-processor-type ()
   (with-system-info ((:dwProcessorType type)) type))
@@ -26,16 +22,11 @@
   (IsProcessorFeaturePresent feature))
 
 (defmacro with-version-info ((&rest slot-name-and-var-list) &body body)
-  (let ((pvi (gensym)))
-    `(with-foreign-object (,pvi '(:struct OSVERSIONINFOEX))
-       (setf (foreign-slot-value ,pvi '(:struct OSVERSIONINFOEX) :dwOSVersionInfoSize)
-	     (foreign-type-size '(:struct OSVERSIONINFOEX)))
+  (let ((pvi (gensym)) (pvis (gensym)))
+    `(with-foreign-struct ((,pvi OSVERSIONINFOEX ,pvis) ,@(mapcar #'list slot-name-and-var-list))
+       (setf (foreign-slot-value ,pvi '(:struct OSVERSIONINFOEX) :dwOSVersionInfoSize) ,pvis)
        (when (GetVersionExW ,pvi)
-	 (symbol-macrolet
-	     (,@(loop for (slot-name var) in slot-name-and-var-list
-		   collect
-		     `(,var (foreign-slot-value ,pvi '(:struct OSVERSIONINFOEX) ,slot-name))))
-	   ,@body)))))
+	 ,@body))))
 
 (defun get-os-version ()
   (with-version-info ((:dwMajorVersion major)
@@ -134,12 +125,10 @@
 ;;; user32
 (defun create-desktop (name)
   (when (stringp name)
-    (with-foreign-object (sa '(:struct SECURITY_ATTRIBUTES))
-
-      (setf (foreign-slot-value sa '(:struct SECURITY_ATTRIBUTES) :nLength) (foreign-type-size '(:struct SECURITY_ATTRIBUTES)))
-      (setf (foreign-slot-value sa '(:struct SECURITY_ATTRIBUTES) :lpSecurityDescriptor) (null-pointer))
-      (setf (foreign-slot-value sa '(:struct SECURITY_ATTRIBUTES) :bInheritHandle) t)
-
+    (with-foreign-struct ((sa SECURITY_ATTRIBUTES struct-size)
+			  (:nLength struct-size)
+			  (:lpSecurityDescriptor (null-pointer))
+			  (:bInheritHandle t))
       (let ((desktop (CreateDesktopW name
 				     (null-pointer)
 				     (null-pointer)
@@ -245,44 +234,41 @@
 	  res
 	  (DefWindowProcW hWnd Msg wParam lParam)))))
 
-(defun register-class (name
-		       &key
-			 (procedure (callback MainWndProc))
-			 (style '(:CS_HREDRAW :CS_VREDRAW)))
+(defun register-class (name &key
+			      (procedure (callback MainWndProc))
+			      (style '(:CS_HREDRAW :CS_VREDRAW))
+			      (background-color (GetSysColorBrush :COLOR_WINDOW)))
   (if (stringp name)
-      (with-foreign-object (wnd-class '(:struct WNDCLASSEX))
-	
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :cbSize) (foreign-type-size '(:struct WNDCLASSEX)))
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :style) style)
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :lpfnWndProc) procedure)
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :cbClsExtra) 0)
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :cbWndExtra) 0)
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hInstance) (GetModuleHandleW (null-pointer)))
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hIcon) (null-pointer))
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hCursor) (null-pointer))
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hbrBackground) (GetSysColorBrush :COLOR_WINDOW))
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :lpszMenuName) (null-pointer))
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :lpszClassName) name)
-	(setf (foreign-slot-value wnd-class '(:struct WNDCLASSEX) :hIconSm) (null-pointer))
-
-	(RegisterClassExW wnd-class))
+      (with-foreign-struct ((window-class WNDCLASSEX struct-size)
+			    (:cbSize struct-size)
+			    (:style  style)
+			    (:lpfnWndProc procedure)
+			    (:cbClsExtra 0)
+			    (:cbWndExtra 0)
+			    (:hInstance (GetModuleHandleW (null-pointer)))
+			    (:hIcon (null-pointer))
+			    (:hCursor (null-pointer))
+			    (:hbrBackground background-color)
+			    (:lpszMenuName (null-pointer))
+			    (:lpszClassName name)
+			    (:hIconSm (null-pointer)))
+	(RegisterClassExW window-class)) 
       0))
 
 (defun unregister-class (name)
   (when (stringp name)
     (UnregisterClassW name (GetModuleHandleW (null-pointer)))))
 
-(defun create-window (name
-		      &key
-			(class-name name)
-			(procedure nil procedure-p)
-			(style +WS_OVERLAPPEDWINDOW+)
-			(extended-style +WS_EX_OVERLAPPEDWINDOW+)
-			(x +CW_USEDEFAULT+)
-			(y +CW_USEDEFAULT+)
-			(width +CW_USEDEFAULT+)
-			(height +CW_USEDEFAULT+)
-			(parent *parent-window*))
+(defun create-window (name &key
+			     (class-name name)
+			     (procedure nil procedure-p)
+			     (style +WS_OVERLAPPEDWINDOW+)
+			     (extended-style +WS_EX_OVERLAPPEDWINDOW+)
+			     (x +CW_USEDEFAULT+)
+			     (y +CW_USEDEFAULT+)
+			     (width +CW_USEDEFAULT+)
+			     (height +CW_USEDEFAULT+)
+			     (parent *parent-window*))
   (unless (get-window name :class-name class-name :parent parent)
     (let* ((atom (register-class class-name))
 	   (style (if (window-p parent)
@@ -476,22 +462,18 @@
   (when (window-p window)
     (MoveWindow window x y width height t)))
 
-(defun invalidate-rect (window x y width height &optional (erase-p t))
+(defun invalidate-rect (window x1 y1 x2 y2 &optional (erase-p t))
   (when (window-p window)
-    (with-foreign-object (rect '(:struct RECT))
-      (setf (foreign-slot-value rect '(:struct RECT) :left) x)
-      (setf (foreign-slot-value rect '(:struct RECT) :top)  y)
-      (setf (foreign-slot-value rect '(:struct RECT) :right) (+ x width))
-      (setf (foreign-slot-value rect '(:struct RECT) :bottom) (+ y height))
+    (with-foreign-struct ((rect RECT)
+			  (:left x1)  (:top  y1)
+			  (:right x2) (:bottom y2))
       (InvalidateRect window rect erase-p))))
 
-(defun validate-rect (window x y width height)
+(defun validate-rect (window x1 y1 x2 y2)
   (when (window-p window)
-    (with-foreign-object (rect '(:struct RECT))
-      (setf (foreign-slot-value rect '(:struct RECT) :left) x)
-      (setf (foreign-slot-value rect '(:struct RECT) :top)  y)
-      (setf (foreign-slot-value rect '(:struct RECT) :right) (+ x width))
-      (setf (foreign-slot-value rect '(:struct RECT) :bottom) (+ y height))
+    (with-foreign-struct ((rect RECT)
+			  (:left x1)  (:top  y1)
+			  (:right x2) (:bottom y2))
       (ValidateRect window rect))))
 
 (defun update-window (window)
@@ -664,22 +646,22 @@
 ;;; DC and Drawing
 (defun get-window-rectangle (window &optional client-area-p)
   (when (window-p window)
-    (with-foreign-object (rect '(:struct RECT))
+    (with-foreign-struct ((rect RECT)
+			  ((:left x1))
+			  ((:top  y1))
+			  ((:right x2))
+			  ((:bottom y2)))
       (if client-area-p
 	  (GetClientRect window rect)
 	  (GetWindowRect window rect))
-      (values
-       (foreign-slot-value rect '(:struct RECT) :left)
-       (foreign-slot-value rect '(:struct RECT) :top)
-       (foreign-slot-value rect '(:struct RECT) :right)
-       (foreign-slot-value rect '(:struct RECT) :bottom)))))
+      (values x1 y1 x2 y2))))
 
 (defun get-window-size (window &optional client-area-p)
   (when (window-p window)
-    (multiple-value-bind (left top right bottom)
+    (multiple-value-bind (x1 y1 x2 y2)
 	(get-window-rectangle window client-area-p)
-      (values (- right left)
-	      (- bottom top)))))
+      (values (- x2 x1)
+	      (- y2 y1)))))
 
 (defun get-drawing-context (window &key (full nil))
   (when (window-p window)

@@ -56,3 +56,31 @@
 
 (defmethod translate-from-foreign (value (type enum-union-type))
   (enum-union-keyword-or-value value (enum-types type)))
+
+(defmacro %with-foreign-struct (((var type &optional size-var) &rest slots) &body body)
+  `(let ,(when size-var `((,size-var (foreign-type-size ',type))))
+     (with-foreign-object (,var ',type)
+       (setf ,@(loop for (slot-name slot-val) in slots
+		  append
+		    (destructuring-bind ((slot-name &optional slot-var) &optional slot-val)
+			(list (ensure-list slot-name) slot-val)
+		      (declare (ignore slot-var))
+		      (when slot-val
+			`((foreign-slot-value ,var ',type ,slot-name) ,slot-val)))))
+       (symbol-macrolet
+	   ,(remove-if #'null
+		       (loop for (slot-name slot-val) in slots
+			  collect
+			    (destructuring-bind ((slot-name &optional slot-var) &optional slot-val)
+				(list (ensure-list slot-name) slot-val)
+			      (declare (ignore slot-val))
+			      `(,(if slot-var slot-var
+				     (intern (format nil "~a.~a" var slot-name)))
+				 (foreign-slot-value ,var ',type ,slot-name)))))
+	 ,@body))))
+
+(defmacro with-foreign-struct (((var type &optional size-var) &rest slots) &body body)
+  `(%with-foreign-struct ((,var (:struct ,type) ,size-var) ,@slots) ,@body))
+
+(defmacro with-foreign-union (((var type &optional size-var) &rest slots) &body body)
+  `(%with-foreign-struct ((,var (:union ,type) ,size-var) ,@slots) ,@body))

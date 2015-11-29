@@ -409,7 +409,7 @@
 
 (test |(destroy-window <window>) should remove procedure registered in *create-window-owned-procedures*| 
   (with-fixture window-name ((string (gensym "WIN")))
-    (let* ((<window> (create-window <window-name> :procedure (lambda (hWnd Msg lParam wParam) (declare (ignore hWnd Msg lParam wParam cont)) 0)))
+    (let* ((<window> (create-window <window-name> :procedure (lambda (hWnd Msg lParam wParam) (declare (ignore hWnd Msg lParam wParam)) 0)))
 	   (key (pointer-address <window>)))
       (is (functionp (gethash key w32api::*create-window-owned-procedures*)))
       (destroy-window <window>)
