@@ -702,25 +702,41 @@
 ;;;
 
 (defun create-window-thread (name &rest args)
-  (make-thread
-   (lambda ()
-     (let ((hWnd (apply #'create-window name :procedure
-			(lambda (hWnd Msg wParam lParam)
-			  (declare (ignore lParam wParam))
-			  (block nil
-			    (case Msg
-			      (:WM_PAINT (with-drawing-context (dc hWnd)
-					   (declare (ignore dc))))
-			      (:WM_DESTROY (post-quit-message 0))
-			      (:WM_CLOSE   (destroy-window hWnd))
-			      (t (return nil)))
-			    0))
-			args)))
-       (when hWnd
-	 (unwind-protect
-	      (progn (show-window hWnd)
-		     (process-message))
-	   (destroy-window hWnd)))))))
+  (let ((finish (make-condition-variable))
+	(cv-lock (make-recursive-lock))
+	(output-stream *standard-output*))
+    (prog1
+	(make-thread
+	 (lambda ()
+	   (let ((*standard-output* output-stream))
+	     (let ((hWnd (apply #'create-window name :procedure
+				(lambda (hWnd Msg wParam lParam)
+				  (declare (ignore lParam wParam))
+				  (block nil
+				    (case Msg
+				      (:WM_PAINT (with-drawing-context (dc hWnd)
+						   (declare (ignore dc))))
+				      (:WM_DESTROY (post-quit-message 0))
+				      (:WM_CLOSE   (destroy-window hWnd))
+				      (t (return nil)))
+				    0))
+				args)))
+	       (condition-notify finish)
+	       (when hWnd
+		 (unwind-protect
+		      (progn (show-window hWnd)
+			     (process-message))
+		   (destroy-window hWnd)))
+	       ))))
+      (acquire-lock cv-lock)
+      (condition-wait finish cv-lock))))
 
 (defmacro with-window-thread ((thread) &body body)
-  `(interrupt-thread ,thread (lambda () ,@body)))
+  (let ((output-stream (gensym)))
+    `(let ((,output-stream *standard-output*))
+       (interrupt-thread
+	,thread
+	(lambda ()
+	  (let ((*standard-output* ,output-stream))
+	    ,@body)
+	  (thread-yield))))))
