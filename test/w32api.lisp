@@ -288,13 +288,15 @@
 (test |(set-window-style <window> <style>) will set <style> to <window>|
   (with-fixture window ((string (gensym "WIN")))
     (set-window-style <window> :WS_CHILD)
-    (is (member :WS_CHILD (get-window-style <window>))))
+    (is (member :WS_CHILD (get-window-style <window>)))
+    (set-window-style <window>)		;fixme : :WS_CHILD will make switch-desktop fail
+    )
   )
 
 (test |(set-window-style <window> <style>) will set <style> to <window>|
   (with-fixture window ((string (gensym "WIN")))
-    (set-window-style <window> (list :WS_CHILD :BS_CHECKBOX))
-    (is (member :WS_CHILD (get-window-style <window>)))
+    (set-window-style <window> (list :WS_GROUP :BS_CHECKBOX))
+    (is (member :WS_GROUP (get-window-style <window>)))
     (is (member :BS_CHECKBOX (get-window-style <window>))))
   )
 
@@ -535,7 +537,7 @@
   (with-fixture window ((string (gensym "WIN")))
     (move-window <window> 100 100 200 200)
     (multiple-value-bind (x1 y1 x2 y2)
-	  (get-window-rectangle <window> t)
+	(get-window-rectangle <window> t)
       (is (eq 0 x1))			;Client Area always start from (0,0)
       (is (eq 0 y1))
       (multiple-value-bind (xx1 yy1 xx2 yy2)
