@@ -323,8 +323,10 @@
 			      (y +CW_USEDEFAULT+)
 			      (width +CW_USEDEFAULT+)
 			      (height +CW_USEDEFAULT+)
-			      (parent *parent-window*))
-  (unless (get-window name :class-name class-name :parent parent)
+			      (parent *parent-window*)
+			      (allow-same-name-p nil))
+  (unless (and (not allow-same-name-p)
+	       (get-window name :class-name class-name :parent parent))
     (let* ((atom (register-class class-name))
 	   (style (if (window-p parent)
 		      (remove :WS_POPUP (cons :WS_CHILD style))
@@ -633,23 +635,21 @@
 				    (height 30)
 				    (style nil)
 				    (default-p nil))
-  (let* ((button (create-window name
-				:class-name :BUTTON
-				:style (append '(:WS_TABSTOP :WS_VISIBLE :WS_CHILD :BS_PUSHBUTTON) style (when default-p '(:BS_DEFPUSHBUTTON)))
-				:parent window
-				:x x
-				:y y
-				:width width
-				:height height))
-	 (BTNDEFPROC (make-pointer (GetWindowLongPtrW button :GWLP_WNDPROC))))
-
-    ;; Subclassing
-    (message-handler+ button t
-		      (lambda (hWnd Msg wParam lParam)
-			(CallWindowProcW BTNDEFPROC hWnd Msg wParam lParam)))
-    
-    (SetWindowLongPtrW button :GWLP_WNDPROC (pointer-address (callback MainWndProc)))
-    button))
+  (let ((button (create-window name
+			       :class-name :BUTTON
+			       :style (append '(:WS_TABSTOP :WS_VISIBLE :WS_CHILD :BS_PUSHBUTTON) style (when default-p '(:BS_DEFPUSHBUTTON)))
+			       :parent window
+			       :x x
+			       :y y
+			       :width width
+			       :height height
+			       :allow-same-name-p t)))
+    (when (window-p button)
+      (let ((BTNDEFPROC (make-pointer (GetWindowLongPtrW button :GWLP_WNDPROC))))
+	;; Subclassing
+	(message-handler+ button t (lambda (hWnd Msg wParam lParam) (CallWindowProcW BTNDEFPROC hWnd Msg wParam lParam)))
+	(SetWindowLongPtrW button :GWLP_WNDPROC (pointer-address (callback MainWndProc)))
+	button))))
 
 (defun create-checkbox (name window &key
 				      (x 0)
@@ -668,38 +668,37 @@
 		 :default-p default-p))
 
 ;;; Editbox
-(defun create-input (name window &key
+(defun create-input (window &key (text "")
 				   (x 0)
 				   (y 0)
 				   (width 150)
 				   (height 30)
 				   (style nil))
-  (let* ((editor (create-window name
-				:class-name :EDIT
-				:style (append '(:WS_VISIBLE :WS_CHILD :ES_LEFT) style)
-				:parent window
-				:x x
-				:y y
-				:width width
-				:height height))
-	 (EDITDEFPROC (make-pointer (GetWindowLongPtrW editor :GWLP_WNDPROC))))
+  (let ((editor (create-window text
+			       :class-name :EDIT
+			       :style (append '(:WS_VISIBLE :WS_CHILD :ES_LEFT) style)
+			       :parent window
+			       :x x
+			       :y y
+			       :width width
+			       :height height
+			       :allow-same-name-p t)))
+    (when (window-p editor)
+      (let ((EDITDEFPROC (make-pointer (GetWindowLongPtrW editor :GWLP_WNDPROC))))
+	;; Subclassing
+	(message-handler+ editor t (lambda (hWnd Msg wParam lParam) (CallWindowProcW EDITDEFPROC hWnd Msg wParam lParam)))
+	(SetWindowLongPtrW editor :GWLP_WNDPROC (pointer-address (callback MainWndProc)))
+	editor))))
 
-    ;; Subclassing
-    (message-handler+ editor t
-		      (lambda (hWnd Msg wParam lParam)
-			(CallWindowProcW EDITDEFPROC hWnd Msg wParam lParam)))
-    
-    (SetWindowLongPtrW editor :GWLP_WNDPROC (pointer-address (callback MainWndProc)))
-    editor))
-
-(defun create-editor (name window &key
+(defun create-editor (window &key (text "")
 				    (x 0)
 				    (y 0)
 				    (width 400)
 				    (height 300)
 				    (style nil))
   (declare (inline))
-  (create-input name window
+  (create-input window
+		:text text
 		:x x
 		:y y
 		:width width
