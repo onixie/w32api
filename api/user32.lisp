@@ -94,6 +94,7 @@
 
 	   GetSysColor	   
 	   GetSysColorBrush
+	   MessageBoxW
 	   ))
 
 (in-package #:w32api.user32)
@@ -512,3 +513,9 @@
 
 (defcfun "GetSysColor" DWORD
   (nIndex COLOR_ENUM))
+
+(defcfun "MessageBoxW" MB_RESULT_ENUM
+  (hWnd      HWND)
+  (lpText    :string)
+  (lpCaption :string)
+  (uType     MB_FLAG))
