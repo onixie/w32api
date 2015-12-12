@@ -6,7 +6,7 @@
 		:license "BSD"
 		:serial t
 		:in-order-to ((test-op (test-op "w32api/test")))
-		:depends-on (#:cffi #:bordeaux-threads #:lparallel)
+		:depends-on (#:cffi #:bordeaux-threads)
 		:components ((:module "util"
 				      :components ((:file "package")
 						   (:file "helper")

@@ -407,21 +407,21 @@
       (destroy-window (create-window <window-name>))
       (is (equal 0 (register-class <window-name>))))))
 
-(test |(destroy-window <window>) should remove procedure registered in *create-window-owned-procedures*| 
+(test |(destroy-window <window>) should remove procedure registered in *message-handlers*| 
   (with-fixture window-name ((string (gensym "WIN")))
-    (let* ((<window> (create-window <window-name> :procedure (lambda (hWnd Msg lParam wParam) (declare (ignore hWnd Msg lParam wParam)) 0)))
-	   (key (pointer-address <window>)))
-      (is (functionp (gethash key w32api::*create-window-owned-procedures*)))
+    (let* ((<window> (create-window <window-name>)))
+      (message-handler+ <window> (lambda (hWnd Msg lParam wParam) (declare (ignore hWnd Msg lParam wParam)) 0))
+      (is (functionp (message-handler <window>)))
       (destroy-window <window>)
-      (is (equal nil (gethash key w32api::*create-window-owned-procedures*))))))
+      (is (equal nil (message-handler <window>))))))
 
-(test |(destroy-window <window>) should remove class-name registered in *create-window-owned-classes* if class is created by create-window| 
+(test |(destroy-window <window>) should remove class-name registered in *window-classes* if class is created by create-window| 
   (with-fixture window-name ((string (gensym "WIN")))
     (let* ((<window> (create-window <window-name>))
 	   (key (pointer-address <window>)))
-      (is (string-equal <window-name> (gethash key w32api::*create-window-owned-classes*)))
+      (is (string-equal <window-name> (gethash key w32api::*window-classes*)))
       (destroy-window <window>)
-      (is (equal nil (gethash key w32api::*create-window-owned-classes*))))))
+      (is (equal nil (gethash key w32api::*window-classes*))))))
 
 (test |(set-window-title <window>) = t and the title is changed|
   (with-fixture window ((string (gensym "WIN")))
@@ -479,14 +479,13 @@
       (let ((result nil))
 	(with-fixture window-name ((string (gensym "WIN")))
 	  (let ((<window> 
-		 (create-window <window-name>
-				:extended-style :topmost
-				:procedure (lambda (hWnd x y z)
-					     (declare (ignore x y z))
-					     (cond ((foreground-window hWnd)
-						    (setq result (window-foregrounded-p hWnd))
-						    (post-quit-message 0)))
-					     0))))
+		 (create-window <window-name> :extended-style :topmost)))
+	    (message-handler+ <window> (lambda (hWnd x y z)
+					 (declare (ignore x y z))
+					 (cond ((foreground-window hWnd)
+						(setq result (window-foregrounded-p hWnd))
+						(post-quit-message 0)))
+					 0))
 	    (show-window <window>)
 	    (process-message <window>)
 	    (destroy-window <window>)))
@@ -630,8 +629,8 @@
     (is (equal nil (window-maximized-p <window>)))))
 
 (test |check state|
-  (is (equal 0 (hash-table-count w32api::*create-window-owned-classes*))) 
-  (is (equal 0 (hash-table-count w32api::*create-window-owned-procedures*))))
+  (is (equal 0 (hash-table-count w32api::*window-classes*))) 
+  (is (equal 0 (hash-table-count w32api::*message-handlers*))))
 
 (test |multithread window creation/destroy test|
   (let ((*kernel* (lparallel:make-kernel 100)))
@@ -640,16 +639,13 @@
 		   (parent-name (format nil "PWIN~d" index)))
 	       (with-class (parent-name)
 		 (with-window (<parent-window> parent-name :class-name parent-name)
-		   (let ((<window>
-			  (create-window name
-					 :parent <parent-window>
-					 :procedure
-					 (lambda (hWnd Msg lParam wParam)
-					   (declare (ignore Msg lParam wParam))
-					   (with-drawing-context (dc hWnd)
-					     (declare (ignore dc)))
-					   (post-quit-message 0)
-					   0))))
+		   (let ((<window> (create-window name :parent <parent-window>)))
+		     (message-handler+ <window>
+				       (lambda (hWnd Msg lParam wParam)
+					 (declare (ignore Msg lParam wParam))
+					 (with-drawing-context (dc hWnd)
+					   (declare (ignore dc)))
+					 (post-quit-message 0)))
 		     (show-window <parent-window>)
 		     (show-window <window>)
 		     (set-window-title <window> (format nil "CWIN~d" index))
@@ -660,5 +656,5 @@
 		     (process-message)
 		     (destroy-window <window>))))))
 	   (loop for x from 1 to 300 collect x)))
-  (is (equal 0 (hash-table-count w32api::*create-window-owned-classes*)))
-  (is (equal 0 (hash-table-count w32api::*create-window-owned-procedures*))))
+  (is (equal 0 (hash-table-count w32api::*window-classes*)))
+  (is (equal 0 (hash-table-count w32api::*message-handlers*))))

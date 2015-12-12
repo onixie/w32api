@@ -2,7 +2,7 @@
 
 ;;; "w32api" goes here. Hacks and glory await!
 
-;;; kernel32
+;;; kernel32 - Info
 (defmacro with-system-info ((&rest slot-name-and-var-list) &body body)
   (let ((psi (gensym)))
     `(with-foreign-struct ((,psi SYSTEM_INFO) ,@(mapcar #'list slot-name-and-var-list))
@@ -122,7 +122,7 @@
 (defun get-system-directory ()
   (get-sys-dir GetSystemDirectoryW))
 
-;;; user32
+;;; user32 - Desktop
 (defun create-desktop (name)
   (when (stringp name)
     (with-foreign-struct ((sa SECURITY_ATTRIBUTES struct-size)
@@ -188,51 +188,66 @@
 	   (when (switch-desktop ,old)
 	     (destroy-desktop ,new)))))))
 
-(defvar *create-window-owned-classes* (make-hash-table))
-(defvar *create-window-owned-procedures* (make-hash-table))
-(defvar *create-window-lock* (make-recursive-lock))
+;;; user32 - Window Proc
+(defvar *message-handlers* (make-hash-table :test #'equal))
 
-(defvar *parent-window* (null-pointer))
-(defvar *parent-window-lock* (make-recursive-lock))
+(defun message-handler (window &optional Msg)
+  (when (and (window-p window))
+    (gethash (cons (pointer-address window) Msg) *message-handlers*)))
 
-(defmacro with-parent-window ((parent) &body body)
-  (let ((p (gensym)))
-    `(with-recursive-lock-held (*parent-window-handle-lock*)
-       (let ((,p ,parent))
-	 (when (window-p ,p)
-	   (let ((*parent-window-handle* ,p))
-	     ,@body))))))
+(defun message-handler+ (window handler &optional Msg)
+  (when (and (window-p window) (functionp handler))
+    (setf (gethash (cons (pointer-address window) Msg) *message-handlers*) handler)))
 
-(defmacro with-window ((var &rest args) &body body)
-  `(let ((,var (create-window ,@args)))
-     (when ,var
-       (unwind-protect
-	    (progn ,@body)
-	 (destroy-window ,var)))))
-
-(defmacro with-windows ((&rest args) &body body)
-  (if args
-      `(with-window ,(car args)
-	 (with-windows ,(cdr args) ,@body))
-      `(progn ,@body)))
-
-(defmacro with-class ((name &rest args) &body body)
-  `(unless (eq (register-class ,name ,@args) 0)
-     (unwind-protect
-	  (progn ,@body)
-       (unregister-class ,name))))
+(defun message-handler- (window &optional Msg)
+  (if Msg
+      (when (and (window-p window))
+	(remhash (cons (pointer-address window) Msg) *message-handlers*))
+      (maphash (lambda (wm h)
+		 (declare (ignore h))
+		 (when (eq (first wm) (pointer-address window))
+		   (remhash wm *message-handlers*)))
+	       *message-handlers*)))
 
 (defcallback MainWndProc LRESULT
     ((hWnd   HWND)
      (Msg    WND_MESSAGE)
      (wParam WPARAM)
      (lParam LPARAM))
-  (with-recursive-lock-held (*create-window-lock*)
-    (let* ((proc (gethash (pointer-address hWnd) *create-window-owned-procedures*))
-	   (res  (when proc (funcall proc hWnd Msg wParam lParam))))
+  (progn
+    (let* ((default-handler (gethash (cons (pointer-address hWnd) nil) *message-handlers* #'DefWindowProcW))
+	   (handler         (gethash (cons (pointer-address hWnd) Msg) *message-handlers*))
+	   (res             (funcall (or handler default-handler) hWnd Msg wParam lParam)))
       (if (numberp res)
 	  res
-	  (DefWindowProcW hWnd Msg wParam lParam)))))
+	  0))))
+
+(defun clear-message (&optional (window (null-pointer)))
+  (with-foreign-object (msg '(:struct MSG))
+    (loop while (PeekMessageW msg (or (window-p window) (null-pointer)) 0 0 :PM_REMOVE))))
+
+(defun process-message (&optional (window (null-pointer)) (extra-process-func nil extra-process-func-p))
+  (with-foreign-object (msg '(:struct MSG))
+    (with-foreign-object (accelerator-table '(:struct ACCEL))
+      (let ((hAccel (CreateAcceleratorTableW accelerator-table 1)))
+	(unless (null-pointer-p hAccel)
+	  (loop while (eq 1 (GetMessageW msg (or (window-p window) (null-pointer)) 0 0))
+	     do (unless (TranslateAcceleratorW (foreign-slot-value msg '(:struct MSG) :hWnd) hAccel msg)
+		  (when extra-process-func-p (funcall extra-process-func (foreign-slot-value msg '(:struct MSG) :hWnd) msg))
+		  (TranslateMessage msg)
+		  (DispatchMessageW msg))))))))
+
+(defun post-quit-message (exit-code)
+  (PostQuitMessage exit-code))
+
+;;; user32 - Window Class
+(defvar *window-classes* (make-hash-table))
+
+(defmacro with-class ((name &rest args) &body body)
+  `(unless (eq (register-class ,name ,@args) 0)
+     (unwind-protect
+	  (progn ,@body)
+       (unregister-class ,name))))
 
 (defun register-class (name &key
 			      (procedure (callback MainWndProc))
@@ -259,9 +274,32 @@
   (when (stringp name)
     (UnregisterClassW name (GetModuleHandleW (null-pointer)))))
 
+;;; user32 - Window
+(defvar *parent-window* (null-pointer))
+
+(defmacro with-parent-window ((parent) &body body)
+  (let ((p (gensym)))
+    `(progn
+       (let ((,p ,parent))
+	 (when (window-p ,p)
+	   (let ((*parent-window-handle* ,p))
+	     ,@body))))))
+
+(defmacro with-window ((var &rest args) &body body)
+  `(let ((,var (create-window ,@args)))
+     (when ,var
+       (unwind-protect
+	    (progn ,@body)
+	 (destroy-window ,var)))))
+
+(defmacro with-windows ((&rest args) &body body)
+  (if args
+      `(with-window ,(car args)
+	 (with-windows ,(cdr args) ,@body))
+      `(progn ,@body)))
+
 (defun create-window (name &key
-			     (class-name name)
-			     (procedure nil procedure-p)
+			     (class-name name) 
 			     (style +WS_OVERLAPPEDWINDOW+)
 			     (extended-style +WS_EX_OVERLAPPEDWINDOW+)
 			     (x +CW_USEDEFAULT+)
@@ -286,21 +324,13 @@
 				  (null-pointer)
 				  (GetModuleHandleW (null-pointer))
 				  (null-pointer))))
-      (with-recursive-lock-held (*create-window-lock*)
+      (progn
 	(unless (eq atom 0)
 	  (if (null-pointer-p hWnd)
 	      (unregister-class class-name)
-	      (setf (gethash (pointer-address hWnd) *create-window-owned-classes*) class-name)))
+	      (setf (gethash (pointer-address hWnd) *window-classes*) class-name)))
 	(unless (null-pointer-p hWnd)
-	  (when procedure-p
-	    (setf (gethash (pointer-address hWnd) *create-window-owned-procedures*) procedure))
 	  hWnd)))))
-
-(defun set-window-procedure (window procedure)
-  (when (and (window-p window) (functionp procedure))
-    (with-recursive-lock-held (*create-window-lock*)
-      (setf (gethash (pointer-address window) *create-window-owned-procedures*) procedure)
-      t)))
 
 (defun window-p (window)
   (when (and window
@@ -397,12 +427,12 @@
   (when (window-p window)
     (prog1
 	(DestroyWindow window)
-      (with-recursive-lock-held (*create-window-lock*)
-	(remhash (pointer-address window) *create-window-owned-procedures*)
-	(let ((class-name (gethash (pointer-address window) *create-window-owned-classes*)))
+      (progn
+	(message-handler- window)
+	(let ((class-name (gethash (pointer-address window) *window-classes*)))
 	  (when class-name
 	    (unregister-class class-name)
-	    (remhash (pointer-address window) *create-window-owned-classes*)))))))
+	    (remhash (pointer-address window) *window-classes*)))))))
 
 (defun show-window (window)
   (when (window-p window)
@@ -532,33 +562,13 @@
        (window-p parent)
        (IsChild parent window)))
 
-(defun clear-message (&optional (window (null-pointer)))
-  (with-foreign-object (msg '(:struct MSG))
-    (loop while (PeekMessageW msg (or (window-p window) (null-pointer)) 0 0 :PM_REMOVE))))
-
-(defun process-message (&optional (window (null-pointer)) (extra-process-func nil extra-process-func-p))
-  (with-foreign-object (msg '(:struct MSG))
-    (with-foreign-object (accelerator-table '(:struct ACCEL))
-      (let ((hAccel (CreateAcceleratorTableW accelerator-table 1)))
-	(unless (null-pointer-p hAccel)
-	  (loop while (eq 1 (GetMessageW msg (or (window-p window) (null-pointer)) 0 0))
-	     do (unless (TranslateAcceleratorW (foreign-slot-value msg '(:struct MSG) :hWnd) hAccel msg)
-		  (when extra-process-func-p (funcall extra-process-func (foreign-slot-value msg '(:struct MSG) :hWnd) msg))
-		  (TranslateMessage msg)
-		  (DispatchMessageW msg))))))))
-
-(defun post-quit-message (exit-code)
-  (PostQuitMessage exit-code))
-
-;;; Button
-
+;;; user32 - Window Control
 (defun create-button (name window &key
 				    (x 0)
 				    (y 0)
 				    (width 100)
 				    (height 30)
 				    (style nil)
-				    (on-click nil)
 				    (default-p nil))
   (let* ((button (create-window name
 				:class-name :BUTTON
@@ -571,13 +581,9 @@
 	 (BTNDEFPROC (make-pointer (GetWindowLongPtrW button :GWLP_WNDPROC))))
 
     ;; Subclassing
-    (set-window-procedure
-     button
-     (lambda (hWnd Msg wParam lParam)
-       (case Msg
-       	 (:WM_LBUTTONDOWN (and (functionp on-click) (funcall on-click)))
-	 (t))
-       (CallWindowProcW BTNDEFPROC hWnd Msg wParam lParam)))
+    (message-handler+ button
+		    (lambda (hWnd Msg wParam lParam)
+		      (CallWindowProcW BTNDEFPROC hWnd Msg wParam lParam)))
     
     (SetWindowLongPtrW button :GWLP_WNDPROC (pointer-address (callback MainWndProc)))
     button))
@@ -588,7 +594,6 @@
 				      (width 100)
 				      (height 30)
 				      (style nil)
-				      (on-check nil)
 				      (default-p nil))
   (declare (inline))
   (create-button name window
@@ -597,7 +602,6 @@
 		 :width width
 		 :height height
 		 :style (append '(:BS_AUTOCHECKBOX) style)
-		 :on-click on-check
 		 :default-p default-p))
 
 ;;; Editbox
@@ -618,13 +622,9 @@
 	 (EDITDEFPROC (make-pointer (GetWindowLongPtrW editor :GWLP_WNDPROC))))
 
     ;; Subclassing
-    (set-window-procedure
-     editor
-     (lambda (hWnd Msg wParam lParam cont)
-       (declare (ignore cont))
-       (case Msg
-	 (t))
-       (CallWindowProcW EDITDEFPROC hWnd Msg wParam lParam)))
+    (message-handler+ editor
+		      (lambda (hWnd Msg wParam lParam)
+			(CallWindowProcW EDITDEFPROC hWnd Msg wParam lParam)))
     
     (SetWindowLongPtrW editor :GWLP_WNDPROC (pointer-address (callback MainWndProc)))
     editor))
@@ -643,7 +643,7 @@
 		:height height
 		:style (append '(:WS_VISIBLE :WS_CHILD :WS_VSCROLL :ES_MULTILINE :ES_AUTOVSCROLL) style)))
 
-;;; DC and Drawing
+;;; gdi32 - Drawing
 (defun get-window-rectangle (window &optional client-area-p)
   (when (window-p window)
     (with-foreign-struct ((rect RECT)
@@ -709,20 +709,16 @@
 	(make-thread
 	 (lambda ()
 	   (let ((*standard-output* output-stream))
-	     (let ((hWnd (apply #'create-window name :procedure
-				(lambda (hWnd Msg wParam lParam)
-				  (declare (ignore lParam wParam))
-				  (block nil
-				    (case Msg
-				      (:WM_PAINT (with-drawing-context (dc hWnd)
-						   (declare (ignore dc))))
-				      (:WM_DESTROY (post-quit-message 0))
-				      (:WM_CLOSE   (destroy-window hWnd))
-				      (t (return nil)))
-				    0))
-				args)))
+	     (let ((hWnd (apply #'create-window name args)))
 	       (condition-notify finish)
 	       (when hWnd
+		 (message-handler+ hWnd :WM_DESTROY (lambda (hWnd Msg wParam lParam)
+						      (declare (ignore hWnd Msg wParam lParam))
+						      (post-quit-message 0)))
+		 (message-handler+ hWnd :WM_CLOSE   (lambda (hWnd Msg wParam lParam)
+						      (declare (ignore Msg wParam lParam))
+						      (destroy-window hWnd)))
+		 
 		 (unwind-protect
 		      (progn (show-window hWnd)
 			     (process-message))

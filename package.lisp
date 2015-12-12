@@ -1,7 +1,7 @@
 ;;;; package.lisp
 
 (defpackage #:w32api
-  (:use #:cl #:cffi #:bordeaux-threads #:lparallel
+  (:use #:cl #:cffi #:bordeaux-threads
 	#:w32api.type
 	#:w32api.kernel32
 	#:w32api.secur32	
@@ -73,6 +73,9 @@
 	   window-maximized-p
 	   process-message
 	   post-quit-message
+	   message-handler+
+	   message-handler-
+	   message-handler
 	   create-window-thread
 	   with-window-thread
 	   update-window
