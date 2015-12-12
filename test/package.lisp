@@ -1,5 +1,5 @@
 (defpackage #:w32api/test
-  (:use #:cl #:cffi #:fiveam #:w32api #:lparallel))
+  (:use #:cl #:cffi #:fiveam #:w32api #:bordeaux-threads))
 
 (in-package #:w32api/test)
 

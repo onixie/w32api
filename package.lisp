@@ -76,8 +76,6 @@
 	   message-handler+
 	   message-handler-
 	   message-handler
-	   create-window-thread
-	   with-window-thread
 	   update-window
 	   invalidate-rect
 	   validate-rect

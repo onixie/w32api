@@ -303,7 +303,7 @@
 	     ,@body))))))
 
 (defmacro with-window ((var &rest args) &body body)
-  `(let ((,var (create-window ,@args)))
+  `(let ((,var (%create-window ,@args)))
      (when ,var
        (unwind-protect
 	    (progn ,@body)
@@ -315,43 +315,69 @@
 	 (with-windows ,(cdr args) ,@body))
       `(progn ,@body)))
 
-(defun create-window (name &key
-			     (class-name name) 
-			     (style +WS_OVERLAPPEDWINDOW+)
-			     (extended-style +WS_EX_OVERLAPPEDWINDOW+)
-			     (x +CW_USEDEFAULT+)
-			     (y +CW_USEDEFAULT+)
-			     (width +CW_USEDEFAULT+)
-			     (height +CW_USEDEFAULT+)
-			     (parent *parent-window*))
-  (let ((%create-window (lambda ()
-	    (unless (get-window name :class-name class-name :parent parent)
-	      (let* ((atom (register-class class-name))
-		     (style (if (window-p parent)
-				(remove :WS_POPUP (cons :WS_CHILD style))
-				style))
-		     (hWnd (CreateWindowExW extended-style
-					    (string class-name)
-					    name
-					    style
-					    x
-					    y
-					    width
-					    height
-					    (or (window-p parent) (null-pointer))
-					    (null-pointer)
-					    (GetModuleHandleW (null-pointer))
-					    (null-pointer))))
-		(progn
-		  (unless (eq atom 0)
-		    (if (null-pointer-p hWnd)
-			(unregister-class class-name)
-			(setf (gethash (pointer-address hWnd) *window-classes*) class-name)))
-		  (unless (null-pointer-p hWnd)
-		    hWnd)))))))
-    (if (window-p parent)
-	(eval-in-window parent %create-window)
-	(funcall %create-window))))
+(defun %create-window (name &key
+			      (class-name name) 
+			      (style +WS_OVERLAPPEDWINDOW+)
+			      (extended-style +WS_EX_OVERLAPPEDWINDOW+)
+			      (x +CW_USEDEFAULT+)
+			      (y +CW_USEDEFAULT+)
+			      (width +CW_USEDEFAULT+)
+			      (height +CW_USEDEFAULT+)
+			      (parent *parent-window*))
+  (unless (get-window name :class-name class-name :parent parent)
+    (let* ((atom (register-class class-name))
+	   (style (if (window-p parent)
+		      (remove :WS_POPUP (cons :WS_CHILD style))
+		      style))
+	   (hWnd (CreateWindowExW extended-style
+				  (string class-name)
+				  name
+				  style
+				  x
+				  y
+				  width
+				  height
+				  (or (window-p parent) (null-pointer))
+				  (null-pointer)
+				  (GetModuleHandleW (null-pointer))
+				  (null-pointer))))
+      (progn
+	(unless (eq atom 0)
+	  (if (null-pointer-p hWnd)
+	      (unregister-class class-name)
+	      (setf (gethash (pointer-address hWnd) *window-classes*) class-name)))
+	(unless (null-pointer-p hWnd)
+	  hWnd)))))
+
+(defun create-window (name &rest args)
+  (if (window-p (getf args :parent))
+      (eval-in-window (getf args :parent) (lambda () (apply #'%create-window name args)))
+      (let ((finish (make-condition-variable))
+	    (cv-lock (make-recursive-lock))
+	    (output-stream *standard-output*)
+	    (window nil))
+	(make-thread
+	     (lambda ()
+	       (let ((*standard-output* output-stream))
+		 (setf window (apply #'%create-window name args))
+		 (condition-notify finish)
+		 (when window
+		   (message-handler+ window :WM_DESTROY (proc (post-quit-message 0)))
+		   (message-handler+ window :WM_CLOSE   (proc (destroy-window window)))
+		   (unwind-protect
+			(progn (show-window window)
+			       (process-message))
+		     (destroy-window window))))))
+	(acquire-lock cv-lock)
+	(condition-wait finish cv-lock)
+	window)))
+
+(defun eval-in-window (window thunk)
+  (let ((res nil))
+    (message-handler+ window :WM_EVAL (proc (setf res (funcall thunk))
+					    (message-handler- window :WM_EVAL)))
+    (SendMessageW window :WM_EVAL 0 0)
+    res))
 
 (defun window-p (window)
   (when (and window
@@ -444,7 +470,7 @@
   (when (and (window-p window) (stringp title))
     (SetWindowTextW window title)))
 
-(defun destroy-window (window)
+(defun %destroy-window (window)
   (when (window-p window)
     (prog1
 	(DestroyWindow window)
@@ -454,6 +480,12 @@
 	  (when class-name
 	    (unregister-class class-name)
 	    (remhash (pointer-address window) *window-classes*)))))))
+
+(defun destroy-window (window)
+  (when (window-p window)
+    (if (eq (GetWindowThreadId window) (GetCurrentThreadId))
+	(%destroy-window window)
+	(eval-in-window window (lambda () (%destroy-window window))))))
 
 (defun show-window (window)
   (when (window-p window)
@@ -490,9 +522,14 @@
     (SwitchToThisWindow window t)
     t))
 
-(defun focus-window (window)
+(defun %focus-window (window)
   (when (window-p window)
     (SetFocus window)))
+
+(defun focus-window (window)
+  (if (eq (GetWindowThreadId window) (GetCurrentThreadId))
+      (%focus-window window)
+      (eval-in-window window (lambda ()(%focus-window window)))))
 
 (defun minimize-window (window)
   (when (window-p window)
@@ -558,9 +595,14 @@
   (and (window-p window)
        (IsWindowVisible window)))
 
-(defun window-focused-p (window)
+(defun %window-focused-p (window)
   (and (window-p window)
        (pointer-eq window (GetFocus))))
+
+(defun window-focused-p (window)
+  (if (eq (GetWindowThreadId window) (GetCurrentThreadId))
+      (%window-focused-p window)
+      (eval-in-window window (lambda () (%window-focused-p window)))))
 
 (defun window-active-p (window)
   (and (window-p window)
@@ -719,36 +761,3 @@
 
 (defmacro with-drawing-context ((var window) &body draws)
   `(call-with-drawing-context ,window (lambda (,var) ,@draws)))
-
-;;;
-
-(defun create-window-thread (name &rest args)
-  (let ((finish (make-condition-variable))
-	(cv-lock (make-recursive-lock))
-	(output-stream *standard-output*))
-    (prog1
-	(make-thread
-	 (lambda ()
-	   (let ((*standard-output* output-stream))
-	     (let ((hWnd (apply #'create-window name args)))
-	       (condition-notify finish)
-	       (when hWnd
-		 (message-handler+ hWnd :WM_DESTROY (lambda (hWnd Msg wParam lParam)
-						      (declare (ignore hWnd Msg wParam lParam))
-						      (post-quit-message 0)))
-		 (message-handler+ hWnd :WM_CLOSE   (lambda (hWnd Msg wParam lParam)
-						      (declare (ignore Msg wParam lParam))
-						      (destroy-window hWnd)))
-		 (unwind-protect
-		      (progn (show-window hWnd)
-			     (process-message))
-		   (destroy-window hWnd)))))))
-      (acquire-lock cv-lock)
-      (condition-wait finish cv-lock))))
-
-(defun eval-in-window (window thunk)
-  (let ((res nil))
-    (message-handler+ window :WM_EVAL (proc (setf res (funcall thunk))
-					    (message-handler- window :WM_EVAL)))
-    (SendMessageW window :WM_EVAL 0 0)
-    res))

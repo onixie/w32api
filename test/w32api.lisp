@@ -163,39 +163,39 @@
     (register-class <class-name>)
     (is (equal t (unregister-class <class-name>)))))
 
-(test |(create-window <new-name>) = <window>| 
+(test |(w32api::%create-window <new-name>) = <window>| 
   (with-fixture window-name ((string (gensym "WIN")))
-    (let ((<window> (create-window <window-name>)))
+    (let ((<window> (w32api::%create-window <window-name>)))
       (is-true (window-p <window>))
       (destroy-window <window>))))
 
-(test |(create-window <new-name> :class-name <new-name>) = <window>| 
+(test |(w32api::%create-window <new-name> :class-name <new-name>) = <window>| 
   (with-fixture class-name ((string (gensym "WINCLASS")))
     (with-fixture window-name ((string (gensym "WIN")))
-      (let ((<window> (create-window <window-name> :class-name <class-name>)))
+      (let ((<window> (w32api::%create-window <window-name> :class-name <class-name>)))
 	(is-true (window-p <window>))
 	(is (equal <class-name> (get-window-class-name <window>)))
 	(destroy-window <window>)))))
 
-(test |(create-window <new-name> :class-name <exist-name>) = <window>| 
+(test |(w32api::%create-window <new-name> :class-name <exist-name>) = <window>| 
   (with-fixture class ((string (gensym "WINCLASS")))
     (with-fixture window-name ((string (gensym "WIN")))
-      (let ((<window> (create-window <window-name> :class-name <class-name>)))
+      (let ((<window> (w32api::%create-window <window-name> :class-name <class-name>)))
 	(is-true (window-p <window>))
 	(is (equal <class-name> (get-window-class-name <window>)))
 	(destroy-window <window>)))))
 
-(test |(create-window <new-name> :parent <exist-window>) = <window>| 
+(test |(w32api::%create-window <new-name> :parent <exist-window>) = <window>| 
   (with-fixture window ((string (gensym "WIN")))
     (with-fixture window-name ((string (gensym "WIN")))
-      (let ((<child-window> (create-window <window-name> :parent <window>)))
+      (let ((<child-window> (w32api::%create-window <window-name> :parent <window>)))
 	(is-true (window-p <child-window>))
 	(is-true (parent-window-p <child-window> <window>))
 	(destroy-window <child-window>)))))
 
-(test |(create-window <exist-name>) = nil| 
+(test |(w32api::%create-window <exist-name>) = nil| 
   (with-fixture window ((string (gensym "WIN")))
-    (is-false (create-window <window-name>))))
+    (is-false (w32api::%create-window <window-name>))))
 
 (test |(get-window <window-name>) = <window>|
   (with-fixture window ((string (gensym "WIN")))
@@ -331,14 +331,14 @@
 
 (test |(get-child-window <window>) will return first child, :reverse t will return last child|
   (with-fixture window ((string (gensym "WIN")))
-    (let ((children (loop repeat 10 collect (create-window (string (gensym "WIN")) :parent <window>))))
+    (let ((children (loop repeat 10 collect (w32api::%create-window (string (gensym "WIN")) :parent <window>))))
       (is (pointer-eq (first children) (get-child-window <window>)))
       (is (pointer-eq (first (last children)) (get-child-window <window> :reverse t)))
       (mapc #'destroy-window children))))
 
 (test |(get-child-window <window> :nth <n>) will return nth child if n < child count|
   (with-fixture window ((string (gensym "WIN")))
-    (let ((children (loop repeat 10 collect (create-window (string (gensym "WIN")) :parent <window>))))
+    (let ((children (loop repeat 10 collect (w32api::%create-window (string (gensym "WIN")) :parent <window>))))
       (is (pointer-eq (third children) (get-child-window <window> :nth 3)))
       (is (pointer-eq (third children) (get-child-window <window> :nth 8 :reverse t)))
       (mapc #'destroy-window children))))
@@ -346,7 +346,7 @@
 (test |(get-child-window <window> :nth <n>) will return nil if n > child count or < 1|
   (with-fixture window ((string (gensym "WIN")))
     (is (eq nil (get-child-window <window>)))
-    (let ((children (loop repeat 10 collect (create-window (string (gensym "WIN")) :parent <window>))))
+    (let ((children (loop repeat 10 collect (w32api::%create-window (string (gensym "WIN")) :parent <window>))))
       (is (eq nil (get-child-window <window> :nth 11)))
       (is (eq nil (get-child-window <window> :nth 11 :reverse t)))
       (is (eq nil (get-child-window <window> :nth 0)))
@@ -356,7 +356,7 @@
 (test |(get-children-windows <window>) will return all children windows|
   (with-fixture window ((string (gensym "WIN")))
     (is (eq nil (get-children-windows <window>)))
-    (let ((children (loop repeat 10 collect (create-window (string (gensym "WIN")) :parent <window>))))
+    (let ((children (loop repeat 10 collect (w32api::%create-window (string (gensym "WIN")) :parent <window>))))
       (is (eq 10 (length (get-children-windows <window>))))
       (is (eq nil (set-exclusive-or
 		   children
@@ -371,7 +371,7 @@
     (with-fixture window ((string (gensym "WIN")) :parent <window>)
       (is (member <window> (get-descendant-windows <parent-window>)
 		  :test #'pointer-eq))
-      (let ((children (loop repeat 10 collect (create-window (string (gensym "WIN")) :parent <window>))))
+      (let ((children (loop repeat 10 collect (w32api::%create-window (string (gensym "WIN")) :parent <window>))))
 	(is (eq 11 (length (get-descendant-windows <parent-window>))))
 	(is (member <window>
 		    (set-difference
@@ -393,33 +393,33 @@
 
 (test |(destroy-window <window> = t| 
   (with-fixture window-name ((string (gensym "WIN")))
-    (is (equal t (destroy-window (create-window <window-name>))))
+    (is (equal t (destroy-window (w32api::%create-window <window-name>))))
     (is (eq nil (get-window <window-name>)))))
 
-(test |(destroy-window <window>) should unregister class if class is created by create-window| 
+(test |(destroy-window <window>) should unregister class if class is created by w32api::%create-window| 
   (with-fixture window-name ((string (gensym "WIN")))
-    (let ((<window> (create-window <window-name>)))
+    (let ((<window> (w32api::%create-window <window-name>)))
       (destroy-window <window>))
     (is (not (equal 0 (register-class <window-name>))))
     (unregister-class <window-name>)))
 
-(test |(destroy-window <window>) should not unregister class if class is not created by create-window| 
+(test |(destroy-window <window>) should not unregister class if class is not created by w32api::%create-window| 
   (with-fixture window-name ((string (gensym "WIN")))
     (with-fixture class (<window-name>)
-      (destroy-window (create-window <window-name>))
+      (destroy-window (w32api::%create-window <window-name>))
       (is (equal 0 (register-class <window-name>))))))
 
 (test |(destroy-window <window>) should remove procedure registered in *message-handlers*| 
   (with-fixture window-name ((string (gensym "WIN")))
-    (let* ((<window> (create-window <window-name>)))
+    (let* ((<window> (w32api::%create-window <window-name>)))
       (message-handler+ <window> nil (lambda (hWnd Msg lParam wParam) (declare (ignore hWnd Msg lParam wParam)) 0))
       (is (functionp (message-handler <window>)))
       (destroy-window <window>)
       (is (equal nil (message-handler <window>))))))
 
-(test |(destroy-window <window>) should remove class-name registered in *window-classes* if class is created by create-window| 
+(test |(destroy-window <window>) should remove class-name registered in *window-classes* if class is created by w32api::%create-window| 
   (with-fixture window-name ((string (gensym "WIN")))
-    (let* ((<window> (create-window <window-name>))
+    (let* ((<window> (w32api::%create-window <window-name>))
 	   (key (pointer-address <window>)))
       (is (string-equal <window-name> (gethash key w32api::*window-classes*)))
       (destroy-window <window>)
@@ -481,7 +481,7 @@
       (let ((result nil))
 	(with-fixture window-name ((string (gensym "WIN")))
 	  (let ((<window> 
-		 (create-window <window-name> :extended-style :topmost)))
+		 (w32api::%create-window <window-name> :extended-style :topmost)))
 	    (message-handler+ <window> nil
 			      (lambda (hWnd x y z)
 				(declare (ignore x y z))
@@ -636,28 +636,29 @@
   (is (equal 0 (hash-table-count w32api::*message-handlers*))))
 
 (test |multithread window creation/destroy test|
-  (let ((*kernel* (lparallel:make-kernel 100)))
-    (pmapc (lambda (index)
-	     (let ((name (format nil "WIN~d" index))
-		   (parent-name (format nil "PWIN~d" index)))
-	       (with-class (parent-name)
-		 (with-window (<parent-window> parent-name :class-name parent-name)
-		   (let ((<window> (create-window name :parent <parent-window>)))
-		     (message-handler+ <window> nil
-				       (lambda (hWnd Msg wParam lParam)
-					 (declare (ignore Msg wParam lParam))
-					 (with-drawing-context (dc hWnd)
-					   (declare (ignore dc)))
-					 (post-quit-message 0)))
-		     (show-window <parent-window>)
-		     (show-window <window>)
-		     (set-window-title <window> (format nil "CWIN~d" index))
-		     (get-window-title <parent-window>)
-		     (get-window-class-name <window>)
-		     (window-active-p <window>)
-		     (get-parent-window <window>)
-		     (process-message)
-		     (destroy-window <window>))))))
-	   (loop for x from 1 to 300 collect x)))
+  (mapcar #'join-thread
+	  (loop for index from 1 to 300 collect 
+	       (make-thread
+		(lambda ()
+		  (let ((name (format nil "WIN~d" index))
+			(parent-name (format nil "PWIN~d" index)))
+		    (with-class (parent-name)
+		      (with-window (<parent-window> parent-name :class-name parent-name)
+			(let ((<window> (w32api::%create-window name :parent <parent-window>)))
+			  (message-handler+ <window> t
+					    (lambda (hWnd Msg wParam lParam)
+					      (declare (ignore Msg wParam lParam))
+					      (with-drawing-context (dc hWnd)
+						(declare (ignore dc)))
+					      (post-quit-message 0)))
+			  (show-window <parent-window>)
+			  (show-window <window>)
+			  (set-window-title <window> (format nil "CWIN~d" index))
+			  (get-window-title <parent-window>)
+			  (get-window-class-name <window>)
+			  (window-active-p <window>)
+			  (get-parent-window <window>)
+			  (process-message)
+			  (destroy-window <window>)))))))))
   (is (equal 0 (hash-table-count w32api::*window-classes*)))
   (is (equal 0 (hash-table-count w32api::*message-handlers*))))
