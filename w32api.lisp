@@ -667,6 +667,38 @@
 		 :style (append '(:BS_AUTOCHECKBOX) style)
 		 :default-p default-p))
 
+(defun create-radiobox (name window &key
+				      (x 0)
+				      (y 0)
+				      (width 100)
+				      (height 30)
+				      (style nil)
+				      (default-p nil))
+  (declare (inline))
+  (create-button name window
+		 :x x
+		 :y y
+		 :width width
+		 :height height
+		 :style (append '(:BS_AUTORADIOBUTTON) style)
+		 :default-p default-p))
+
+(defun create-groupbox (name window &key
+				      (x 0)
+				      (y 0)
+				      (width 150)
+				      (height 150)
+				      (style nil)
+				      (default-p nil))
+  (declare (inline))
+  (create-button name window
+		 :x x
+		 :y y
+		 :width width
+		 :height height
+		 :style (append '(:BS_GROUPBOX) style)
+		 :default-p default-p))
+
 ;;; Editbox
 (defun create-input (window &key (text "")
 				   (x 0)
