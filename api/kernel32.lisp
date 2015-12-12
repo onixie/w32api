@@ -5,6 +5,8 @@
 	   FormatMessageW
 	   GetCurrentThreadId
 	   GetCurrentProcessId
+	   GetCurrentThread
+	   GetCurrentProcess
 	   GetCurrentProcessorNumber
 	   GetCommandLineW
 	   GetFirmwareType
@@ -42,7 +44,11 @@
 
 (defcfun "GetCurrentThreadId" DWORD)
 
+(defcfun "GetCurrentThread" HANDLE)
+
 (defcfun "GetCurrentProcessId" DWORD)
+
+(defcfun "GetCurrentProcess" HANDLE)
 
 (defcfun "GetCurrentProcessorNumber" DWORD)
 

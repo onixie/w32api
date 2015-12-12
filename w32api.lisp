@@ -192,10 +192,13 @@
 (defvar *message-handlers* (make-hash-table :test #'equal))
 
 (defun message-handler (window &optional Msg)
-  (when (and (window-p window))
-    (gethash (cons (pointer-address window) Msg) *message-handlers*)))
+  (when (window-p window)
+    (let ((default (gethash (cons (pointer-address window) nil) *message-handlers* #'DefWindowProcW)))
+      (if Msg
+	  (gethash (cons (pointer-address window) Msg) *message-handlers* default)
+	  default))))
 
-(defun message-handler+ (window handler &optional Msg)
+(defun message-handler+ (window Msg handler)
   (when (and (window-p window) (functionp handler))
     (setf (gethash (cons (pointer-address window) Msg) *message-handlers*) handler)))
 
@@ -214,13 +217,10 @@
      (Msg    WND_MESSAGE)
      (wParam WPARAM)
      (lParam LPARAM))
-  (progn
-    (let* ((default-handler (gethash (cons (pointer-address hWnd) nil) *message-handlers* #'DefWindowProcW))
-	   (handler         (gethash (cons (pointer-address hWnd) Msg) *message-handlers*))
-	   (res             (funcall (or handler default-handler) hWnd Msg wParam lParam)))
-      (if (numberp res)
-	  res
-	  0))))
+  (let ((res (funcall (message-handler hWnd Msg) hWnd Msg wParam lParam)))
+    (if (numberp res)
+	res
+	0)))
 
 (defun clear-message (&optional (window (null-pointer)))
   (with-foreign-object (msg '(:struct MSG))
@@ -581,9 +581,9 @@
 	 (BTNDEFPROC (make-pointer (GetWindowLongPtrW button :GWLP_WNDPROC))))
 
     ;; Subclassing
-    (message-handler+ button
-		    (lambda (hWnd Msg wParam lParam)
-		      (CallWindowProcW BTNDEFPROC hWnd Msg wParam lParam)))
+    (message-handler+ button nil
+		      (lambda (hWnd Msg wParam lParam)
+			(CallWindowProcW BTNDEFPROC hWnd Msg wParam lParam)))
     
     (SetWindowLongPtrW button :GWLP_WNDPROC (pointer-address (callback MainWndProc)))
     button))
@@ -622,7 +622,7 @@
 	 (EDITDEFPROC (make-pointer (GetWindowLongPtrW editor :GWLP_WNDPROC))))
 
     ;; Subclassing
-    (message-handler+ editor
+    (message-handler+ editor nil
 		      (lambda (hWnd Msg wParam lParam)
 			(CallWindowProcW EDITDEFPROC hWnd Msg wParam lParam)))
     

@@ -37,6 +37,7 @@
 	   GWLP_ENUM
 	   GW_ENUM
 	   GWR_RESULT_ENUM
+	   HANDLE
 	   HACCEL
 	   HBRUSH
 	   HCURSOR
@@ -129,6 +130,7 @@
 (defctype LPVOID        (:pointer :void))
 (defctype DWORD_PTR     ULONG_PTR)
 
+(defctype HANDLE	:pointer)
 (defctype HWINSTA	:pointer)
 (defctype HDESK		:pointer)
 (defctype HWND		:pointer)

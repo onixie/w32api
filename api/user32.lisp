@@ -27,7 +27,9 @@
 	   EnumWindows
 	   EnumDesktopWindows
 	   GetTopWindow
-
+	   GetWindowThreadProcessId
+	   GetWindowThreadId
+	   GetWindowProcessId
 	   GetWindowTextLengthW
 	   GetWindowTextW
 	   SetWindowTextW
@@ -221,8 +223,6 @@
   (hWnd     HWND)
   (nIndex   GWLP_ENUM))
 
-
-
 (defun SetWindowStyle (hWnd styles)
   (foreign-funcall "SetWindowLongPtrW"
 		   HWND hWnd
@@ -235,6 +235,24 @@
 		   HWND hWnd
 		   GWLP_ENUM :GWL_STYLE
 		   WND_STYLE))
+
+(defcfun "GetWindowThreadProcessId" DWORD
+  (hWnd    HWND)
+  (lpdwProcessId (:pointer DWORD)))
+
+(defun GetWindowThreadId (hWnd)
+  (foreign-funcall "GetWindowThreadProcessId"
+		   HWND hWnd
+		   (:pointer DWORD) (null-pointer)
+		   DWORD))
+
+(defun GetWindowProcessId (hWnd)
+  (with-foreign-object (procId 'DWORD)
+    (foreign-funcall "GetWindowThreadProcessId"
+		     HWND hWnd
+		     (:pointer DWORD) procId
+		     DWORD)
+    (mem-ref procId 'DWORD)))
 
 (defcfun "ShowWindow" :boolean
   (hWnd HWND)

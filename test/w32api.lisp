@@ -412,7 +412,7 @@
 (test |(destroy-window <window>) should remove procedure registered in *message-handlers*| 
   (with-fixture window-name ((string (gensym "WIN")))
     (let* ((<window> (create-window <window-name>)))
-      (message-handler+ <window> (lambda (hWnd Msg lParam wParam) (declare (ignore hWnd Msg lParam wParam)) 0))
+      (message-handler+ <window> nil (lambda (hWnd Msg lParam wParam) (declare (ignore hWnd Msg lParam wParam)) 0))
       (is (functionp (message-handler <window>)))
       (destroy-window <window>)
       (is (equal nil (message-handler <window>))))))
@@ -482,12 +482,13 @@
 	(with-fixture window-name ((string (gensym "WIN")))
 	  (let ((<window> 
 		 (create-window <window-name> :extended-style :topmost)))
-	    (message-handler+ <window> (lambda (hWnd x y z)
-					 (declare (ignore x y z))
-					 (cond ((foreground-window hWnd)
-						(setq result (window-foregrounded-p hWnd))
-						(post-quit-message 0)))
-					 0))
+	    (message-handler+ <window> nil
+			      (lambda (hWnd x y z)
+				(declare (ignore x y z))
+				(cond ((foreground-window hWnd)
+				       (setq result (window-foregrounded-p hWnd))
+				       (post-quit-message 0)))
+				0))
 	    (show-window <window>)
 	    (process-message <window>)
 	    (destroy-window <window>)))
@@ -642,9 +643,9 @@
 	       (with-class (parent-name)
 		 (with-window (<parent-window> parent-name :class-name parent-name)
 		   (let ((<window> (create-window name :parent <parent-window>)))
-		     (message-handler+ <window>
-				       (lambda (hWnd Msg lParam wParam)
-					 (declare (ignore Msg lParam wParam))
+		     (message-handler+ <window> nil
+				       (lambda (hWnd Msg wParam lParam)
+					 (declare (ignore Msg wParam lParam))
 					 (with-drawing-context (dc hWnd)
 					   (declare (ignore dc)))
 					 (post-quit-message 0)))
