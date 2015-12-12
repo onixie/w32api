@@ -85,6 +85,7 @@
 	   GetMessageW
 	   PeekMessageW
 	   PostMessageW
+	   SendMessageW
 	   PostThreadMessageW
 	   PostQuitMessage
 	   WaitMessage
@@ -392,6 +393,12 @@
   )
 
 (defcfun "PostMessageW" :boolean
+  (hWnd   HWND)
+  (Msg    WND_MESSAGE)
+  (wParam WPARAM)
+  (lParam LPARAM))
+
+(defcfun "SendMessageW" :boolean
   (hWnd   HWND)
   (Msg    WND_MESSAGE)
   (wParam WPARAM)

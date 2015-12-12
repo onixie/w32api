@@ -193,10 +193,18 @@
 
 (defun message-handler (window &optional Msg)
   (when (window-p window)
-    (let ((default (gethash (cons (pointer-address window) nil) *message-handlers* #'DefWindowProcW)))
-      (if Msg
-	  (gethash (cons (pointer-address window) Msg) *message-handlers* default)
-	  default))))
+    (let* ((default  (gethash (cons (pointer-address window) t) *message-handlers*))
+	   (fallback (gethash (cons (pointer-address window) nil) *message-handlers* #'DefWindowProcW))
+	   (handler  (gethash (cons (pointer-address window) Msg) *message-handlers*)))
+      (if default
+	  (lambda (hWnd Msg wParam lParam)
+	    (when handler
+	      (funcall handler hWnd Msg wParam lParam))
+	    (funcall default hWnd Msg wParam lParam))
+	  (lambda (hWnd Msg wParam lParam)
+	    (if handler
+		(funcall handler hWnd Msg wParam lParam)
+		(funcall fallback hWnd Msg wParam lParam)))))))
 
 (defun message-handler+ (window Msg handler)
   (when (and (window-p window) (functionp handler))
@@ -211,6 +219,15 @@
 		 (when (eq (first wm) (pointer-address window))
 		   (remhash wm *message-handlers*)))
 	       *message-handlers*)))
+
+(defmacro proc (&body body)
+  (let ((hWnd (gensym))
+	(Msg  (gensym))
+	(wParam  (gensym))
+	(lParam  (gensym)))
+    `(lambda (,hWnd ,Msg ,wParam ,lParam)
+       (declare (ignore ,hWnd ,Msg ,wParam ,lParam))
+       ,@body)))
 
 (defcallback MainWndProc LRESULT
     ((hWnd   HWND)
@@ -282,7 +299,7 @@
     `(progn
        (let ((,p ,parent))
 	 (when (window-p ,p)
-	   (let ((*parent-window-handle* ,p))
+	   (let ((*parent-window* ,p))
 	     ,@body))))))
 
 (defmacro with-window ((var &rest args) &body body)
@@ -307,30 +324,34 @@
 			     (width +CW_USEDEFAULT+)
 			     (height +CW_USEDEFAULT+)
 			     (parent *parent-window*))
-  (unless (get-window name :class-name class-name :parent parent)
-    (let* ((atom (register-class class-name))
-	   (style (if (window-p parent)
-		      (remove :WS_POPUP (cons :WS_CHILD style))
-		      style))
-	   (hWnd (CreateWindowExW extended-style
-				  (string class-name)
-				  name
-				  style
-				  x
-				  y
-				  width
-				  height
-				  (or (window-p parent) (null-pointer))
-				  (null-pointer)
-				  (GetModuleHandleW (null-pointer))
-				  (null-pointer))))
-      (progn
-	(unless (eq atom 0)
-	  (if (null-pointer-p hWnd)
-	      (unregister-class class-name)
-	      (setf (gethash (pointer-address hWnd) *window-classes*) class-name)))
-	(unless (null-pointer-p hWnd)
-	  hWnd)))))
+  (let ((%create-window (lambda ()
+	    (unless (get-window name :class-name class-name :parent parent)
+	      (let* ((atom (register-class class-name))
+		     (style (if (window-p parent)
+				(remove :WS_POPUP (cons :WS_CHILD style))
+				style))
+		     (hWnd (CreateWindowExW extended-style
+					    (string class-name)
+					    name
+					    style
+					    x
+					    y
+					    width
+					    height
+					    (or (window-p parent) (null-pointer))
+					    (null-pointer)
+					    (GetModuleHandleW (null-pointer))
+					    (null-pointer))))
+		(progn
+		  (unless (eq atom 0)
+		    (if (null-pointer-p hWnd)
+			(unregister-class class-name)
+			(setf (gethash (pointer-address hWnd) *window-classes*) class-name)))
+		  (unless (null-pointer-p hWnd)
+		    hWnd)))))))
+    (if (window-p parent)
+	(eval-in-window parent %create-window)
+	(funcall %create-window))))
 
 (defun window-p (window)
   (when (and window
@@ -355,7 +376,7 @@
   (when (window-p window)
     (GetWindowStyle window)))
 
-(defun set-parent-window (window &optional (parent (null-pointer)))
+(defun set-parent-window (window &optional (parent *parent-window*))
   (when (and (window-p window) (or (window-p parent) (null-pointer-p parent)))
     (cond ((window-p parent)
 	   (set-window-style window (remove :WS_POPUP (cons :WS_CHILD (get-window-style window)))))
@@ -523,10 +544,10 @@
 			 (print (,api (print ,parent) ,how ,range real-count children)))))
 	 t))))
 
-(defun tile-windows (&optional (how :MDITILE_ZORDER) (parent (null-pointer)) windows)
+(defun tile-windows (&optional (how :MDITILE_ZORDER) (parent *parent-window*) windows)
   (arrange-window TileWindows parent windows how (null-pointer)))
 
-(defun cascade-windows (&optional (how :MDITILE_HORIZONTAL) (parent (null-pointer)) windows)
+(defun cascade-windows (&optional (how :MDITILE_HORIZONTAL) (parent *parent-window*) windows)
   (arrange-window CascadeWindows parent windows how (null-pointer)))
 
 (defun window-enabled-p (window)
@@ -581,7 +602,7 @@
 	 (BTNDEFPROC (make-pointer (GetWindowLongPtrW button :GWLP_WNDPROC))))
 
     ;; Subclassing
-    (message-handler+ button nil
+    (message-handler+ button t
 		      (lambda (hWnd Msg wParam lParam)
 			(CallWindowProcW BTNDEFPROC hWnd Msg wParam lParam)))
     
@@ -622,7 +643,7 @@
 	 (EDITDEFPROC (make-pointer (GetWindowLongPtrW editor :GWLP_WNDPROC))))
 
     ;; Subclassing
-    (message-handler+ editor nil
+    (message-handler+ editor t
 		      (lambda (hWnd Msg wParam lParam)
 			(CallWindowProcW EDITDEFPROC hWnd Msg wParam lParam)))
     
@@ -718,21 +739,16 @@
 		 (message-handler+ hWnd :WM_CLOSE   (lambda (hWnd Msg wParam lParam)
 						      (declare (ignore Msg wParam lParam))
 						      (destroy-window hWnd)))
-		 
 		 (unwind-protect
 		      (progn (show-window hWnd)
 			     (process-message))
-		   (destroy-window hWnd)))
-	       ))))
+		   (destroy-window hWnd)))))))
       (acquire-lock cv-lock)
       (condition-wait finish cv-lock))))
 
-(defmacro with-window-thread ((thread) &body body)
-  (let ((output-stream (gensym)))
-    `(let ((,output-stream *standard-output*))
-       (interrupt-thread
-	,thread
-	(lambda ()
-	  (let ((*standard-output* ,output-stream))
-	    ,@body)
-	  (thread-yield))))))
+(defun eval-in-window (window thunk)
+  (let ((res nil))
+    (message-handler+ window :WM_EVAL (proc (setf res (funcall thunk))
+					    (message-handler- window :WM_EVAL)))
+    (SendMessageW window :WM_EVAL 0 0)
+    res))

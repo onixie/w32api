@@ -762,7 +762,10 @@
 					;(WINVER >= 0x0600)
   (:BM_SETDONTCLICK    #x00F8))
 
-(defctype WND_MESSAGE (enum-union :uint WM_ENUM BM_ENUM))
+(defcenum (LISPM_ENUM :uint)
+  (:WM_EVAL #x0401))
+
+(defctype WND_MESSAGE (enum-union :uint WM_ENUM BM_ENUM LISPM_ENUM))
 
 (defcstruct POINT
   (:x :long)
