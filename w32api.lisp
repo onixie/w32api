@@ -190,43 +190,41 @@
 
 ;;; user32 - Window Proc
 (defvar *message-handlers* (make-hash-table :test #'equal))
+(defvar *message-handlers-lock* (make-recursive-lock))
 
 (defun message-handler (window &optional Msg)
-  (when (window-p window)
-    (let* ((default  (gethash (cons (pointer-address window) t) *message-handlers*))
-	   (fallback (gethash (cons (pointer-address window) nil) *message-handlers* #'DefWindowProcW))
-	   (handler  (gethash (cons (pointer-address window) Msg) *message-handlers*)))
-      (if default
-	  (lambda (hWnd Msg wParam lParam)
-	    (when handler
-	      (funcall handler hWnd Msg wParam lParam))
-	    (funcall default hWnd Msg wParam lParam))
-	  (lambda (hWnd Msg wParam lParam)
-	    (if handler
-		(funcall handler hWnd Msg wParam lParam)
-		(funcall fallback hWnd Msg wParam lParam)))))))
+  (unless (null-pointer-p window)
+    (with-recursive-lock-held (*message-handlers-lock*)
+      (let* ((default  (gethash (cons (pointer-address window) t) *message-handlers*))
+	     (fallback (gethash (cons (pointer-address window) nil) *message-handlers* #'DefWindowProcW))
+	     (handler  (gethash (cons (pointer-address window) Msg) *message-handlers*)))
+	(if default
+	    (lambda (hWnd Msg wParam lParam)
+	      (when handler
+		(funcall handler hWnd Msg wParam lParam))
+	      (funcall default hWnd Msg wParam lParam))
+	    (or handler fallback))))))
 
 (defun message-handler+ (window Msg handler)
   (when (and (window-p window) (functionp handler))
-    (setf (gethash (cons (pointer-address window) Msg) *message-handlers*) handler)))
+    (with-recursive-lock-held (*message-handlers-lock*)
+      (setf (gethash (cons (pointer-address window) Msg) *message-handlers*) handler))))
 
 (defun message-handler- (window &optional Msg)
-  (if Msg
-      (when (and (window-p window))
-	(remhash (cons (pointer-address window) Msg) *message-handlers*))
-      (maphash (lambda (wm h)
-		 (declare (ignore h))
-		 (when (eq (first wm) (pointer-address window))
-		   (remhash wm *message-handlers*)))
-	       *message-handlers*)))
+  (unless (null-pointer-p window)
+    (with-recursive-lock-held (*message-handlers-lock*)
+      (if Msg
+	  (remhash (cons (pointer-address window) Msg) *message-handlers*)
+	  (maphash (lambda (wm h)
+		     (declare (ignore h))
+		     (when (eq (first wm) (pointer-address window))
+		       (remhash wm *message-handlers*)))
+		   *message-handlers*)))))
 
 (defmacro proc (&body body)
-  (let ((hWnd (gensym))
-	(Msg  (gensym))
-	(wParam  (gensym))
-	(lParam  (gensym)))
-    `(lambda (,hWnd ,Msg ,wParam ,lParam)
-       (declare (ignore ,hWnd ,Msg ,wParam ,lParam))
+  (let ((args (gensym)))
+    `(lambda (&rest ,args)
+       (declare (ignore ,args))
        ,@body)))
 
 (defcallback MainWndProc LRESULT
@@ -259,6 +257,19 @@
 
 ;;; user32 - Window Class
 (defvar *window-classes* (make-hash-table))
+(defvar *window-classes-lock* (make-recursive-lock))
+
+(defun window-class (window)
+  (with-recursive-lock-held (*window-classes-lock*)
+    (gethash (pointer-address window) *window-classes*)))
+
+(defun window-class+ (window class)
+  (with-recursive-lock-held (*window-classes-lock*)
+    (setf (gethash (pointer-address window) *window-classes*) class)))
+
+(defun window-class- (window)
+  (with-recursive-lock-held (*window-classes-lock*)
+    (remhash (pointer-address window) *window-classes*)))
 
 (defmacro with-class ((name &rest args) &body body)
   `(unless (eq (register-class ,name ,@args) 0)
@@ -347,7 +358,7 @@
 	(unless (eq atom 0)
 	  (if (null-pointer-p hWnd)
 	      (unregister-class class-name)
-	      (setf (gethash (pointer-address hWnd) *window-classes*) class-name)))
+	      (window-class+ hWnd class-name)))
 	(unless (null-pointer-p hWnd)
 	  hWnd)))))
 
@@ -359,17 +370,17 @@
 	    (output-stream *standard-output*)
 	    (window nil))
 	(make-thread
-	     (lambda ()
-	       (let ((*standard-output* output-stream))
-		 (setf window (apply #'%create-window name args))
-		 (condition-notify finish)
-		 (when window
-		   (message-handler+ window :WM_DESTROY (proc (post-quit-message 0)))
-		   (message-handler+ window :WM_CLOSE   (proc (destroy-window window)))
-		   (unwind-protect
-			(progn (show-window window)
-			       (process-message))
-		     (destroy-window window))))))
+	 (lambda ()
+	   (let ((*standard-output* output-stream))
+	     (setf window (apply #'%create-window name args))
+	     (condition-notify finish)
+	     (when window
+	       (message-handler+ window :WM_DESTROY (proc (post-quit-message 0)))
+	       (message-handler+ window :WM_CLOSE   (proc (destroy-window window)))
+	       (unwind-protect
+		    (progn (show-window window)
+			   (process-message))
+		 (destroy-window window))))))
 	(acquire-lock cv-lock)
 	(condition-wait finish cv-lock)
 	window)))
@@ -478,10 +489,10 @@
 	(DestroyWindow window)
       (progn
 	(message-handler- window)
-	(let ((class-name (gethash (pointer-address window) *window-classes*)))
+	(let ((class-name (window-class window)))
 	  (when class-name
 	    (unregister-class class-name)
-	    (remhash (pointer-address window) *window-classes*)))))))
+	    (window-class- window)))))))
 
 (defun destroy-window (window)
   (when (window-p window)
@@ -701,11 +712,11 @@
 
 ;;; Editbox
 (defun create-input (window &key (text "")
-				   (x 0)
-				   (y 0)
-				   (width 150)
-				   (height 30)
-				   (style nil))
+			      (x 0)
+			      (y 0)
+			      (width 150)
+			      (height 30)
+			      (style nil))
   (let ((editor (create-window text
 			       :class-name :EDIT
 			       :style (append '(:WS_VISIBLE :WS_CHILD :ES_LEFT) style)
@@ -723,11 +734,11 @@
 	editor))))
 
 (defun create-editor (window &key (text "")
-				    (x 0)
-				    (y 0)
-				    (width 400)
-				    (height 300)
-				    (style nil))
+			       (x 0)
+			       (y 0)
+			       (width 400)
+			       (height 300)
+			       (style nil))
   (declare (inline))
   (create-input window
 		:text text

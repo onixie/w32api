@@ -415,7 +415,7 @@
       (message-handler+ <window> nil (lambda (hWnd Msg lParam wParam) (declare (ignore hWnd Msg lParam wParam)) 0))
       (is (functionp (message-handler <window>)))
       (destroy-window <window>)
-      (is (equal nil (message-handler <window>))))))
+      (is (equal #'w32api.user32::DefWindowProcW (message-handler <window>))))))
 
 (test |(destroy-window <window>) should remove class-name registered in *window-classes* if class is created by w32api::%create-window| 
   (with-fixture window-name ((string (gensym "WIN")))
