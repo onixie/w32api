@@ -79,6 +79,8 @@
 	   VER_NT_FLAG
 	   VER_SUITE_FLAG
 	   WM_ENUM
+	   BM_ENUM
+	   BN_ENUM
 	   WNDCLASSEX
 	   WND_MESSAGE
 	   WND_STYLE
@@ -764,10 +766,24 @@
 					;(WINVER >= 0x0600)
   (:BM_SETDONTCLICK    #x00F8))
 
-(defcenum (LISPM_ENUM :uint)
-  (:WM_EVAL #x0401))
+(defcenum (BN_ENUM WORD)
+  (:BN_CLICKED          0)
+  (:BN_PAINT            1)
+  (:BN_HILITE           2)
+  (:BN_UNHILITE         3)
+  (:BN_DISABLE          4)
+  (:BN_DOUBLECLICKED    5)
+					;WINVER >= 0x0400
+  (:BN_PUSHED           2)
+  (:BN_UNPUSHED         3)
+  (:BN_DBLCLK           5)
+  (:BN_SETFOCUS         6)
+  (:BN_KILLFOCUS        7))
 
-(defctype WND_MESSAGE (enum-union :uint WM_ENUM BM_ENUM LISPM_ENUM))
+(defcenum (USERM_ENUM :uint)
+  (:UM_EVAL  #x0401))
+
+(defctype WND_MESSAGE (enum-union :uint WM_ENUM BM_ENUM USERM_ENUM))
 
 (defcstruct POINT
   (:x :long)

@@ -387,9 +387,9 @@
 
 (defun eval-in-window (window thunk)
   (let ((res nil))
-    (message-handler+ window :WM_EVAL (proc (setf res (funcall thunk))
-					    (message-handler- window :WM_EVAL)))
-    (SendMessageW window :WM_EVAL 0 0)
+    (message-handler+ window :UM_EVAL (proc (setf res (funcall thunk))
+					    (message-handler- window :UM_EVAL)))
+    (SendMessageW window :UM_EVAL 0 0)
     res))
 
 (defun window-p (window)
