@@ -75,7 +75,6 @@
 	   post-quit-message
 	   message-handler+
 	   message-handler-
-	   message-handler
 	   update-window
 	   invalidate-rect
 	   validate-rect
@@ -88,4 +87,5 @@
 	   get-window-size
 	   get-window-rectangle
 	   move-window
+	   wm-command-handler
 	   ))

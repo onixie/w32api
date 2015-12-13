@@ -227,6 +227,20 @@
        (declare (ignore ,args))
        ,@body)))
 
+(defmacro wm-command-handler ((window control notification-code) &body body)
+  (let ((Msg (gensym))
+	(wParam (gensym))
+	(lParam (gensym)))
+    `(lambda (,window ,Msg ,wParam ,lParam)
+       (when (eq ,Msg :WM_COMMAND)
+	 (let ((,control (if (zerop ,lParam)
+			     (LOWORD ,wParam) ;Menu, Accel
+			     (make-pointer ,lParam)))
+	       (,notification-code (if (zerop ,lParam)
+				       (HIWORD ,wParam)
+				       (foreign-enum-keyword 'BN_ENUM (HIWORD ,wParam)))))
+	   ,@body)))))
+
 (defcallback MainWndProc LRESULT
     ((hWnd   HWND)
      (Msg    WND_MESSAGE)
