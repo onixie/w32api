@@ -67,24 +67,26 @@
 	  type))))
 
 (defmacro with-name (api (&rest slot-name-and-var-list) &body body)
-  `(let (,@(loop for (slot-name var) in slot-name-and-var-list
-	      collect `(,var nil)))
-     ,@(loop for (slot-name var) in slot-name-and-var-list
-	  collect
-	    `(with-foreign-pointer (try 0)
-	       (with-foreign-object (size 'DWORD)
-		 (setf (mem-ref size 'DWORD) 0)
-		 (,api ,slot-name try size)
-		 (with-foreign-pointer (try (* 2 (mem-ref size 'DWORD)))
-		   (when (,api ,slot-name try size)
-		     (setf ,var (foreign-string-to-lisp try)))))))
-     ,@body))
+  (let ((try (gensym))
+	(size (gensym)))
+    `(let (,@(loop for (slot-name var) in slot-name-and-var-list collect `(,var nil)))
+       ,@(loop for (slot-name var) in slot-name-and-var-list
+	    collect
+	      `(with-foreign-pointer (,try 0)
+		 (with-foreign-object (,size 'DWORD)
+		   (setf (mem-ref ,size 'DWORD) 0)
+		   (,api ,slot-name ,try ,size)
+		   (unless (zerop (mem-ref ,size 'DWORD))
+		     (with-foreign-pointer (,try (* 2 (mem-ref ,size 'DWORD)))
+		       (when (,api ,slot-name ,try ,size)
+			 (setf ,var (foreign-string-to-lisp ,try))))))))
+       ,@body)))
 
 (defun get-computer-name (&optional (type :ComputerNameNetBIOS))
   (with-name GetComputerNameExW ((type name))
     name))
 
-(defun get-user-name (&optional (type :NameDisplay))
+(defun get-user-name (&optional (type :NameSamCompatible))
   (with-name GetUserNameExW ((type name))
     name))
 
