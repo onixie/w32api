@@ -198,6 +198,12 @@
   (with-fixture window ((string (gensym "WIN")))
     (is-false (w32api::%create-window <window-name>))))
 
+(test |(create-window <new-name> :desktop <desktop-name>) will create window in new desktop|
+  (let* ((d (create-desktop (string (gensym "DESK"))))
+	 (w (create-window (string (gensym "WIN")) :desktop d)))
+    (is (not (pointer-eq (get-desktop-window) (get-parent-window w))))
+    (w32api.user32::SendMessageW w :WM_CLOSE 0 0)))
+
 (test |(get-window <window-name>) = <window>|
   (with-fixture window ((string (gensym "WIN")))
     (is (window-p (get-window <window-name>)))))

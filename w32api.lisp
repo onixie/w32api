@@ -180,15 +180,18 @@
   (let ((old (gensym))
 	(new (gensym)))
     `(let* ((,old (get-current-desktop))
-	    (,new (open-desktop ,name))
-	    (,new (or ,new (create-desktop ,name))))
-       (when (and ,old ,new)
-	 (unwind-protect
-	      (progn
-		(switch-desktop ,new)
-		,@body)
-	   (when (switch-desktop ,old)
-	     (destroy-desktop ,new)))))))
+	    (,new (or (when (pointerp ,name) ,name)
+		      (open-desktop ,name)
+		      (create-desktop ,name))))
+       (if (and ,old ,new (not (pointer-eq ,old ,new)))
+	   (unwind-protect
+		(progn
+		  (switch-desktop ,new)
+		  ,@body)
+	     (when (switch-desktop ,old)
+	       (destroy-desktop ,new)))
+	   (progn
+	     ,@body)))))
 
 ;;; user32 - Window Proc
 (defvar *message-handlers* (make-hash-table :test #'equal))
@@ -357,7 +360,8 @@
 			      (class-name name)
 			      (procedure (callback MainWndProc))
 			      (class-style '(:CS_HREDRAW :CS_VREDRAW))
-			      (background-color (GetSysColorBrush :COLOR_WINDOW)))
+			      (background-color (GetSysColorBrush :COLOR_WINDOW))
+			      &allow-other-keys)
   (unless (and (not allow-same-name-p)
 	       (get-window name :class-name class-name :parent parent))
     (let* ((atom (register-class class-name procedure :style class-style :background-color background-color))
@@ -394,15 +398,16 @@
 	(make-thread
 	 (lambda ()
 	   (let ((*standard-output* output-stream))
-	     (setf window (apply #'%create-window name args))
-	     (condition-notify finish)
-	     (when window
-	       (message-handler+ window :WM_DESTROY (proc (post-quit-message 0)))
-	       (message-handler+ window :WM_CLOSE   (proc (destroy-window window)))
-	       (unwind-protect
-		    (progn (show-window window)
-			   (process-message))
-		 (destroy-window window))))))
+	     (with-desktop ((getf args :desktop))
+	       (setf window (apply #'%create-window name args))
+	       (condition-notify finish)
+	       (when window
+	       	 (message-handler+ window :WM_DESTROY (proc (post-quit-message 0)))
+	       	 (message-handler+ window :WM_CLOSE   (proc (destroy-window window)))
+	       	 (unwind-protect
+	       	      (progn (show-window window)
+			     (process-message))
+	       	   (destroy-window window)))))))
 	(acquire-lock cv-lock)
 	(condition-wait finish cv-lock)
 	window)))
