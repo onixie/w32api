@@ -287,16 +287,13 @@
   (with-recursive-lock-held (*window-classes-lock*)
     (remhash (pointer-address window) *window-classes*)))
 
-(defmacro with-class ((name &rest args) &body body)
-  `(unless (eq (register-class ,name ,@args) 0)
+(defmacro with-class ((name procedure &rest args) &body body)
+  `(unless (eq (register-class ,name ,procedure ,@args) 0)
      (unwind-protect
 	  (progn ,@body)
        (unregister-class ,name))))
 
-(defun register-class (name &key
-			      (procedure (callback MainWndProc))
-			      (style '(:CS_HREDRAW :CS_VREDRAW))
-			      (background-color (GetSysColorBrush :COLOR_WINDOW)))
+(defun register-class (name procedure &key style background-color)
   (if (stringp name)
       (with-foreign-struct ((window-class WNDCLASSEX struct-size)
 			    (:cbSize struct-size)
@@ -307,16 +304,20 @@
 			    (:hInstance (GetModuleHandleW (null-pointer)))
 			    (:hIcon (null-pointer))
 			    (:hCursor (null-pointer))
-			    (:hbrBackground background-color)
+			    (:hbrBackground (or background-color (null-pointer)))
 			    (:lpszMenuName (null-pointer))
 			    (:lpszClassName name)
 			    (:hIconSm (null-pointer)))
-	(RegisterClassExW window-class)) 
+	(RegisterClassExW window-class))
       0))
 
 (defun unregister-class (name)
   (when (stringp name)
     (UnregisterClassW name (GetModuleHandleW (null-pointer)))))
+
+(defun set-window-class-background-color (window background-color)
+  (when (window-p window)
+    (SetClassLongPtrW window :GCLP_HBRBACKGROUND (pointer-address background-color))))
 
 ;;; user32 - Window
 (defvar *parent-window* (null-pointer))
@@ -343,7 +344,6 @@
       `(progn ,@body)))
 
 (defun %create-window (name &key
-			      (class-name name) 
 			      (style +WS_OVERLAPPEDWINDOW+)
 			      (extended-style +WS_EX_OVERLAPPEDWINDOW+)
 			      (x +CW_USEDEFAULT+)
@@ -351,10 +351,15 @@
 			      (width +CW_USEDEFAULT+)
 			      (height +CW_USEDEFAULT+)
 			      (parent *parent-window*)
-			      (allow-same-name-p nil))
+			      (allow-same-name-p nil)
+			      ;; argument to register-class if need
+			      (class-name name)
+			      (procedure (callback MainWndProc))
+			      (class-style '(:CS_HREDRAW :CS_VREDRAW))
+			      (background-color (GetSysColorBrush :COLOR_WINDOW)))
   (unless (and (not allow-same-name-p)
 	       (get-window name :class-name class-name :parent parent))
-    (let* ((atom (register-class class-name))
+    (let* ((atom (register-class class-name procedure :style class-style :background-color background-color))
 	   (style (if (window-p parent)
 		      (remove :WS_POPUP (cons :WS_CHILD style))
 		      style))
@@ -661,10 +666,12 @@
 				    (width 100)
 				    (height 30)
 				    (style nil)
+				    (extended-style nil)
 				    (default-p nil))
   (let ((button (create-window name
 			       :class-name :BUTTON
 			       :style (append '(:WS_TABSTOP :WS_VISIBLE :WS_CHILD :BS_PUSHBUTTON) style (when default-p '(:BS_DEFPUSHBUTTON)))
+			       :extended-style extended-style
 			       :parent window
 			       :x x
 			       :y y
@@ -684,6 +691,7 @@
 				      (width 100)
 				      (height 30)
 				      (style nil)
+				      (extended-style nil)
 				      (default-p nil))
   (declare (inline))
   (create-button name window
@@ -692,6 +700,7 @@
 		 :width width
 		 :height height
 		 :style (append '(:BS_AUTOCHECKBOX) style)
+		 :extended-style extended-style
 		 :default-p default-p))
 
 (defun create-radiobox (name window &key
@@ -700,6 +709,7 @@
 				      (width 100)
 				      (height 30)
 				      (style nil)
+				      (extended-style nil)
 				      (default-p nil))
   (declare (inline))
   (create-button name window
@@ -708,6 +718,7 @@
 		 :width width
 		 :height height
 		 :style (append '(:BS_AUTORADIOBUTTON) style)
+		 :extended-style extended-style
 		 :default-p default-p))
 
 (defun create-groupbox (name window &key
@@ -716,6 +727,7 @@
 				      (width 150)
 				      (height 150)
 				      (style nil)
+				      (extended-style nil)
 				      (default-p nil))
   (declare (inline))
   (create-button name window
@@ -724,6 +736,7 @@
 		 :width width
 		 :height height
 		 :style (append '(:BS_GROUPBOX) style)
+		 :extended-style extended-style
 		 :default-p default-p))
 
 ;;; Editbox
@@ -732,10 +745,12 @@
 			      (y 0)
 			      (width 150)
 			      (height 30)
-			      (style nil))
+			      (style nil)
+			      (extended-style nil))
   (let ((editor (create-window text
 			       :class-name :EDIT
 			       :style (append '(:WS_VISIBLE :WS_CHILD :ES_LEFT) style)
+			       :extended-style extended-style
 			       :parent window
 			       :x x
 			       :y y
@@ -754,7 +769,8 @@
 			       (y 0)
 			       (width 400)
 			       (height 300)
-			       (style nil))
+			       (style nil)
+			       (extended-style nil))
   (declare (inline))
   (create-input window
 		:text text
@@ -762,7 +778,8 @@
 		:y y
 		:width width
 		:height height
-		:style (append '(:WS_VISIBLE :WS_CHILD :WS_VSCROLL :ES_MULTILINE :ES_AUTOVSCROLL) style)))
+		:style (append '(:WS_VISIBLE :WS_CHILD :WS_VSCROLL :ES_MULTILINE :ES_AUTOVSCROLL) style)
+		:extended-style extended-style))
 
 ;;; gdi32 - Drawing
 (defun get-window-rectangle (window &optional client-area-p)

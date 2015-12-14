@@ -305,8 +305,9 @@
 
 (defctype WND_STYLE (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG))
 
-;;; SetClassLongPtr nIndex
+;;; Get/SetClassLongPtr nIndex
 (defcenum (GCL_ENUM :int)
+  (:GCW_ATOM            -32)    ;Retrieves an ATOM value that uniquely identifies the window class. This is the same atom that the RegisterClassEx function returns.
   (:GCL_CBCLSEXTRA	-20)	;Sets the size, in bytes, of the extra memory associated with the class. Setting this value does not change the number of extra bytes already allocated.
   (:GCL_CBWNDEXTRA	-18)	;Sets the size, in bytes, of the extra window memory associated with each window in the class. Setting this value does not change the number of extra bytes already allocated. For information on how to access this memory, see SetWindowLongPtr.
   (:GCLP_HBRBACKGROUND	-10)	;Replaces a handle to the background brush associated with the class.

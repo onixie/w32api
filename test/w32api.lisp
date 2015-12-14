@@ -97,7 +97,7 @@
 
 (def-fixture class (<class-name>)
   (print <class-name>)
-  (with-class (<class-name>)
+  (with-class (<class-name> (callback w32api::MainWndProc))
     (&body)))
 
 (def-fixture window (<window-name>
@@ -147,12 +147,12 @@
 
 (test |(register-class <new-name>) /= 0 to indicate no errors|
   (with-fixture class-name ((string (gensym "WINCLASS")))
-    (is (not (equal 0 (register-class <class-name>))))
+    (is (not (equal 0 (register-class <class-name> (callback w32api::MainWndProc)))))
     (unregister-class <class-name>)))
 
 (test |(register-class <exist-name>) = 0 to indicate error|
   (with-fixture class ((string (gensym "WINCLASS")))
-    (is (equal 0 (register-class <class-name>)))))
+    (is (equal 0 (register-class <class-name> (callback w32api::MainWndProc))))))
 
 (test |(unregister-class <new-name>) = nil| 
   (with-fixture class-name ((string (gensym "WINCLASS")))
@@ -160,7 +160,7 @@
 
 (test |(unregister-class <exist-name>) = t| 
   (with-fixture class-name ((string (gensym "WINCLASS")))
-    (register-class <class-name>)
+    (register-class <class-name> (callback w32api::MainWndProc))
     (is (equal t (unregister-class <class-name>)))))
 
 (test |(w32api::%create-window <new-name>) = <window>| 
@@ -400,14 +400,14 @@
   (with-fixture window-name ((string (gensym "WIN")))
     (let ((<window> (w32api::%create-window <window-name>)))
       (destroy-window <window>))
-    (is (not (equal 0 (register-class <window-name>))))
+    (is (not (equal 0 (register-class <window-name> (callback w32api::MainWndProc)))))
     (unregister-class <window-name>)))
 
 (test |(destroy-window <window>) should not unregister class if class is not created by w32api::%create-window| 
   (with-fixture window-name ((string (gensym "WIN")))
     (with-fixture class (<window-name>)
       (destroy-window (w32api::%create-window <window-name>))
-      (is (equal 0 (register-class <window-name>))))))
+      (is (equal 0 (register-class <window-name> (callback w32api::MainWndProc)))))))
 
 (test |(destroy-window <window>) should remove procedure registered in *message-handlers*| 
   (with-fixture window-name ((string (gensym "WIN")))
@@ -642,7 +642,7 @@
 		(lambda ()
 		  (let ((name (format nil "WIN~d" index))
 			(parent-name (format nil "PWIN~d" index)))
-		    (with-class (parent-name)
+		    (with-class (parent-name (callback w32api::MainWndProc))
 		      (with-window (<parent-window> parent-name :class-name parent-name)
 			(let ((<window> (w32api::%create-window name :parent <parent-window>)))
 			  (message-handler+ <window> t

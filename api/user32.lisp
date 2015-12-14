@@ -15,6 +15,9 @@
 	   DefWindowProcW
 	   CallWindowProcW
 	   GetClassNameW
+	   GetClassInfoExW
+	   GetClassLongPtrW
+	   SetClassLongPtrW
 	   ;;	   CreateWindowA
 	   CreateWindowExW
 	   FindWindowExW
@@ -162,9 +165,13 @@
   (nMaxCount :int))
 
 (defcfun "SetClassLongPtrW" ULONG_PTR
-  (hWnd     HWND)
-  (nIndex      :int)
+  (hWnd        HWND)
+  (nIndex      GCL_ENUM)
   (dwNewLong   LONG_PTR))
+
+(defcfun "GetClassLongPtrW" ULONG_PTR
+  (hWnd        HWND)
+  (nIndex      GCL_ENUM))
 
 (defcfun "CreateWindowExW" HWND
   (dwExStyle     WS_EX_FLAG)
