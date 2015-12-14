@@ -103,9 +103,10 @@
 (def-fixture window (<window-name>
 		     &key
 		     ((:class-name <class-name>) <window-name>)
-		     ((:parent <parent-window>) (null-pointer)))
+		     ((:parent <parent-window>) (null-pointer))
+		     ((:owner <owner-window>) (null-pointer)))
   (print <window-name>)
-  (with-window (<window> <window-name> :class-name <class-name> :parent <parent-window>)
+  (with-window (<window> <window-name> :class-name <class-name> :parent <parent-window> :owner <owner-window>)
     (&body)))
 
 (test |(get-current-desktop) return current desktop|
@@ -219,6 +220,7 @@
 (test |call on <invalid-window> should return nil| 
   (dolist (func (list
 		 #'window-p
+		 #'get-owner-window
 		 #'get-parent-window
 		 (lambda (window)
 		   (with-fixture window ((string (gensym "PWIN")))
@@ -300,10 +302,24 @@
     (is (member :BS_CHECKBOX (get-window-style <window>))))
   )
 
+(test |(get-owner-window <window>) will return owner of <window>|
+  (with-fixture window ((string (gensym "WIN")))
+    (with-fixture window ((string (gensym "WIN")) :owner <window>)
+      (is (pointer-eq <owner-window> (get-owner-window <window>)))
+      (is (pointer-eq (get-desktop-window) (get-parent-window <window>))))))
+
 (test |(get-parent-window <window>) will return parent of <window>|
   (with-fixture window ((string (gensym "WIN")))
     (with-fixture window ((string (gensym "WIN")) :parent <window>)
-      (is (pointer-eq <parent-window> (get-parent-window <window>))))))
+      (is (pointer-eq <parent-window> (get-parent-window <window>)))
+      (is-false (get-owner-window <window>)))))
+
+(test |(get-parent-window <pop-up-window>) will return desktop window as parent|
+  (with-fixture window ((string (gensym "WIN")))
+    (is (pointer-eq (get-desktop-window) (get-parent-window <window>)))
+    (is (parent-window-p <window> (get-desktop-window)))
+    (is (member <window> (get-children-windows (get-desktop-window)) :test #'pointer-eq))
+    (is (member <window> (get-descendant-windows (get-desktop-window)) :test #'pointer-eq))))
 
 (test |(set-parent-window <window> <parent>) will set <parent> as parent of <window>|
   (with-fixture window ((string (gensym "WIN")))

@@ -36,6 +36,7 @@
 	   get-window
 	   with-window
 	   with-windows
+	   get-owner-window
 	   set-parent-window
 	   get-parent-window
 	   get-ancestor-window

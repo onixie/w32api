@@ -351,6 +351,7 @@
 			      (width +CW_USEDEFAULT+)
 			      (height +CW_USEDEFAULT+)
 			      (parent *parent-window*)
+			      (owner (null-pointer))
 			      (allow-same-name-p nil)
 			      ;; argument to register-class if need
 			      (class-name name)
@@ -371,7 +372,7 @@
 				  y
 				  width
 				  height
-				  (or (window-p parent) (null-pointer))
+				  (or (window-p parent) (window-p owner) (null-pointer))
 				  (null-pointer)
 				  (GetModuleHandleW (null-pointer))
 				  (null-pointer))))
@@ -444,15 +445,19 @@
 	   (set-window-style window (remove :WS_CHILD (cons :WS_POPUP (get-window-style window))))))
     (SetParent window parent)))
 
-(defun get-parent-window (window)
+(defun get-owner-window (window)
   (when (window-p window)
-    (let ((parent (GetParent window)))
-      (unless (null-pointer-p parent) parent))))
+    (let ((owner (GetWindow window :GW_OWNER)))
+      (unless (null-pointer-p owner) owner))))
 
 (defun get-ancestor-window (window ga)
   (when (window-p window)
     (let ((ancestor (GetAncestor window ga)))
       (unless (null-pointer-p ancestor) ancestor))))
+
+(defun get-parent-window (window)
+  (declare (inline))
+  (get-ancestor-window window :GA_PARENT))
 
 (defun get-child-window (window &key (nth 1) (reverse nil))
   (when (and (window-p window) (> nth 0))
@@ -658,7 +663,9 @@
 (defun parent-window-p (window parent)
   (and (window-p window)
        (window-p parent)
-       (IsChild parent window)))
+       (or (IsChild parent window)
+	   (pointer-eq parent (get-parent-window window))) ; if parent is desktop window
+       ))
 
 ;;; user32 - Window Control
 (defun create-button (name window &key
