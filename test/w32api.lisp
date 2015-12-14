@@ -635,7 +635,7 @@
   (is (equal 0 (hash-table-count w32api::*window-classes*))) 
   (is (equal 0 (hash-table-count w32api::*message-handlers*))))
 
-(test |multithread window creation/destroy test|
+(test |multithread window creation/destroy test (low level)|
   (mapcar #'join-thread
 	  (loop for index from 1 to 300 collect 
 	       (make-thread
@@ -662,3 +662,50 @@
 			  (destroy-window <window>)))))))))
   (is (equal 0 (hash-table-count w32api::*window-classes*)))
   (is (equal 0 (hash-table-count w32api::*message-handlers*))))
+
+(test |multithread window creation/destroy test (high level)|
+  (mapcar
+   (lambda (<window>)
+     (w32api.user32::SendMessageW <window> :WM_CLOSE 0 0))
+   (loop for index from 1 to 300 collect
+	(let ((name (format nil "WIN~d" index)))
+	  (let ((<window> (create-window name)))
+	    (is (equal name (get-window-class-name <window>)))
+	    (is (equal name (get-window-title <window>)))
+	    (window-active-p <window>)
+	    <window>))))
+  (is (equal 0 (hash-table-count w32api::*window-classes*)))
+  (is (equal 0 (hash-table-count w32api::*message-handlers*))))
+
+(test |various window controls test|
+  (with-fixture window-name ((string (gensym "WIN")))
+    (let* ((w (create-window <window-name>))
+	   (b (create-button "button1" w))
+	   (c (create-checkbox "checkbox1" w))
+	   (r (create-radiobox "radiobox1" w))
+	   (g (create-groupbox "groupbox1" w))
+	   (i (create-input w :text "input1"))
+	   (e (create-editor w :text "editor1")))
+      (is (window-p w))
+      (is (window-p b))
+      (is (equal (get-window-title b) "button1"))
+      (is (window-p c))
+      (is (equal (get-window-title c) "checkbox1"))
+      (is (window-p r))
+      (is (equal (get-window-title r) "radiobox1"))
+      (is (window-p g))
+      (is (equal (get-window-title g) "groupbox1"))
+      (is (window-p i))
+      (is (equal (get-window-title i) "input1"))
+      (is (window-p e))
+      (is (equal (get-window-title e) "editor1"))
+      (destroy-window w)
+      (is (not (window-p w)))
+      (is (not (window-p b)))
+      (is (not (window-p c)))
+      (is (not (window-p r)))
+      (is (not (window-p g)))
+      (is (not (window-p i)))
+      (is (not (window-p e)))
+      (is (equal 0 (hash-table-count w32api::*window-classes*)))
+      (is (equal 0 (hash-table-count w32api::*message-handlers*))))))

@@ -88,4 +88,11 @@
 	   get-window-rectangle
 	   move-window
 	   wm-command-handler
+	   proc
+	   create-button
+	   create-checkbox
+	   create-radiobox
+	   create-groupbox
+	   create-input
+	   create-editor
 	   ))

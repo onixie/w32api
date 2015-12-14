@@ -507,7 +507,8 @@
 (defun %destroy-window (window)
   (when (window-p window)
     (prog1
-	(DestroyWindow window)
+	(and (every #'%destroy-window (get-children-windows window))
+	     (DestroyWindow window))
       (progn
 	(message-handler- window)
 	(let ((class-name (window-class window)))
