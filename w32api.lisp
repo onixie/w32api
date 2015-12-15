@@ -159,7 +159,7 @@
      (lParam LPARAM))
   (declare (ignore lParam) (special desktops))
   (setf desktops (cons lpszDesktop desktops)))
-(defun get-all-desktop ()
+(defun get-all-desktops ()
   (let ((winsta (GetProcessWindowStation))
 	(desktops nil))
     (declare (special desktops))
@@ -180,18 +180,19 @@
   (let ((old (gensym))
 	(new (gensym)))
     `(let* ((,old (get-current-desktop))
-	    (,new (or (when (pointerp ,name) ,name)
-		      (open-desktop ,name)
+	    (,new (or (open-desktop ,name)
 		      (create-desktop ,name))))
        (if (and ,old ,new (not (pointer-eq ,old ,new)))
 	   (unwind-protect
-		(progn
-		  (switch-desktop ,new)
-		  ,@body)
-	     (when (switch-desktop ,old)
-	       (destroy-desktop ,new)))
-	   (progn
-	     ,@body)))))
+		(if (switch-desktop ,new) ;it succeeds if no thread windows created
+		    (unwind-protect
+			 (progn ,@body)
+		      (mapc #'destroy-window (get-descendant-windows (get-current-desktop)))
+		      (SwitchDesktop ,old)
+		      (SetThreadDesktop ,old))
+		    (progn ,@body))
+	     (destroy-desktop ,new))
+	   (progn ,@body)))))
 
 ;;; user32 - Window Proc
 (defvar *message-handlers* (make-hash-table :test #'equal))
@@ -398,6 +399,8 @@
 	(make-thread
 	 (lambda ()
 	   (let ((*standard-output* output-stream))
+	     (when (window-p (getf args :owner))
+	       (switch-desktop (GetThreadDesktop (GetWindowThreadId (getf args :owner)))))
 	     (with-desktop ((getf args :desktop))
 	       (setf window (apply #'%create-window name args))
 	       (condition-notify finish)
@@ -405,8 +408,9 @@
 	       	 (message-handler+ window :WM_DESTROY (proc (post-quit-message 0)))
 	       	 (message-handler+ window :WM_CLOSE   (proc (destroy-window window)))
 	       	 (unwind-protect
-	       	      (progn (show-window window)
-			     (process-message))
+	       	      (progn
+			(show-window window)
+			(process-message))
 	       	   (destroy-window window)))))))
 	(acquire-lock cv-lock)
 	(condition-wait finish cv-lock)
@@ -426,13 +430,37 @@
 	     (IsWindow window))
     window))
 
-(defun get-window (name &key (class-name name) (parent *parent-window*))
+(defcallback EnumThreadWindowsCallback :boolean
+    ((hWnd HWND)
+     (lParam LPARAM))
+  (declare (special windows) (ignore lParam))
+  (setf windows (cons hWnd windows)))
+(defun get-current-thread-windows ()
+  (let ((windows nil))
+    (declare (special windows))
+    (when (EnumThreadWindows (GetCurrentThreadId) (callback EnumThreadWindowsCallback) 0)
+      windows)))
+
+(defun get-window (name &key (class-name nil) (parent *parent-window*) (nth 0) (current-thread-window-p t))
+  (let ((windows (remove-if-not
+		  (lambda (window)
+		    (and (string-equal name (get-window-title window))
+			 (or (not (stringp class-name)) (string-equal class-name (get-window-class-name window)))
+			 (or (not (window-p parent)) (parent-window-p window parent))))
+		  (if current-thread-window-p
+		      (let ((current-thread-windows (get-current-thread-windows)))
+			(append current-thread-windows (mapcan #'get-descendant-windows current-thread-windows)))
+		      (get-descendant-windows (get-desktop-window))))))
+    (values (nth nth windows) (length windows))))
+
+(defun find-window (name &key (class-name name) (parent *parent-window*))
   (let ((hWnd (FindWindowExW
 	       (or (window-p parent) (null-pointer))
 	       (null-pointer)
 	       (string class-name)
 	       name)))
-    (unless (null-pointer-p hWnd) hWnd)))
+    (unless (null-pointer-p hWnd)
+      hWnd)))
 
 (defun set-window-style (window &optional (styles w32api.type:+WS_OVERLAPPEDWINDOW+))
   (when (window-p window)

@@ -28,12 +28,14 @@
 	   switch-desktop
 	   destroy-desktop
 	   get-current-desktop
+	   get-all-desktops
 	   register-class
 	   unregister-class
 	   with-class
 	   create-window
 	   window-p
 	   get-window
+	   find-window
 	   with-window
 	   with-windows
 	   get-owner-window

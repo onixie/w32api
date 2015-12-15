@@ -198,11 +198,14 @@
   (with-fixture window ((string (gensym "WIN")))
     (is-false (w32api::%create-window <window-name>))))
 
+(test |(create-window <exist-name>) = <window> if <exist-name> is in another thread| 
+  (with-fixture window ((string (gensym "WIN")))
+    (is (destroy-window (window-p (create-window <window-name>))))))
+
 (test |(create-window <new-name> :desktop <desktop-name>) will create window in new desktop|
-  (let* ((d (create-desktop (string (gensym "DESK"))))
-	 (w (create-window (string (gensym "WIN")) :desktop d)))
+  (let* ((w (create-window (string (gensym "WIN")) :desktop (string (gensym "DESK")))))
     (is (not (pointer-eq (get-desktop-window) (get-parent-window w))))
-    (w32api.user32::SendMessageW w :WM_CLOSE 0 0)))
+    (destroy-window w)))
 
 (test |(get-window <window-name>) = <window>|
   (with-fixture window ((string (gensym "WIN")))
@@ -219,7 +222,10 @@
 	(is (window-p <parent-window>))
 	(is (window-p <window>))
 	(is (parent-window-p <window> <parent-window>))
-	(is (eq nil (get-window <window-name>)))
+	(is (eq nil (find-window <window-name>)))
+	(is (pointer-eq <window> (find-window <window-name> :parent <parent-window>)))
+	(is (pointer-eq <window> (get-window <window-name>)))
+	(is (pointer-eq <window> (get-window <window-name> :current-thread-window-p nil)))
 	(is (pointer-eq <window> (get-window <window-name> :parent <parent-window>)))
 	))))
 

@@ -29,6 +29,7 @@
 	   EnumChildWindows
 	   EnumWindows
 	   EnumDesktopWindows
+	   EnumThreadWindows
 	   GetTopWindow
 	   GetWindowThreadProcessId
 	   GetWindowThreadId
@@ -222,6 +223,11 @@
   (hWndParent HWND)
   (lpEnumFunc :pointer)
   (lParam      LPARAM))
+
+(defcfun "EnumThreadWindows" :boolean
+  (dwThreadId DWORD)
+  (lpfn       :pointer)
+  (lParam     LPARAM))
 
 (defcfun "SetWindowLongPtrW" LONG_PTR
   (hWnd     HWND)
