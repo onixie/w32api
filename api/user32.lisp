@@ -10,6 +10,11 @@
 	   CloseDesktop
 	   SetThreadDesktop
 	   GetThreadDesktop
+	   EnumDisplayMonitors
+	   MonitorFromPoint
+	   MonitorFromRect
+	   MonitorFromWindow
+	   GetMonitorInfo
 	   RegisterClassExW
 	   UnregisterClassW
 	   DefWindowProcW
@@ -147,6 +152,28 @@
 
 (defcfun "GetThreadDesktop" HDESK
   (dwThreadId DWORD))
+
+(defcfun "EnumDisplayMonitors" :boolean
+  (hdc HDC)
+  (lprcClip (:pointer (:struct RECT)))
+  (lpfnEnum :pointer)
+  (dwData LPARAM))
+
+(defcfun "MonitorFromPoint" HMONITOR
+  (pt (:pointer (:struct POINT)))
+  (dwFlags MONITOR_FLAG))
+
+(defcfun "MonitorFromRect" HMONITOR
+  (lprc (:pointer (:struct RECT)))
+  (dwFlags MONITOR_FLAG))
+
+(defcfun "MonitorFromWindow" HMONITOR
+  (hwnd HWND)
+  (dwFlags MONITOR_FLAG))
+
+(defcfun "GetMonitorInfoW" :boolean
+  (hMonitor HMONITOR)
+  (lpmi (:pointer (:struct MONITORINFOEX))))
 
 (defcfun "RegisterClassExW" C_ATOM
   (lpwcx (:pointer (:struct WNDCLASSEX))))

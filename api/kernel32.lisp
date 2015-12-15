@@ -19,7 +19,18 @@
 	   IsNativeVhdBoot
 	   GetSystemDirectoryW
 	   GetWindowsDirectoryW
-	   GetSystemWindowsDirectoryW))
+	   GetSystemWindowsDirectoryW
+	   CreateToolhelp32Snapshot
+	   Thread32First
+	   Thread32Next
+	   Process32First
+	   Process32Next
+	   Module32First
+	   Module32Next
+	   Heap32First
+	   Heap32Next
+	   Heap32ListFirst
+	   Heap32ListNext))
 
 (in-package #:w32api.kernel32)
 
@@ -98,3 +109,47 @@
 (defcfun "GetSystemDirectoryW" :uint
   (lpBuffer :string)
   (uSize   :uint))
+
+(defcfun "CreateToolhelp32Snapshot" HANDLE
+  (dwFlags TH32CS_FLAG)
+  (th32ProcessID DWORD))
+
+(defcfun "Thread32First" :boolean
+  (hSnapshot HANDLE)
+  (lpte (:pointer (:struct THREADENTRY32))))
+
+(defcfun "Thread32Next" :boolean
+  (hSnapshot HANDLE)
+  (lpte (:pointer (:struct THREADENTRY32))))
+
+(defcfun "Process32First" :boolean
+  (hSnapshot HANDLE)
+  (lppe (:pointer (:struct PROCESSENTRY32))))
+
+(defcfun "Process32Next" :boolean
+  (hSnapshot HANDLE)
+  (lppe (:pointer (:struct PROCESSENTRY32))))
+
+(defcfun "Module32First" :boolean
+  (hSnapshot HANDLE)
+  (lpme (:pointer (:struct MODULEENTRY32))))
+
+(defcfun "Module32Next" :boolean
+  (hSnapshot HANDLE)
+  (lpme (:pointer (:struct MODULEENTRY32))))
+
+(defcfun "Heap32First" :boolean
+  (lphe (:pointer (:struct HEAPENTRY32)))
+  (th32ProcessID DWORD)
+  (th32HeapID ULONG_PTR))
+
+(defcfun "Heap32Next" :boolean
+  (lphe (:pointer (:struct HEAPENTRY32))))
+
+(defcfun "Heap32ListFirst" :boolean
+  (hSnapshot HANDLE)
+  (lphl (:pointer (:struct HEAPLIST32))))
+
+(defcfun "Heap32ListNext" :boolean
+  (hSnapshot HANDLE)
+  (lphl (:pointer (:struct HEAPLIST32))))

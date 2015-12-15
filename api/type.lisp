@@ -43,6 +43,7 @@
 	   HCURSOR
 	   HDC
 	   HDESK
+	   HMONITOR
 	   HIBYTE
 	   HICON
 	   HINSTANCE
@@ -55,6 +56,8 @@
 	   INT_PTR
 	   LOBYTE
 	   LONG_PTR
+	   SSIZE_T
+	   SIZE_T
 	   LOWORD
 	   LPARAM
 	   LPVOID
@@ -92,6 +95,15 @@
 	   PF_ENUM
 	   MB_FLAG
 	   MB_RESULT_ENUM
+	   MONITOR_FLAG
+	   MONITORINFOEX
+	   TH32CS_FLAG
+	   +TH32CS_SNAPALL+
+	   HEAPLIST32
+	   HEAPENTRY32
+	   MODULEENTRY32
+	   PROCESSENTRY32
+	   THREADENTRY32
 	   ))
 
 (in-package #:w32api.type)
@@ -133,10 +145,13 @@
 (defctype DWORD		:ulong)
 (defctype LPVOID        (:pointer :void))
 (defctype DWORD_PTR     ULONG_PTR)
+(defctype SIZE_T        ULONG_PTR)
+(defctype SSIZE_T       LONG_PTR)
 
 (defctype HANDLE	:pointer)
 (defctype HWINSTA	:pointer)
 (defctype HDESK		:pointer)
+(defctype HMONITOR	:pointer)
 (defctype HWND		:pointer)
 (defctype HDC		:pointer)
 (defctype HINSTANCE	:pointer)
@@ -1738,3 +1753,76 @@
   (:IDTRYAGAIN 10)	;The Try Again button was selected.
   (:IDYES 6)		;The Yes button was selected.
   )
+
+(defbitfield (MONITOR_FLAG DWORD)
+  (:MONITOR_DEFAULTTONULL       #x00000000)
+  (:MONITOR_DEFAULTTOPRIMARY    #x00000001)
+  (:MONITOR_DEFAULTTONEAREST    #x00000002)
+  )
+
+(defcstruct MONITORINFOEX
+  (:cbSize DWORD)
+  (:rcMonitor (:struct RECT))
+  (:rcWork (:struct RECT))
+  (:dwFlags DWORD)
+  (:szDevice WORD :count 32))
+
+(defbitfield (TH32CS_FLAG DWORD)
+  (:TH32CS_INHERIT	#x80000000) ;Indicates that the snapshot handle is to be inheritable.
+  (:TH32CS_SNAPHEAPLIST	#x00000001);Includes all heaps of the process specified in th32ProcessID in the snapshot. To enumerate the heaps, see Heap32ListFirst.
+  (:TH32CS_SNAPMODULE	#x00000008);Includes all modules of the process specified in th32ProcessID in the snapshot. To enumerate the modules, see Module32First. If the function fails with ERROR_BAD_LENGTH, retry the function until it succeeds.64-bit Windows:  Using this flag in a 32-bit process includes the 32-bit modules of the process specified in th32ProcessID, while using it in a 64-bit process includes the 64-bit modules. To include the 32-bit modules of the process specified in th32ProcessID from a 64-bit process, use the TH32CS_SNAPMODULE32 flag.
+  (:TH32CS_SNAPMODULE32	#x00000010);Includes all 32-bit modules of the process specified in th32ProcessID in the snapshot when called from a 64-bit process. This flag can be combined with TH32CS_SNAPMODULE or TH32CS_SNAPALL. If the function fails with ERROR_BAD_LENGTH, retry the function until it succeeds.
+  (:TH32CS_SNAPPROCESS	#x00000002);Includes all processes in the system in the snapshot. To enumerate the processes, see Process32First.
+  (:TH32CS_SNAPTHREAD	#x00000004));Includes all threads in the system in the snapshot. To enumerate the threads, see Thread32First.To identify the threads that belong to a specific process, compare its process identifier to the th32OwnerProcessID member of the THREADENTRY32 structure when enumerating the threads.
+
+(defparameter +TH32CS_SNAPALL+ '(:TH32CS_SNAPHEAPLIST :TH32CS_SNAPMODULE :TH32CS_SNAPPROCESS :TH32CS_SNAPTHREAD));Includes all processes and threads in the system, plus the heaps and modules of the process specified in th32ProcessID. Equivalent to specifying the TH32CS_SNAPHEAPLIST, TH32CS_SNAPMODULE, TH32CS_SNAPPROCESS, and TH32CS_SNAPTHREAD values combined using an OR operation.
+
+(defcstruct THREADENTRY32
+  (:dwSize   DWORD)
+  (:cntUsage DWORD)
+  (:th32ThreadID DWORD)
+  (:th32OwnerProcessID DWORD)
+  (:tpBasePri  :long)
+  (:tpDeltaPri :long)
+  (:dwFlags DWORD))
+
+(defcstruct PROCESSENTRY32
+  (:dwSize DWORD)
+  (:cntUsage DWORD)
+  (:th32ProcessID DWORD)
+  (:th32DefaultHeapID ULONG_PTR)
+  (:th32ModuleID DWORD)
+  (:cntThreads DWORD)
+  (:th32ParentProcessID DWORD)
+  (:pcPriClassBase :long)
+  (:dwFlags DWORD)		
+  (:szExeFile WORD :count 260))
+
+(defcstruct MODULEENTRY32
+  (:dwSize DWORD)
+  (:th32ModuleID DWORD)
+  (:th32ProcessID DWORD)
+  (:GlblcntUsage DWORD)
+  (:ProccntUsage DWORD)
+  (:modBaseAddr (:pointer C_BYTE))
+  (:modBaseSize DWORD)
+  (:hModule HMODULE)
+  (:szModule WORD :count 256)
+  (:szExePath WORD :count 260))
+
+(defcstruct HEAPENTRY32
+  (:dwSize SIZE_T)
+  (:hHandle HANDLE)
+  (:dwAddress ULONG_PTR)
+  (:dwBlockSize SIZE_T)
+  (:dwFlags DWORD)
+  (:dwLockCount DWORD)
+  (:dwResvd DWORD)
+  (:th32ProcessID DWORD)
+  (:th32HeapID ULONG_PTR))
+
+(defcstruct HEAPLIST32
+  (:dwSize SIZE_T)
+  (:th32ProcessID DWORD)
+  (:th32HeapID ULONG_PTR)
+  (:dwFlags DWORD))
