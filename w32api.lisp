@@ -168,9 +168,12 @@
       desktops)))
 
 (defun switch-desktop (desktop)
-  (and (pointerp desktop)
-       (SetThreadDesktop desktop)
-       (SwitchDesktop desktop)))
+  (let ((current (get-current-desktop)))
+    (and (pointerp desktop)
+	 (SwitchDesktop desktop)
+	 (or (SetThreadDesktop desktop)
+	     (SwitchDesktop current))
+	 current)))
 
 (defun destroy-desktop (desktop)
   (when (pointerp desktop)
@@ -184,14 +187,13 @@
 		      (create-desktop ,name))))
        (if (and ,old ,new (not (pointer-eq ,old ,new)))
 	   (unwind-protect
-		(if (switch-desktop ,new) ;it succeeds if no thread windows created
-		    (unwind-protect
-			 (progn ,@body)
-		      (mapc #'destroy-window (get-descendant-windows (get-current-desktop)))
-		      (SwitchDesktop ,old)
-		      (SetThreadDesktop ,old))
-		    (progn ,@body))
-	     (destroy-desktop ,new))
+		(progn
+		  (switch-desktop ,new)
+		  ,@body)
+	     (mapc #'destroy-window (get-descendant-windows (get-desktop-window)))
+	     (SetThreadDesktop ,old)	;
+	     (destroy-desktop ,new)
+	     (switch-desktop ,old))
 	   (progn ,@body)))))
 
 ;;; user32 - Window Proc
@@ -399,19 +401,20 @@
 	(make-thread
 	 (lambda ()
 	   (let ((*standard-output* output-stream))
-	     (when (window-p (getf args :owner))
-	       (switch-desktop (GetThreadDesktop (GetWindowThreadId (getf args :owner)))))
-	     (with-desktop ((getf args :desktop))
-	       (setf window (apply #'%create-window name args))
-	       (condition-notify finish)
-	       (when window
-	       	 (message-handler+ window :WM_DESTROY (proc (post-quit-message 0)))
-	       	 (message-handler+ window :WM_CLOSE   (proc (destroy-window window)))
-	       	 (unwind-protect
-	       	      (progn
-			(show-window window)
-			(process-message))
-	       	   (destroy-window window)))))))
+	     (if (window-p (getf args :owner))
+		 (SetThreadDesktop (GetThreadDesktop (GetWindowThreadId (getf args :owner))))
+		 (when (pointerp (getf args :desktop))
+		   (SetThreadDesktop (getf args :desktop))))
+	     (setf window (apply #'%create-window name args))
+	     (condition-notify finish)
+	     (when window
+	       (message-handler+ window :WM_DESTROY (proc (post-quit-message 0)))
+	       (message-handler+ window :WM_CLOSE   (proc (destroy-window window)))
+	       (unwind-protect
+		    (progn
+		      (show-window window)
+		      (process-message))
+		 (destroy-window window))))))
 	(acquire-lock cv-lock)
 	(condition-wait finish cv-lock)
 	window)))
@@ -647,11 +650,11 @@
 	    (windows (remove-if-not #'window-p ,windows))
 	    (real-count (length ,windows)))
        (when (/= 0 (if (= count 0)
-		       (print (,api (print ,parent) ,how ,range 0 (null-pointer)))
+		       (,api ,parent ,how ,range 0 (null-pointer))
 		       (with-foreign-object (children :pointer real-count)
 			 (loop for index from 0 below real-count
 			    do (setf (mem-aref children :pointer index) (nth index ,windows)))
-			 (print (,api (print ,parent) ,how ,range real-count children)))))
+			 (,api ,parent ,how ,range real-count children))))
 	 t))))
 
 (defun tile-windows (&optional (how :MDITILE_ZORDER) (parent *parent-window*) windows)

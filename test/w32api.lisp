@@ -135,6 +135,17 @@
     (destroy-desktop new1)
     (destroy-desktop new2)))
 
+(test |(switch-desktop ... (switch-desktop <desktop>)) chains will not hold <desktop>|
+      (let ((desktop-name (string (gensym "DESK"))))
+	(is (not (member desktop-name (get-all-desktops) :test #'string-equal)))
+	(destroy-desktop
+	 (switch-desktop
+	  (switch-desktop
+	   (switch-desktop
+	    (switch-desktop
+	     (create-desktop desktop-name))))))
+	(is (not (member desktop-name (get-all-desktops) :test #'string-equal)))))
+
 (test |call on <invalid-desktop> should return nil| 
   (dolist (func (list
 		 #'switch-desktop
@@ -143,8 +154,7 @@
     (is (equal nil (funcall func (null-pointer))))
     (is (equal nil (funcall func (make-pointer #x1))))
     (with-foreign-object (invalid :int)
-      (is (equal nil (funcall func invalid)))))
-  )
+      (is (equal nil (funcall func invalid))))))
 
 (test |(register-class <new-name>) /= 0 to indicate no errors|
   (with-fixture class-name ((string (gensym "WINCLASS")))
@@ -203,9 +213,10 @@
     (is (destroy-window (window-p (create-window <window-name>))))))
 
 (test |(create-window <new-name> :desktop <desktop-name>) will create window in new desktop|
-  (let* ((w (create-window (string (gensym "WIN")) :desktop (string (gensym "DESK")))))
+  (let* ((d (create-desktop (string (gensym "DESK"))))
+	 (w (create-window (string (gensym "WIN")) :desktop d)))
     (is (not (pointer-eq (get-desktop-window) (get-parent-window w))))
-    (destroy-window w)))
+    (is (destroy-window w))))
 
 (test |(get-window <window-name>) = <window>|
   (with-fixture window ((string (gensym "WIN")))
