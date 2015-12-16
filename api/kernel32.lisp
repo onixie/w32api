@@ -30,7 +30,8 @@
 	   Heap32First
 	   Heap32Next
 	   Heap32ListFirst
-	   Heap32ListNext))
+	   Heap32ListNext
+	   CloseHandle))
 
 (in-package #:w32api.kernel32)
 
@@ -122,19 +123,19 @@
   (hSnapshot HANDLE)
   (lpte (:pointer (:struct THREADENTRY32))))
 
-(defcfun "Process32First" :boolean
+(defcfun ("Process32FirstW" Process32First) :boolean
   (hSnapshot HANDLE)
   (lppe (:pointer (:struct PROCESSENTRY32))))
 
-(defcfun "Process32Next" :boolean
+(defcfun ("Process32NextW" Process32Next) :boolean
   (hSnapshot HANDLE)
   (lppe (:pointer (:struct PROCESSENTRY32))))
 
-(defcfun "Module32First" :boolean
+(defcfun ("Module32FirstW" Module32First) :boolean
   (hSnapshot HANDLE)
   (lpme (:pointer (:struct MODULEENTRY32))))
 
-(defcfun "Module32Next" :boolean
+(defcfun ("Module32NextW" Module32Next) :boolean
   (hSnapshot HANDLE)
   (lpme (:pointer (:struct MODULEENTRY32))))
 
@@ -153,3 +154,6 @@
 (defcfun "Heap32ListNext" :boolean
   (hSnapshot HANDLE)
   (lphl (:pointer (:struct HEAPLIST32))))
+
+(defcfun "CloseHandle" :boolean
+  (hObject HANDLE))

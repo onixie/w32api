@@ -130,6 +130,23 @@
 (defun get-system-directory ()
   (get-sys-dir GetSystemDirectoryW))
 
+(defmacro with-th32-snapshot ((portion slot-name-and-var-list &key (snapshots +TH32CS_SNAPALL+) (process-id 0)) &body body)
+  (let ((hSnapshot (gensym))
+	(entry (gensym))
+	(entry-size (gensym))
+	(p32First (find-symbol (format nil "~a32FIRST" (string portion))))
+	(p32Next  (find-symbol (format nil "~a32NEXT"  (string portion))))
+	(p32Entry (find-symbol (format nil "~aENTRY32" (string portion)))))
+    `(let ((,hSnapshot (CreateToolhelp32Snapshot (list ,@snapshots) ,process-id)))
+       (unwind-protect
+	    (WITH-FOREIGN-struct ((,entry ,p32Entry ,entry-size) (:dwSize ,entry-size)
+				  ,@slot-name-and-var-list)
+	      (when (,p32First ,hSnapshot ,entry)
+		(cons (progn ,@body)
+		      (loop while (,p32Next ,hSnapshot ,entry)
+			 collect (progn ,@body)))))
+	 (CloseHandle ,hSnapshot)))))
+
 ;;; user32 - Monitor
 (defcallback EnumDisplayMonitorsCallback :boolean
     ((hMonitor HMONITOR)
