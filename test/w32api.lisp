@@ -82,9 +82,16 @@
 (test |(get-error) = 0 if no errors|
   (is (equal 0 (get-error))))
 
-(test |(print-error 0) = string indicates no errors|
+(test |(format-error 0) = string indicates no errors|
   (is (string-equal "The operation completed successfully."
-		    (print-error 0 :lang :LANG_ENGLISH :sublang :SUBLANG_ENGLISH_US))))
+		    (format-error 0 :lang :LANG_ENGLISH :sublang :SUBLANG_ENGLISH_US))))
+
+(test |(print-error 0) = (values code message)|
+  (multiple-value-bind (code message)
+      (print-error :lang :LANG_ENGLISH :sublang :SUBLANG_ENGLISH_US)
+    ;; I guess there are no errors before here
+    (is (eq 0 code))
+    (is (string-equal "The operation completed successfully." message))))
 
 ;;; user32 api
 (def-fixture class-name (<class-name>)

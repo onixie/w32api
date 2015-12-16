@@ -22,6 +22,7 @@
 	   get-windows-directory
 	   get-system-directory
 	   get-error
+	   format-error
 	   print-error
 
 	   create-desktop

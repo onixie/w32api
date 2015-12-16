@@ -93,7 +93,7 @@
 (defun get-error ()
   (GetLastError))
 
-(defun print-error (error-code &key (lang :LANG_NEUTRAL) (sublang :SUBLANG_SYS_DEFAULT))
+(defun format-error (error-code &key (lang :LANG_NEUTRAL) (sublang :SUBLANG_SYS_DEFAULT))
   (let ((dwFLAGS '(:FORMAT_MESSAGE_ALLOCATE_BUFFER
 		   :FORMAT_MESSAGE_ARGUMENT_ARRAY
 		   :FORMAT_MESSAGE_FROM_SYSTEM)))
@@ -107,6 +107,12 @@
 		      (null-pointer))
       (string-trim (list #\Space #\Tab #\NewLine #\Return)
 		   (foreign-string-to-lisp (mem-ref strptr :pointer))))))
+
+(defun print-error (&rest args)
+  (let* ((error-code (get-error))
+	 (error-message (apply #'format-error error-code args)))
+    (print error-message)
+    (values error-code error-message)))
 
 (defmacro get-sys-dir (api)
   `(with-foreign-pointer (try 0)
