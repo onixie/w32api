@@ -130,6 +130,65 @@
 (defun get-system-directory ()
   (get-sys-dir GetSystemDirectoryW))
 
+;;; user32 - Monitor
+(defcallback EnumDisplayMonitorsCallback :boolean
+    ((hMonitor HMONITOR)
+     (hdcMonitor HDC)
+     (lprcMonitor (:pointer (:struct RECT)))
+     (dwData   LPARAM))
+  (declare (special monitors) (ignore hdcMonitor dwData lprcMonitor))
+  (setf monitors (cons hMonitor monitors)))
+(defun get-all-monitors ()
+  (let ((monitors nil))
+    (declare (special monitors))
+    (EnumDisplayMonitors (null-pointer) (null-pointer) (callback EnumDisplayMonitorsCallback) 0)
+    monitors))
+
+(defun get-monitor (&key (x1 0) (y1 0) (x2 nil) (y2 nil) (method nil))
+  (let ((monitor
+	 (if (and x2 y2)
+	     (with-foreign-struct ((rect RECT)
+				   (:left x1)
+				   (:top y1)
+				   (:right x2)
+				   (:bottom y2))
+	       (MonitorFromRect rect (or method :MONITOR_DEFAULTTONULL)))
+	     (with-foreign-struct ((point POINT)
+				   (:x x1)
+				   (:y y1))
+	       ;; checkme: :MONITOR_DEFAULTTONULL always return null?
+	       (MonitorFromPoint point (or method :MONITOR_DEFAULTTONEAREST))))))
+    (unless (null-pointer-p monitor)
+      monitor)))
+
+(defun get-window-monitor (window &optional (method :MONITOR_DEFAULTTONULL))
+  (when (window-p window)
+    (let ((monitor (MonitorFromWindow window method)))
+      (unless (null-pointer-p monitor)
+	monitor))))
+
+(defmacro with-monitor-info ((monitor &rest slot-name-and-var-list) &body body)
+  (let ((mon-info (gensym))
+	(info-size (gensym)))
+    `(when (pointerp ,monitor)
+       (with-foreign-struct ((,mon-info MONITORINFOEX ,info-size)
+			     (:cbSize ,info-size)
+			     ,@slot-name-and-var-list)
+	 (when (GetMonitorInfoW ,monitor ,mon-info)
+	   ,@body)))))
+
+(defun get-monitor-name (monitor)
+  (with-monitor-info (monitor ((:szDevice szDevice)))
+    (foreign-string-to-lisp szDevice)))
+
+(defun get-monitor-rectangle (monitor &optional (area :rcMonitor))
+  (with-monitor-info (monitor ((area rect)))
+    (values
+     (getf rect :left)
+     (getf rect :top)
+     (getf rect :right)
+     (getf rect :bottom))))
+
 ;;; user32 - Desktop
 (defun create-desktop (name)
   (when (stringp name)
@@ -159,6 +218,12 @@
   (let ((desktop (GetThreadDesktop (GetCurrentThreadId))))
     (unless (null-pointer-p desktop)
       desktop)))
+
+(defun get-window-desktop (window)
+  (when (window-p window)
+    (let ((desktop (GetThreadDesktop (GetWindowThreadId window))))
+      (unless (null-pointer-p desktop)
+	desktop))))
 
 (defcallback EnumDesktopsW :boolean
     ((lpszDesktop :string)

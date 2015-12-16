@@ -14,7 +14,7 @@
 	   MonitorFromPoint
 	   MonitorFromRect
 	   MonitorFromWindow
-	   GetMonitorInfo
+	   GetMonitorInfoW
 	   RegisterClassExW
 	   UnregisterClassW
 	   DefWindowProcW

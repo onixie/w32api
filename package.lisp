@@ -25,10 +25,16 @@
 	   format-error
 	   print-error
 
+	   get-all-monitors
+	   get-monitor
+	   get-window-monitor
+	   get-monitor-name
+	   get-monitor-rectangle
 	   create-desktop
 	   switch-desktop
 	   destroy-desktop
 	   get-current-desktop
+	   get-window-desktop
 	   get-all-desktops
 	   register-class
 	   unregister-class

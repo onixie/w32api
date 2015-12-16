@@ -116,8 +116,44 @@
   (with-window (<window> <window-name> :class-name <class-name> :parent <parent-window> :owner <owner-window>)
     (&body)))
 
+(test |(get-all-monitors) = all monitors|
+  (is (get-all-monitors))		;this is a gui wrapper, so monitor is necessity i guess
+  (is-false (some #'null-pointer-p (get-all-monitors))))
+
+(test |(get-monitor) = nearest monitor from (0, 0)|
+  (is (get-monitor)))
+
+(test |(get-monitor :x1 x :y1 y :x2 x2 :y2 y2) = intersected monitor|
+  (is (get-monitor :x1 0 :y1 0 :x2 1 :y2 1)))
+
+(test |(get-window-monitor <window>) = intersected monitor|
+  (is (get-window-monitor (get-desktop-window))))
+
+(test |(get-monitor-name <monitor>) = name of monitor|
+  (is (stringp (get-monitor-name (get-window-monitor (get-desktop-window))))))
+
+(test |(get-monitor-rectangle <monitor>) = monitor full area|
+  (multiple-value-bind (left top right bottom)
+      (get-monitor-rectangle (get-window-monitor (get-desktop-window)))
+    (is (numberp left))
+    (is (numberp top))
+    (is (numberp right))
+    (is (numberp bottom))))
+
+(test |(get-monitor-rectangle <monitor> :rcWork) = monitor working area|
+  (multiple-value-bind (left top right bottom)
+      (get-monitor-rectangle (get-window-monitor (get-desktop-window)) :rcWork)
+    (is (numberp left))
+    (is (numberp top))
+    (is (numberp right))
+    (is (numberp bottom))))
+
 (test |(get-current-desktop) return current desktop|
   (is (not (null-pointer-p (get-current-desktop)))))
+
+(test |(get-window-desktop <window>) return desktop in which the window is|
+  (with-fixture window ((string (gensym "WIN")))
+    (is (pointer-eq  (get-current-desktop) (get-window-desktop <window>)))))
 
 (test |(create-desktop <name>) return new created desktop|
   (let ((desk (create-desktop (string (gensym "DESK")))))
@@ -153,10 +189,12 @@
 	     (create-desktop desktop-name))))))
 	(is (not (member desktop-name (get-all-desktops) :test #'string-equal)))))
 
-(test |call on <invalid-desktop> should return nil| 
+(test |call on <invalid-desktop/monitor> should return nil| 
   (dolist (func (list
+		 #'get-monitor-name
+		 #'get-monitor-rectangle
 		 #'switch-desktop
-		 #'destroy-desktop		 
+		 #'destroy-desktop
 		 ))
     (is (equal nil (funcall func (null-pointer))))
     (is (equal nil (funcall func (make-pointer #x1))))
@@ -249,6 +287,7 @@
 
 (test |call on <invalid-window> should return nil| 
   (dolist (func (list
+		 #'get-window-desktop
 		 #'window-p
 		 #'get-owner-window
 		 #'get-parent-window
