@@ -36,6 +36,8 @@
 	   get-current-desktop
 	   get-window-desktop
 	   get-all-desktops
+	   desktop-p
+	   get-desktop-name
 	   register-class
 	   unregister-class
 	   with-class

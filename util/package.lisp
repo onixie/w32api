@@ -1,7 +1,8 @@
 (defpackage #:w32api.util
   (:use #:cl #:cffi #:bordeaux-threads)
-  (:export bitfield-union
+  (:export ensure-list
+	   make-keyword
+	   bitfield-union
 	   enum-union
-	   ensure-list
 	   with-foreign-struct
 	   with-foreign-union))

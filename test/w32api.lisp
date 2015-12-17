@@ -160,6 +160,12 @@
     (is (not (null-pointer-p desk)))
     (is-true (destroy-desktop desk))))
 
+(test |(desktop-p <desktop>) = <desktop>|
+  (is (pointer-eq (desktop-p (get-current-desktop)) (get-current-desktop))))
+
+(test |(get-desktop-name <desktop>) = string to indicate desktop name|
+  (is (stringp (get-desktop-name (get-current-desktop)))))
+
 (test |(create-desktop <non-string>) = nil|
   (is (eq nil (create-desktop 'non-string))))
 
@@ -193,6 +199,8 @@
   (dolist (func (list
 		 #'get-monitor-name
 		 #'get-monitor-rectangle
+		 #'get-desktop-name
+		 #'desktop-p
 		 #'switch-desktop
 		 #'destroy-desktop
 		 ))

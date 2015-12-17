@@ -277,6 +277,29 @@
       (EnumDesktopsW winsta (callback EnumDesktopsW) 0)
       desktops)))
 
+(defun desktop-p (desktop)
+  (when (pointerp desktop)
+    (with-foreign-object (need 'DWORD)
+      (setf (mem-ref need 'DWORD) 0)
+      (GetUserObjectInformationW desktop :UOI_TYPE (null-pointer) 0 need)
+      (let ((size (mem-ref need 'DWORD)))
+	(unless (zerop size)
+	  (when (string-equal
+		 "desktop"
+		 (with-foreign-pointer-as-string (type size)
+		   (GetUserObjectInformationW desktop :UOI_TYPE type size need))))
+	  desktop)))))
+
+(defun get-desktop-name (desktop)
+  (when (pointerp desktop)
+    (with-foreign-object (need 'DWORD)
+      (setf (mem-ref need 'DWORD) 0)
+      (GetUserObjectInformationW desktop :UOI_NAME (null-pointer) 0 need)
+      (let ((size (mem-ref need 'DWORD)))
+	(unless (zerop size)
+	  (with-foreign-pointer-as-string (name size)
+	    (GetUserObjectInformationW desktop :UOI_NAME name size need)))))))
+
 (defun switch-desktop (desktop)
   (let ((current (get-current-desktop)))
     (and (pointerp desktop)

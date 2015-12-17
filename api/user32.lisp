@@ -10,6 +10,8 @@
 	   CloseDesktop
 	   SetThreadDesktop
 	   GetThreadDesktop
+	   GetUserObjectInformationW
+	   SetUserObjectInformationW
 	   EnumDisplayMonitors
 	   MonitorFromPoint
 	   MonitorFromRect
@@ -153,6 +155,19 @@
 
 (defcfun "GetThreadDesktop" HDESK
   (dwThreadId DWORD))
+
+(defcfun "GetUserObjectInformationW" :boolean
+  (hObj HANDLE)
+  (nIndex UOI_ENUM)
+  (pvInfo (:pointer :void))
+  (nLength DWORD)
+  (lpnLengthNeeded (:pointer DWORD)))
+
+(defcfun "SetUserObjectInformationW" :boolean
+  (hObj HANDLE)
+  (nIndex UOI_ENUM)
+  (pvInfo (:pointer :void))
+  (nLength DWORD))
 
 (defcfun "EnumDisplayMonitors" :boolean
   (hdc HDC)

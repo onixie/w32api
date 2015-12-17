@@ -109,6 +109,8 @@
 	   PROCESS_FLAG
 	   +PROCESS_ALL_ACCESS+
 	   WAIT_RESULT_ENUM
+	   UOI_ENUM
+	   USEROBJECTFLAGS
 	   ))
 
 (in-package #:w32api.type)
@@ -208,7 +210,8 @@
 ;;; CreateDesktop dwFlags
 
 (defbitfield (DF_FLAG DWORD)
-  (:DF_ALLOWOTHERACCOUNTHOOK #x0001))		;Enables processes running in other accounts on the desktop to set hooks in this process.
+  (:DF_ALLOWOTHERACCOUNTHOOK #x0001)		;Enables processes running in other accounts on the desktop to set hooks in this process.
+  (:WSF_VISIBLE              #x0001))
 
 (defbitfield (%DA_FLAG ACCESS_MASK)
   (:DESKTOP_CREATEMENU		#x0004)		;Required to create a menu on the desktop.
@@ -1911,3 +1914,17 @@
   (:WAIT_OBJECT_0	#x00000000);The state of the specified object is signaled.
   (:WAIT_TIMEOUT	#x00000102);The time-out interval elapsed, and the object's state is nonsignaled.
   (:WAIT_FAILED		#xFFFFFFF));The function has failed. To get extended error information, call GetLastError.
+
+(defcenum (UOI_ENUM :int)
+  (:UOI_FLAGS 1)	;The handle flags. The pvInfo parameter must point to a USEROBJECTFLAGS structure.
+  (:UOI_HEAPSIZE 5)	;The size of the desktop heap, in KB, as a ULONG value. The hObj parameter must be a handle to a desktop object, otherwise, the function fails.Windows Server 2003 and Windows XP/2000:  This value is not supported.
+  (:UOI_IO 6)		;TRUE if the hObj parameter is a handle to the desktop object that is receiving input from the user. FALSE otherwise.Windows Server 2003 and Windows XP/2000:  This value is not supported.
+  (:UOI_NAME 2)		;The name of the object, as a string.
+  (:UOI_TYPE 3)		;The type name of the object, as a string.
+  (:UOI_USER_SID 4)     ;The SID structure that identifies the user that is currently associated with the specified object. If no user is associated with the object, the value returned in the buffer pointed to by lpnLengthNeeded is zero. Note that SID is a variable length structure. You will usually make a call to GetUserObjectInformation to determine the length of the SID before retrieving its value.
+  (:UOI_TIMERPROC_EXCEPTION_SUPPRESSION 7)) ;for SetUserObjectInformationW
+
+(defcstruct USEROBJECTFLAGS
+  (:fInherit  :boolean)
+  (:fReserved :boolean)
+  (:dwFlags   DF_FLAG))
