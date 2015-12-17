@@ -23,10 +23,10 @@
 	   CreateToolhelp32Snapshot
 	   Thread32First
 	   Thread32Next
-	   Process32First
-	   Process32Next
-	   Module32First
-	   Module32Next
+	   Process32FirstW
+	   Process32NextW
+	   Module32FirstW
+	   Module32NextW
 	   Heap32First
 	   Heap32Next
 	   Heap32ListFirst
@@ -123,19 +123,19 @@
   (hSnapshot HANDLE)
   (lpte (:pointer (:struct THREADENTRY32))))
 
-(defcfun ("Process32FirstW" Process32First) :boolean
+(defcfun "Process32FirstW" :boolean
   (hSnapshot HANDLE)
   (lppe (:pointer (:struct PROCESSENTRY32))))
 
-(defcfun ("Process32NextW" Process32Next) :boolean
+(defcfun "Process32NextW" :boolean
   (hSnapshot HANDLE)
   (lppe (:pointer (:struct PROCESSENTRY32))))
 
-(defcfun ("Module32FirstW" Module32First) :boolean
+(defcfun "Module32FirstW" :boolean
   (hSnapshot HANDLE)
   (lpme (:pointer (:struct MODULEENTRY32))))
 
-(defcfun ("Module32NextW" Module32Next) :boolean
+(defcfun "Module32NextW" :boolean
   (hSnapshot HANDLE)
   (lpme (:pointer (:struct MODULEENTRY32))))
 

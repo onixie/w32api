@@ -130,22 +130,44 @@
 (defun get-system-directory ()
   (get-sys-dir GetSystemDirectoryW))
 
+;;; low-level snapshot enumeration macro
 (defmacro with-th32-snapshot ((portion slot-name-and-var-list &key (snapshots +TH32CS_SNAPALL+) (process-id 0)) &body body)
-  (let ((hSnapshot (gensym))
-	(entry (gensym))
-	(entry-size (gensym))
-	(p32First (find-symbol (format nil "~a32FIRST" (string portion))))
-	(p32Next  (find-symbol (format nil "~a32NEXT"  (string portion))))
-	(p32Entry (find-symbol (format nil "~aENTRY32" (string portion)))))
-    `(let ((,hSnapshot (CreateToolhelp32Snapshot (list ,@snapshots) ,process-id)))
-       (unwind-protect
-	    (WITH-FOREIGN-struct ((,entry ,p32Entry ,entry-size) (:dwSize ,entry-size)
-				  ,@slot-name-and-var-list)
-	      (when (,p32First ,hSnapshot ,entry)
-		(cons (progn ,@body)
-		      (loop while (,p32Next ,hSnapshot ,entry)
-			 collect (progn ,@body)))))
-	 (CloseHandle ,hSnapshot)))))
+  (let* ((hSnapshot (gensym))
+	 (entry (gensym))
+	 (entry-size (gensym))
+	 (p32First (case portion
+		     (:PROCESS  `(Process32FirstW ,hSnapshot ,entry))
+		     (:THREAD   `(Thread32First   ,hSnapshot ,entry))
+		     (:MODULE   `(Module32First   ,hSnapshot ,entry))
+		     (:HEAPLIST `(Heap32ListFirst ,hSnapshot ,entry))))
+	 (p32Next  (case portion
+		     (:PROCESS  `(Process32NextW ,hSnapshot ,entry))
+		     (:THREAD   `(Thread32Next   ,hSnapshot ,entry))
+		     (:MODULE   `(Module32Next   ,hSnapshot ,entry))
+		     (:HEAPLIST `(Heap32ListNext ,hSnapshot ,entry))))
+	 (p32Entry (case portion
+		     (:PROCESS  'PROCESSENTRY32)
+		     (:THREAD   'THREADENTRY32)
+		     (:MODULE   'MODULEENTRY32)
+		     (:HEAPLIST 'HEAPLIST32))))
+    (if (eq portion :HEAP)
+	(let ((th32HeapID    (gensym))
+	      (th32ProcessID (gensym)))
+	  `(with-th32-snapshot (:HEAPLIST (((:th32HeapID ,th32HeapID))
+					   ((:th32ProcessID ,th32ProcessID))) :process-id ,process-id)
+	     (with-foreign-struct ((,entry HEAPENTRY32 ,entry-size) (:dwSize ,entry-size)
+				   ,@slot-name-and-var-list)
+	       (when (Heap32First ,entry ,th32ProcessID ,th32HeapID)
+		 (cons (progn ,@body)
+		       (loop while (Heap32Next ,entry) collect (progn ,@body)))))))
+	`(let ((,hSnapshot (CreateToolhelp32Snapshot (list ,@snapshots) ,process-id)))
+	   (unwind-protect
+		(WITH-FOREIGN-struct ((,entry ,p32Entry ,entry-size) (:dwSize ,entry-size)
+				      ,@slot-name-and-var-list)
+		  (when ,p32First
+		    (cons (progn ,@body)
+			  (loop while ,p32Next collect (progn ,@body)))))
+	     (CloseHandle ,hSnapshot))))))
 
 ;;; user32 - Monitor
 (defcallback EnumDisplayMonitorsCallback :boolean
