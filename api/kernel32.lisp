@@ -3,11 +3,25 @@
   (:export GetModuleHandleW
 	   GetLastError
 	   FormatMessageW
+	   OpenThread
+	   TerminateThread
+	   ResumeThread
+	   SuspendThread
+	   ExitThread
+	   GetExitCodeThread
+	   OpenProcess
+	   TerminateProcess
+	   ExitProcess
+	   GetExitCodeProcess
+	   GetCurrentProcessorNumber
+	   GetActiveProcessorCount
+	   GetActiveProcessorGroupCount
+	   GetMaximumProcessorCount
+	   GetMaximumProcessorGroupCount
 	   GetCurrentThreadId
 	   GetCurrentProcessId
 	   GetCurrentThread
 	   GetCurrentProcess
-	   GetCurrentProcessorNumber
 	   GetCommandLineW
 	   GetFirmwareType
 	   GetVersionExW
@@ -31,7 +45,9 @@
 	   Heap32Next
 	   Heap32ListFirst
 	   Heap32ListNext
-	   CloseHandle))
+	   CloseHandle
+	   WaitForSingleObjectEx
+	   WaitForMultipleObjectsEx))
 
 (in-package #:w32api.kernel32)
 
@@ -53,16 +69,6 @@
   (lpBuffer  :string)
   (nSize   DWORD)
   (va_Arguments (:pointer :pointer)))
-
-(defcfun "GetCurrentThreadId" DWORD)
-
-(defcfun "GetCurrentThread" HANDLE)
-
-(defcfun "GetCurrentProcessId" DWORD)
-
-(defcfun "GetCurrentProcess" HANDLE)
-
-(defcfun "GetCurrentProcessorNumber" DWORD)
 
 (defcfun "GetCommandLineW" :string)
 
@@ -115,6 +121,13 @@
   (dwFlags TH32CS_FLAG)
   (th32ProcessID DWORD))
 
+(defcfun "Toolhelp32ReadProcessMemory" :boolean
+  (th32ProcessID DWORD)
+  (lpBaseAddress (:pointer :void))
+  (lpBuffer (:pointer :void))
+  (cbRead SIZE_T)
+  (lpNumberOfBytesRead SIZE_T))
+
 (defcfun "Thread32First" :boolean
   (hSnapshot HANDLE)
   (lpte (:pointer (:struct THREADENTRY32))))
@@ -157,3 +170,77 @@
 
 (defcfun "CloseHandle" :boolean
   (hObject HANDLE))
+
+;;; Thread
+(defcfun "OpenThread" HANDLE
+  (dwDesiredAccess THREAD_FLAG)
+  (bInheritHandle  :boolean)
+  (dwThreadId DWORD))
+
+(defcfun "TerminateThread" :boolean
+  (hThread HANDLE)
+  (dwExitCode  DWORD))
+
+(defcfun "ResumeThread" DWORD
+  (hThread HANDLE))
+
+(defcfun "SuspendThread" DWORD
+  (hThread HANDLE))
+
+(defcfun "ExitThread" :void
+  (dwExitCode DWORD))
+
+(defcfun "GetExitCodeThread" :boolean
+  (hThread HANDLE)
+  (lpExitCode (:pointer DWORD)))
+
+(defcfun "GetCurrentThreadId" DWORD)
+
+(defcfun "GetCurrentThread" HANDLE)
+
+;;; Process
+(defcfun "OpenProcess" HANDLE
+  (dwDesiredAccess PROCESS_FLAG)
+  (bInheritHandle  :boolean)
+  (dwProcessId DWORD))
+
+(defcfun "TerminateProcess" DWORD
+  (hProcess HANDLE)
+  (uExitCode :uint))
+
+(defcfun "ExitProcess" :void
+  (uExitCode :uint))
+
+(defcfun "GetExitCodeProcess" :boolean
+  (hProcess HANDLE)
+  (lpExitCode (:pointer DWORD)))
+
+(defcfun "GetCurrentProcessId" DWORD)
+
+(defcfun "GetCurrentProcess" HANDLE)
+
+;;; Processor
+(defcfun "GetActiveProcessorCount" DWORD
+  (GroupNumber WORD))
+
+(defcfun "GetActiveProcessorGroupCount" DWORD)
+
+(defcfun "GetCurrentProcessorNumber" DWORD)
+
+(defcfun "GetMaximumProcessorCount" DWORD
+  (GroupNumber WORD))
+
+(defcfun "GetMaximumProcessorGroupCount" DWORD)
+
+;;; Synchronization
+(defcfun "WaitForSingleObjectEx" WAIT_RESULT_ENUM
+  (hHandle HANDLE)
+  (dwMilliseconds DWORD)
+  (bAlertable :boolean))
+
+(defcfun "WaitForMultipleObjectsEx" WAIT_RESULT_ENUM
+  (nCount  DWORD)
+  (lpHandles (:pointer HANDLE))
+  (bWaitAll :boolean)
+  (dwMilliseconds DWORD)
+  (bAlertable :boolean))

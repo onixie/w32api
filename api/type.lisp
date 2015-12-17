@@ -104,6 +104,11 @@
 	   MODULEENTRY32
 	   PROCESSENTRY32
 	   THREADENTRY32
+	   THREAD_FLAG
+	   +THREAD_ALL_ACCESS+
+	   PROCESS_FLAG
+	   +PROCESS_ALL_ACCESS+
+	   WAIT_RESULT_ENUM
 	   ))
 
 (in-package #:w32api.type)
@@ -170,17 +175,42 @@
 
 (defctype ACCESS_MASK DWORD)
 
-;;; CreateDesktop dwFlags
-
-(defbitfield (DF_FLAG DWORD)
-  (:DF_ALLOWOTHERACCOUNTHOOK #x0001))		;Enables processes running in other accounts on the desktop to set hooks in this process.
-
-(defbitfield (DA_FLAG ACCESS_MASK)
+(defbitfield (STANDARD_RIGHTS_FLAG ACCESS_MASK)
   (:DELETE			#x00010000)	;Required to delete the object.
   (:READ_CONTROL		#x00020000)	;Required to read information in the security descriptor for the object, not including the information in the SACL. To read or write the SACL, you must request the ACCESS_SYSTEM_SECURITY access right. For more information, see SACL Access Right.
   (:SYNCHRONIZE			#x00100000)	;Not supported for desktop objects.
   (:WRITE_DAC			#x00040000)	;Required to modify the DACL in the security descriptor for the object.
   (:WRITE_OWNER			#x00080000)	;Required to change the owner in the security descriptor for the object.
+  )
+
+(defparameter +STANDARD_RIGHTS_ALL+
+  '(:DELETE
+    :READ_CONTROL
+    :WRITE_DAC
+    :WRITE_OWNER
+    :SYNCHRONIZE))
+
+(defparameter +STANDARD_RIGHTS_REQUIRED+
+  '(:DELETE
+    :READ_CONTROL
+    :WRITE_DAC
+    :WRITE_OWNER))
+
+(defparameter +STANDARD_RIGHTS_EXECUTE+
+  '(:READ_CONTROL))
+
+(defparameter +STANDARD_RIGHTS_READ+
+  '(:READ_CONTROL))
+
+(defparameter +STANDARD_RIGHTS_WRITE+
+  '(:READ_CONTROL))
+
+;;; CreateDesktop dwFlags
+
+(defbitfield (DF_FLAG DWORD)
+  (:DF_ALLOWOTHERACCOUNTHOOK #x0001))		;Enables processes running in other accounts on the desktop to set hooks in this process.
+
+(defbitfield (%DA_FLAG ACCESS_MASK)
   (:DESKTOP_CREATEMENU		#x0004)		;Required to create a menu on the desktop.
   (:DESKTOP_CREATEWINDOW	#x0002)		;Required to create a window on the desktop.
   (:DESKTOP_ENUMERATE		#x0040)		;Required for the desktop to be enumerated.
@@ -192,56 +222,39 @@
   (:DESKTOP_WRITEOBJECTS	#x0080)		;Required to write objects on the desktop.
   )
 
-(defparameter +STANDARD_RIGHTS_ALL+
-  '(:DELETE
-    :READ_CONTROL
-    :WRITE_DAC
-    :WRITE_OWNER
-    :SYNCHRONIZE))
-
-(defparameter +STANDARD_RIGHTS_EXECUTE+
-  :READ_CONTROL)
-
-(defparameter +STANDARD_RIGHTS_READ+
-  :READ_CONTROL)
-
-(defparameter +STANDARD_RIGHTS_REQUIRED+
-  '(:DELETE
-    :READ_CONTROL
-    :WRITE_DAC
-    :WRITE_OWNER))
-
-(defparameter +STANDARD_RIGHTS_WRITE+
-  :READ_CONTROL)
+(defctype DA_FLAG (bitfield-union ACCESS_MASK STANDARD_RIGHTS_FLAG %DA_FLAG))
 
 (defparameter +DESKTOP_GENERIC_READ+
-  '(:DESKTOP_ENUMERATE
-    :DESKTOP_READOBJECTS
-    +STANDARD_RIGHTS_READ+))
+  (list*
+   :DESKTOP_ENUMERATE
+   :DESKTOP_READOBJECTS
+   +STANDARD_RIGHTS_READ+))
 
 (defparameter +DESKTOP_GENERIC_WRITE+
-  '(:DESKTOP_CREATEMENU
-    :DESKTOP_CREATEWINDOW
-    :DESKTOP_HOOKCONTROL
-    :DESKTOP_JOURNALPLAYBACK
-    :DESKTOP_JOURNALRECORD
-    :DESKTOP_WRITEOBJECTS
-    +STANDARD_RIGHTS_WRITE+))
+  (list*
+   :DESKTOP_CREATEMENU
+   :DESKTOP_CREATEWINDOW
+   :DESKTOP_HOOKCONTROL
+   :DESKTOP_JOURNALPLAYBACK
+   :DESKTOP_JOURNALRECORD
+   :DESKTOP_WRITEOBJECTS
+   +STANDARD_RIGHTS_WRITE+))
 
 (defparameter +DESKTOP_GENERIC_EXECUTE+
-  '(:DESKTOP_SWITCHDESKTOP +STANDARD_RIGHTS_EXECUTE+))
+  (list* :DESKTOP_SWITCHDESKTOP +STANDARD_RIGHTS_EXECUTE+))
 
 (defparameter +DESKTOP_GENERIC_ALL+
-  (append '(:DESKTOP_CREATEMENU
-	    :DESKTOP_CREATEWINDOW
-	    :DESKTOP_ENUMERATE
-	    :DESKTOP_HOOKCONTROL
-	    :DESKTOP_JOURNALPLAYBACK
-	    :DESKTOP_JOURNALRECORD
-	    :DESKTOP_READOBJECTS
-	    :DESKTOP_SWITCHDESKTOP
-	    :DESKTOP_WRITEOBJECTS
-	    ) +STANDARD_RIGHTS_REQUIRED+))
+  (list* :DESKTOP_CREATEMENU
+	 :DESKTOP_CREATEWINDOW
+	 :DESKTOP_ENUMERATE
+	 :DESKTOP_HOOKCONTROL
+	 :DESKTOP_JOURNALPLAYBACK
+	 :DESKTOP_JOURNALRECORD
+	 :DESKTOP_READOBJECTS
+	 :DESKTOP_SWITCHDESKTOP
+	 :DESKTOP_WRITEOBJECTS
+	 +STANDARD_RIGHTS_REQUIRED+
+	 ))
 
 (defcstruct SECURITY_ATTRIBUTES
   (:nLength              DWORD)
@@ -1826,3 +1839,75 @@
   (:th32ProcessID DWORD)
   (:th32HeapID ULONG_PTR)
   (:dwFlags DWORD))
+
+(defbitfield (%THREAD_FLAG ACCESS_MASK)
+  (:THREAD_DIRECT_IMPERSONATION		#x0200)		; Required for a server thread that impersonates a client.
+  (:THREAD_GET_CONTEXT			#x0008)		; Required to read the context of a thread using GetThreadContext.
+  (:THREAD_IMPERSONATE			#x0100)		; Required to use a thread's security information directly without calling it by using a communication mechanism that provides impersonation services.
+  (:THREAD_QUERY_INFORMATION		#x0040)		; Required to read certain information from the thread object, such as the exit code (see GetExitCodeThread).
+  (:THREAD_QUERY_LIMITED_INFORMATION	#x0800)		; Required to read certain information from the thread objects (see GetProcessIdOfThread). A handle that has the THREAD_QUERY_INFORMATION access right is automatically granted THREAD_QUERY_LIMITED_INFORMATION.Windows Server 2003 and Windows XP:  This access right is not supported.
+  (:THREAD_SET_CONTEXT			#x0010)		; Required to write the context of a thread using SetThreadContext.
+  (:THREAD_SET_INFORMATION		#x0020)		; Required to set certain information in the thread object.
+  (:THREAD_SET_LIMITED_INFORMATION	#x0400)		; Required to set certain information in the thread object. A handle that has the THREAD_SET_INFORMATION access right is automatically granted THREAD_SET_LIMITED_INFORMATION.Windows Server 2003 and Windows XP:  This access right is not supported.
+  (:THREAD_SET_THREAD_TOKEN		#x0080)		; Required to set the impersonation token for a thread using SetThreadToken.
+  (:THREAD_SUSPEND_RESUME		#x0002)		; Required to suspend or resume a thread (see SuspendThread and ResumeThread).
+  (:THREAD_TERMINATE			#x0001))	; Required to terminate a thread using TerminateThread.
+
+(defctype THREAD_FLAG (bitfield-union ACCESS_MASK STANDARD_RIGHTS_FLAG %THREAD_FLAG))
+
+(defparameter +THREAD_ALL_ACCESS+			;All possible access rights for a thread object.Windows Server 2003 and Windows XP:  The value of the THREAD_ALL_ACCESS flag increased on Windows Server 2008 and Windows Vista. If an application compiled for Windows Server 2008 and Windows Vista is run on Windows Server 2003 or Windows XP, the THREAD_ALL_ACCESS flag contains access bits that are not supported and the function specifying this flag fails with ERROR_ACCESS_DENIED. To avoid this problem, specify the minimum set of access rights required for the operation. If THREAD_ALL_ACCESS must be used, set _WIN32_WINNT to the minimum operating system targeted by your application (for example, #define _WIN32_WINNT _WIN32_WINNT_WINXP). For more information, see Using the Windows Headers.
+  (list*
+   :THREAD_DIRECT_IMPERSONATION		
+   :THREAD_GET_CONTEXT			
+   :THREAD_IMPERSONATE			
+   :THREAD_QUERY_INFORMATION		
+   :THREAD_QUERY_LIMITED_INFORMATION	
+   :THREAD_SET_CONTEXT			
+   :THREAD_SET_INFORMATION		
+   :THREAD_SET_LIMITED_INFORMATION	
+   :THREAD_SET_THREAD_TOKEN		
+   :THREAD_SUSPEND_RESUME		
+   :THREAD_TERMINATE			
+   :SYNCHRONIZE   
+   +STANDARD_RIGHTS_REQUIRED+))
+
+(defbitfield (%PROCESSOR_FLAG ACCESS_MASK)
+  (:PROCESS_CREATE_PROCESS		#x0080) ; Required to create a process.
+  (:PROCESS_CREATE_THREAD		#x0002); Required to create a thread.
+  (:PROCESS_DUP_HANDLE			#x0040); Required to duplicate a handle using DuplicateHandle.
+  (:PROCESS_QUERY_INFORMATION		#x0400); Required to retrieve certain information about a process, such as its token, exit code, and priority class (see OpenProcessToken).
+  (:PROCESS_QUERY_LIMITED_INFORMATION	#x1000); Required to retrieve certain information about a process (see GetExitCodeProcess, GetPriorityClass, IsProcessInJob, QueryFullProcessImageName). A handle that has the PROCESS_QUERY_INFORMATION access right is automatically granted PROCESS_QUERY_LIMITED_INFORMATION.Windows Server 2003 and Windows XP:  This access right is not supported.
+  (:PROCESS_SET_INFORMATION		#x0200); Required to set certain information about a process, such as its priority class (see SetPriorityClass).
+  (:PROCESS_SET_QUOTA			#x0100); Required to set memory limits using SetProcessWorkingSetSize.
+  (:PROCESS_SUSPEND_RESUME		#x0800); Required to suspend or resume a process.
+  (:PROCESS_TERMINATE			#x0001); Required to terminate a process using TerminateProcess.
+  (:PROCESS_VM_OPERATION		#x0008); Required to perform an operation on the address space of a process (see VirtualProtectEx and WriteProcessMemory).
+  (:PROCESS_VM_READ			#x0010); Required to read memory in a process using ReadProcessMemory.
+  (:PROCESS_VM_WRITE			#x0020)); Required to write to memory in a process using WriteProcessMemory.
+
+(defctype PROCESS_FLAG (bitfield-union ACCESS_MASK STANDARD_RIGHTS_FLAG %PROCESSOR_FLAG))
+
+(defparameter +PROCESS_ALL_ACCESS+
+  (list*
+   :PROCESS_CREATE_PROCESS		
+   :PROCESS_CREATE_THREAD
+   :PROCESS_DUP_HANDLE			
+   :PROCESS_QUERY_INFORMATION		
+   :PROCESS_QUERY_LIMITED_INFORMATION	
+   :PROCESS_SET_INFORMATION		
+   :PROCESS_SET_QUOTA			
+   :PROCESS_SUSPEND_RESUME		
+   :PROCESS_TERMINATE			
+   :PROCESS_VM_OPERATION		
+   :PROCESS_VM_READ			
+   :PROCESS_VM_WRITE
+   :SYNCHRONIZE
+   +STANDARD_RIGHTS_REQUIRED+
+   ))
+
+(defcenum (WAIT_RESULT_ENUM DWORD)
+  (:WAIT_ABANDONED	#x00000080);The specified object is a mutex object that was not released by the thread that owned the mutex object before the owning thread terminated. Ownership of the mutex object is granted to the calling thread and the mutex state is set to nonsignaled.If the mutex was protecting persistent state information, you should check it for consistency.
+  (:WAIT_IO_COMPLETION	#x000000C0);The wait was ended by one or more user-mode asynchronous procedure calls (APC) queued to the thread.
+  (:WAIT_OBJECT_0	#x00000000);The state of the specified object is signaled.
+  (:WAIT_TIMEOUT	#x00000102);The time-out interval elapsed, and the object's state is nonsignaled.
+  (:WAIT_FAILED		#xFFFFFFF));The function has failed. To get extended error information, call GetLastError.

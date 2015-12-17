@@ -92,6 +92,7 @@
 	   CreateAcceleratorTableW
 	   TranslateAcceleratorW
 	   GetMessageW
+	   GetMessageTime
 	   PeekMessageW
 	   PostMessageW
 	   SendMessageW
@@ -424,6 +425,8 @@
   (hWnd  HWND)
   (wMsgFilterMin :uint)
   (wMsgFilterMax :uint))
+
+(defcfun "GetMessageTime" :long)
 
 (defcfun "PeekMessageW" :boolean
   (lpMsg (:pointer (:struct MSG)))
