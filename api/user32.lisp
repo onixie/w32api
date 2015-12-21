@@ -64,6 +64,7 @@
 	   BringWindowToTop
 	   UpdateWindow
 	   MoveWindow
+	   SetWindowPos
 	   DestroyWindow
 	   CascadeWindows
 	   TileWindows
@@ -520,6 +521,15 @@
   (nWidth :int)
   (nHeight :int)
   (bRepaint :boolean))
+
+(defcfun "SetWindowPos" :boolean
+  (hWnd HWND)
+  (hWndInsertAfter HWND_ENUM)
+  (X :int)
+  (Y :int)
+  (cx :int)
+  (cy :int)
+  (uFlags SWP_FLAG))
 
 (defcfun "InvalidateRect" :boolean
   (hWnd HWND)
