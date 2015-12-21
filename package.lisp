@@ -31,8 +31,10 @@
 	   get-monitor-name
 	   get-monitor-rectangle
 	   create-desktop
+	   open-desktop
 	   switch-desktop
 	   destroy-desktop
+	   get-default-desktop
 	   get-current-desktop
 	   get-window-desktop
 	   get-all-desktops

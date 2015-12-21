@@ -258,6 +258,13 @@
     (unless (null-pointer-p desktop)
       desktop)))
 
+(defun get-default-desktop ()
+  (let ((desktop nil))
+    (join-thread
+     (make-thread
+      (lambda ()
+	(setf desktop (get-current-desktop)))))))
+
 (defun get-window-desktop (window)
   (when (window-p window)
     (let ((desktop (GetThreadDesktop (GetWindowThreadId window))))
