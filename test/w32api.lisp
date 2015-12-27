@@ -317,6 +317,14 @@
 		 #'active-window
 		 #'switch-window
 		 #'focus-window
+		 #'raise-window
+		 #'bury-window
+		 (lambda (window)
+		   (move-window window 0 0))
+		 (lambda (window)
+		   (resize-window window 100 100))
+		 (lambda (window)
+		   (move-&-resize-window window 0 0 100 100))
 		 (lambda (window)
 		   (set-window-title window "Title"))
 		 #'get-window-title
@@ -602,11 +610,41 @@
   (with-fixture window ((string (gensym "WIN")))
     (is (equal t (restore-window <window>)))))
 
-(test |(move-window <window> 10 20 100 200) = t and move window to (0, 10)|
+(test |(raise-window <window>) = t|
+  (let* ((parent (create-window (string (gensym "WIN"))))
+	 (child1 (create-window (string (gensym "CWIN")) :parent parent))
+	 (child2 (create-window (string (gensym "CWIN")) :parent parent)))
+    (is (eq t (raise-window child1)))
+    (is (pointer-eq child1 (w32api.user32::GetTopWindow parent)))
+    (is (eq t (raise-window child2)))
+    (is (pointer-eq child2 (w32api.user32::GetTopWindow parent)))
+    (destroy-window parent)))
+
+(test |(bury-window <window>) = t|
+  (let* ((parent (create-window (string (gensym "WIN"))))
+	 (child1 (create-window (string (gensym "CWIN")) :parent parent))
+	 (child2 (create-window (string (gensym "CWIN")) :parent parent)))
+    (is (eq t (bury-window child1)))
+    (is (pointer-eq child2 (w32api.user32::GetTopWindow parent)))
+    (is (eq t (bury-window child2)))
+    (is (pointer-eq child1 (w32api.user32::GetTopWindow parent)))
+    (destroy-window parent)))
+
+(test |(move-&-resize-window <window> 10 20 100 200) = t and move window to (0, 10)|
   (with-fixture window ((string (gensym "WIN")))
-    (is (equal t (move-window <window> 10 20 100 200)))
+    (is (equal t (move-&-resize-window <window> 10 20 100 200)))
     (is (equal 10 (first (multiple-value-list (get-window-rectangle <window>)))))
     (is (equal 20 (second (multiple-value-list (get-window-rectangle <window>)))))))
+
+(test |(move-&-resize-window <window> 10 20 100 200) = (move-window <window> 10 20) and (resize-window <window> 100 200)|
+  (with-fixture window ((string (gensym "WIN")))
+    (is (equal t (move-&-resize-window <window> 10 20 100 200)))		
+    (let ((res (multiple-value-list (get-window-rectangle <window>))))
+      (is (equal t (move-&-resize-window <window> 0 0 0 0)))
+      (is (not (equal res (multiple-value-list (get-window-rectangle <window>)))))
+      (is (equal t (move-window <window> 10 20)))
+      (is (equal t (resize-window <window> 100 200)))
+      (is (equal res (multiple-value-list (get-window-rectangle <window>)))))))
 
 (test |(tile-windows <window>) = t and tile childrens in <windows>| 
   (is-true (tile-windows))
@@ -629,7 +667,7 @@
 
 (test |(get-window-rectangle <window> t) is in area of (get-window-rectangle <window>)|
   (with-fixture window ((string (gensym "WIN")))
-    (move-window <window> 100 100 200 200)
+    (move-&-resize-window <window> 100 100 200 200)
     (multiple-value-bind (x1 y1 x2 y2)
 	(get-window-rectangle <window> t)
       (is (eq 0 x1))			;Client Area always start from (0,0)

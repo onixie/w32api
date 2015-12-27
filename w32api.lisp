@@ -762,9 +762,28 @@
     (and (not (window-minimized-p window))
 	 (not (window-maximized-p window)))))
 
-(defun move-window (window x y width height)
+(defun move-&-resize-window (window x y width height)
   (when (window-p window)
     (MoveWindow window x y width height t)))
+
+(defun move-window (window x y)
+  (when (window-p window)
+    (SetWindowPos window :HWND_TOP x y 0 0 '(:SWP_NOSIZE :SWP_NOZORDER))))
+
+(defun resize-window (window width height)
+  (when (window-p window)
+    (SetWindowPos window :HWND_TOP 0 0 width height '(:SWP_NOMOVE :SWP_NOZORDER))))
+
+(defun raise-window (window &optional (top-most-p nil))	;checkme: is there any good method?
+  (when (window-p window)
+    (SetWindowPos window :HWND_TOPMOST 0 0 0 0 '(:SWP_NOMOVE :SWP_NOSIZE))
+    (unless top-most-p
+      (SetWindowPos window :HWND_NOTOPMOST 0 0 0 0 '(:SWP_NOMOVE :SWP_NOSIZE)))
+    (SetWindowPos window :HWND_TOP 0 0 0 0 '(:SWP_NOMOVE :SWP_NOSIZE))))
+
+(defun bury-window (window)
+  (when (window-p window)
+    (SetWindowPos window :HWND_BOTTOM 0 0 0 0 '(:SWP_NOMOVE :SWP_NOSIZE :SWP_NOACTIVATE))))
 
 (defun invalidate-rect (window x1 y1 x2 y2 &optional (erase-p t))
   (when (window-p window)
@@ -971,7 +990,7 @@
     (with-foreign-struct ((rect RECT)
 			  ((:left x1))
 			  ((:top  y1))
-			  ((:right x2))
+			  ((:right  x2))
 			  ((:bottom y2)))
       (if client-area-p
 	  (GetClientRect window rect)
@@ -984,6 +1003,16 @@
 	(get-window-rectangle window client-area-p)
       (values (- x2 x1)
 	      (- y2 y1)))))
+
+(defun get-update-rectangle (window &optional erase-p)
+  (when (window-p window)
+    (with-foreign-struct ((rect RECT)
+			  ((:left x1))
+			  ((:top  y1))
+			  ((:right  x2))
+			  ((:bottom y2)))
+      (GetUpdateRect window rect erase-p)
+      (values x1 y1 x2 y2))))
 
 (defun get-drawing-context (window &key (full nil))
   (when (window-p window)
@@ -1020,3 +1049,5 @@
 
 (defmacro with-drawing-context ((var window) &body draws)
   `(call-with-drawing-context ,window (lambda (,var) ,@draws)))
+
+

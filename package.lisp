@@ -74,6 +74,8 @@
 	   maximize-window
 	   minimize-window
 	   restore-window
+	   raise-window
+	   bury-window
 	   destroy-window
 	   tile-windows
 	   cascade-windows
@@ -100,7 +102,12 @@
 	   get-drawing-context-window
 	   get-window-size
 	   get-window-rectangle
+	   get-update-rectangle
+	   move-&-resize-window
 	   move-window
+	   resize-window
+	   raise-window
+	   bury-window
 	   wm-command-handler
 	   proc
 	   create-button

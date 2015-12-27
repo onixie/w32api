@@ -91,7 +91,9 @@
 	   ValidateRgn
 	   GetWindowRgn
 	   SetWindowRgn
-
+	   GetUpdateRect
+	   GetUpdateRgn
+	   
 	   CreateAcceleratorTableW
 	   TranslateAcceleratorW
 	   GetMessageW
@@ -557,6 +559,16 @@
   (hWnd HWND)
   (hRgn HRGN)
   (bRedraw :boolean))
+
+(defcfun "GetUpdateRect" :boolean
+  (hWnd HWND)
+  (lpRect (:pointer (:struct RECT)))
+  (bErase :boolean))
+
+(defcfun "GetUpdateRgn" :boolean
+  (hWnd HWND)
+  (bRgn HRGN)
+  (bErase :boolean))
 
 (defcfun "WindowFromPoint" HWND
   (Point (:pointer (:struct POINT))))
