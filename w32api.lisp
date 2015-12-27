@@ -490,7 +490,7 @@
       `(progn ,@body)))
 
 (defun %create-window (name &key
-			      (style +WS_OVERLAPPEDWINDOW+)
+			      (style (list* :WS_CLIPSIBLINGS :WS_CLIPCHILDREN +WS_OVERLAPPEDWINDOW+))
 			      (extended-style +WS_EX_OVERLAPPEDWINDOW+)
 			      (x +CW_USEDEFAULT+)
 			      (y +CW_USEDEFAULT+)
@@ -506,7 +506,7 @@
 			      (background-color (GetSysColorBrush :COLOR_WINDOW))
 			      &allow-other-keys)
   (unless (and (not allow-same-name-p)
-	       (get-window name :class-name class-name :parent parent))
+	       (get-window name :class-name class-name :parent parent :current-thread-window-p t))
     (let* ((atom (register-class class-name procedure :style class-style :background-color background-color))
 	   (style (if (window-p parent)
 		      (remove :WS_POPUP (cons :WS_CHILD style))
@@ -584,7 +584,7 @@
     (when (EnumThreadWindows (GetCurrentThreadId) (callback EnumThreadWindowsCallback) 0)
       windows)))
 
-(defun get-window (name &key (class-name nil) (parent *parent-window*) (nth 0) (current-thread-window-p t))
+(defun get-window (name &key (class-name nil) (parent *parent-window*) (nth 0) (current-thread-window-p nil))
   (let ((windows (remove-if-not
 		  (lambda (window)
 		    (and (string-equal name (get-window-title window))
