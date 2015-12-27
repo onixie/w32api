@@ -1050,4 +1050,12 @@
 (defmacro with-drawing-context ((var window) &body draws)
   `(call-with-drawing-context ,window (lambda (,var) ,@draws)))
 
+(defun make-rgb-color (r g b)
+  (declare (inline))
+  (RGB r g b))
 
+(defun get-color-rgb (color)
+  (declare (inline))
+  (values (GetRValue color)
+	  (GetGValue color)
+	  (GetBValue color)))

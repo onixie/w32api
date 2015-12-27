@@ -116,4 +116,7 @@
 	   create-groupbox
 	   create-input
 	   create-editor
+
+	   make-rgb-color
+	   get-color-rgb
 	   ))

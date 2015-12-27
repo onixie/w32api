@@ -113,6 +113,7 @@
 	   USEROBJECTFLAGS
 	   HWND_ENUM
 	   SWP_FLAG
+	   COLORREF
 	   ))
 
 (in-package #:w32api.type)
@@ -178,6 +179,8 @@
 (defctype C_ATOM  WORD)
 
 (defctype ACCESS_MASK DWORD)
+
+(defctype COLORREF DWORD)
 
 (defbitfield (STANDARD_RIGHTS_FLAG ACCESS_MASK)
   (:DELETE			#x00010000)	;Required to delete the object.

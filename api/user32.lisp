@@ -110,6 +110,11 @@
 	   GetSysColor	   
 	   GetSysColorBrush
 	   MessageBoxW
+
+	   RGB
+	   GetRValue
+	   GetGValue
+	   GETBValue
 	   ))
 
 (in-package #:w32api.user32)
@@ -591,7 +596,7 @@
 (defcfun "GetSysColorBrush" HBRUSH
   (nIndex COLOR_ENUM))
 
-(defcfun "GetSysColor" DWORD
+(defcfun "GetSysColor" COLORREF
   (nIndex COLOR_ENUM))
 
 (defcfun "MessageBoxW" MB_RESULT_ENUM
@@ -599,3 +604,23 @@
   (lpText    :string)
   (lpCaption :string)
   (uType     MB_FLAG))
+
+(defun RGB (r g b)
+  (declare (inline) (type (unsigned-byte 8) r g b))
+  (with-foreign-object (color 'COLORREF)
+    (setf (mem-ref color 'COLORREF)
+	  (logior  (ash b 16)
+		   (ash g 8)
+		   r))))
+
+(defun GetRValue (color)
+  (declare (inline))
+  (the (unsigned-byte 8) (logand color #x000000ff)))
+
+(defun GetGValue (color)
+  (declare (inline))
+  (the (unsigned-byte 8) (ash (logand color #x0000ff00) -8)))
+
+(defun GetBValue (color)
+  (declare (inline))
+  (the (unsigned-byte 8) (ash (logand color #x00ff0000) -16)))

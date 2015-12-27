@@ -840,3 +840,10 @@
       (is (not (window-p e)))
       (is (equal 0 (hash-table-count w32api::*window-classes*)))
       (is (equal 0 (hash-table-count w32api::*message-handlers*))))))
+
+(test |(get-color-rgb (make-rgb-color 0 100 200)) = (values 0 100 200)|
+  (multiple-value-bind (r g b)
+      (get-color-rgb (make-rgb-color 0 100 200))
+    (is (eq r 0))
+    (is (eq g 100))
+    (is (eq b 200))))
