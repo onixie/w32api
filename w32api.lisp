@@ -1059,3 +1059,18 @@
   (values (GetRValue color)
 	  (GetGValue color)
 	  (GetBValue color)))
+
+(defun get-key-character (wParam)
+  (code-char wParam))
+
+(defun get-key-repeat-count (lParam)
+  (ldb (byte 16 0) lParam))
+
+(defun key-released-p (lParam)
+  (ldb-test (byte 1 31) lParam))
+
+(defun key-pressed-p (lParam)
+  (not (key-released-p lParam)))
+
+(defun alt-key-p (lParam)
+  (ldb-test (byte 1 29) lParam))

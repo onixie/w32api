@@ -119,4 +119,9 @@
 
 	   make-rgb-color
 	   get-color-rgb
+	   get-key-character
+	   get-key-repeat-count
+	   key-released-p
+	   key-pressed-p
+	   alt-key-p
 	   ))
