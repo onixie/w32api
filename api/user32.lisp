@@ -115,7 +115,11 @@
 	   GetRValue
 	   GetGValue
 	   GETBValue
-	   ))
+
+	   GetKeyState
+	   GetAsyncKeyState
+	   GetKeyboardState
+	   MapVirtualKeyW))
 
 (in-package #:w32api.user32)
 
@@ -624,3 +628,16 @@
 (defun GetBValue (color)
   (declare (inline))
   (the (unsigned-byte 8) (ash (logand color #x00ff0000) -16)))
+
+(defcfun "GetKeyState" :short
+  (nVirtKey VK_ENUM))
+
+(defcfun "GetAsyncKeyState" :short
+  (nVirtKey VK_ENUM))
+
+(defcfun "GetKeyboardState" :boolean
+  (lpKeyState (:pointer C_BYTE)))
+
+(defcfun "MapVirtualKeyW" :uint
+  (uCode :uint)
+  (uMapType MAPVK_ENUM))

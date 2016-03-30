@@ -114,7 +114,9 @@
 	   HWND_ENUM
 	   SWP_FLAG
 	   COLORREF
-	   ))
+	   MK_FLAG
+	   VK_ENUM
+	   MAPVK_ENUM))
 
 (in-package #:w32api.type)
 
@@ -1956,3 +1958,193 @@
   (:SWP_NOSIZE #x0001);Retains the current size (ignores the cx and cy parameters).
   (:SWP_NOZORDER #x0004);Retains the current Z order (ignores the hWndInsertAfter parameter).
   (:SWP_SHOWWINDOW #x0040));Displays the window.
+
+(defbitfield (MK_FLAG :ushort)
+  (:MK_CONTROL	#x0008)		;The CTRL key is down.
+  (:MK_LBUTTON	#x0001)		;The left mouse button is down.
+  (:MK_MBUTTON	#x0010)		;The middle mouse button is down.
+  (:MK_RBUTTON	#x0002)		;The right mouse button is down.
+  (:MK_SHIFT	#x0004)		;The SHIFT key is down.
+  (:MK_XBUTTON1 #x0020)		;The first X button is down.
+  (:MK_XBUTTON2 #x0040))	;The second X button is down.
+
+(defcenum (VK_ENUM :uchar)
+  (:VK_LBUTTON #x01) ;Left mouse button
+  (:VK_RBUTTON #x02) ;Right mouse button
+  (:VK_CANCEL #x03) ;Control-break processing
+  (:VK_MBUTTON #x04) ;Middle mouse button (three-button mouse)
+  (:VK_XBUTTON1 #x05) ;X1 mouse button
+  (:VK_XBUTTON2 #x06) ;X2 mouse button
+  (:VK_BACK #x08) ;BACKSPACE key
+  (:VK_TAB #x09) ;TAB key
+  (:VK_CLEAR #x0C) ;CLEAR key
+  (:VK_RETURN #x0D) ;ENTER key
+  (:VK_SHIFT #x10) ;SHIFT key
+  (:VK_CONTROL #x11) ;CTRL key
+  (:VK_MENU #x12) ;ALT key
+  (:VK_PAUSE #x13) ;PAUSE key
+  (:VK_CAPITAL #x14) ;CAPS LOCK key
+  (:VK_KANA #x15) ;IME Kana mode
+  (:VK_HANGUEL #x15) ;IME Hanguel mode (maintained for compatibility; use VK_HANGUL)
+  (:VK_HANGUL #x15) ;IME Hangul mode
+  (:VK_JUNJA #x17) ;IME Junja mode
+  (:VK_FINAL #x18) ;IME final mode
+  (:VK_HANJA #x19) ;IME Hanja mode
+  (:VK_KANJI #x19) ;IME Kanji mode
+  (:VK_ESCAPE #x1B) ;ESC key
+  (:VK_CONVERT #x1C) ;IME convert
+  (:VK_NONCONVERT #x1D) ;IME nonconvert
+  (:VK_ACCEPT #x1E) ;IME accept
+  (:VK_MODECHANGE #x1F) ;IME mode change request
+  (:VK_SPACE #x20) ;SPACEBAR
+  (:VK_PRIOR #x21) ;PAGE UP key
+  (:VK_NEXT #x22) ;PAGE DOWN key
+  (:VK_END #x23) ;END key
+  (:VK_HOME #x24) ;HOME key
+  (:VK_LEFT #x25) ;LEFT ARROW key
+  (:VK_UP #x26) ;UP ARROW key
+  (:VK_RIGHT #x27) ;RIGHT ARROW key
+  (:VK_DOWN #x28) ;DOWN ARROW key
+  (:VK_SELECT #x29) ;SELECT key
+  (:VK_PRINT #x2A) ;PRINT key
+  (:VK_EXECUTE #x2B) ;EXECUTE key
+  (:VK_SNAPSHOT #x2C) ;PRINT SCREEN key
+  (:VK_INSERT #x2D) ;INS key
+  (:VK_DELETE #x2E) ;DEL key
+  (:VK_HELP #x2F) ;HELP key
+  (:0 #x30)
+  (:1 #x31)
+  (:2 #x32)
+  (:3 #x33)
+  (:4 #x34)
+  (:5 #x35)
+  (:6 #x36)
+  (:7 #x37)
+  (:8 #x38)
+  (:9 #x39)
+  (:A #x41)
+  (:B #x42)
+  (:C #x43)
+  (:D #x44)
+  (:E #x45)
+  (:F #x46)
+  (:G #x47)
+  (:H #x48)
+  (:I #x49)
+  (:J #x4A)
+  (:K #x4B)
+  (:L #x4C)
+  (:M #x4D)
+  (:N #x4E)
+  (:O #x4F)
+  (:P #x50)
+  (:Q #x51)
+  (:R #x52)
+  (:S #x53)
+  (:T #x54)
+  (:U #x55)
+  (:V #x56)
+  (:W #x57)
+  (:X #x58)
+  (:Y #x59)
+  (:Z #x5A)
+  (:VK_LWIN #x5B) ;Left Windows key (Natural keyboard)
+  (:VK_RWIN #x5C) ;Right Windows key (Natural keyboard)
+  (:VK_APPS #x5D) ;Applications key (Natural keyboard)
+  (:VK_SLEEP #x5F) ;Computer Sleep key
+  (:VK_NUMPAD0 #x60) ;Numeric keypad 0 key
+  (:VK_NUMPAD1 #x61) ;Numeric keypad 1 key
+  (:VK_NUMPAD2 #x62) ;Numeric keypad 2 key
+  (:VK_NUMPAD3 #x63) ;Numeric keypad 3 key
+  (:VK_NUMPAD4 #x64) ;Numeric keypad 4 key
+  (:VK_NUMPAD5 #x65) ;Numeric keypad 5 key
+  (:VK_NUMPAD6 #x66) ;Numeric keypad 6 key
+  (:VK_NUMPAD7 #x67) ;Numeric keypad 7 key
+  (:VK_NUMPAD8 #x68) ;Numeric keypad 8 key
+  (:VK_NUMPAD9 #x69) ;Numeric keypad 9 key
+  (:VK_MULTIPLY #x6A) ;Multiply key
+  (:VK_ADD #x6B) ;Add key
+  (:VK_SEPARATOR #x6C) ;Separator key
+  (:VK_SUBTRACT #x6D) ;Subtract key
+  (:VK_DECIMAL #x6E) ;Decimal key
+  (:VK_DIVIDE #x6F) ;Divide key
+  (:VK_F1 #x70) ;F1 key
+  (:VK_F2 #x71) ;F2 key
+  (:VK_F3 #x72) ;F3 key
+  (:VK_F4 #x73) ;F4 key
+  (:VK_F5 #x74) ;F5 key
+  (:VK_F6 #x75) ;F6 key
+  (:VK_F7 #x76) ;F7 key
+  (:VK_F8 #x77) ;F8 key
+  (:VK_F9 #x78) ;F9 key
+  (:VK_F10 #x79) ;F10 key
+  (:VK_F11 #x7A) ;F11 key
+  (:VK_F12 #x7B) ;F12 key
+  (:VK_F13 #x7C) ;F13 key
+  (:VK_F14 #x7D) ;F14 key
+  (:VK_F15 #x7E) ;F15 key
+  (:VK_F16 #x7F) ;F16 key
+  (:VK_F17 #x80) ;F17 key
+  (:VK_F18 #x81) ;F18 key
+  (:VK_F19 #x82) ;F19 key
+  (:VK_F20 #x83) ;F20 key
+  (:VK_F21 #x84) ;F21 key
+  (:VK_F22 #x85) ;F22 key
+  (:VK_F23 #x86) ;F23 key
+  (:VK_F24 #x87) ;F24 key
+  (:VK_NUMLOCK #x90) ;NUM LOCK key
+  (:VK_SCROLL #x91) ;SCROLL LOCK key
+  (:VK_LSHIFT #xA0) ;Left SHIFT key
+  (:VK_RSHIFT #xA1) ;Right SHIFT key
+  (:VK_LCONTROL #xA2) ;Left CONTROL key
+  (:VK_RCONTROL #xA3) ;Right CONTROL key
+  (:VK_LMENU #xA4) ;Left MENU key
+  (:VK_RMENU #xA5) ;Right MENU key
+  (:VK_BROWSER_BACK #xA6) ;Browser Back key
+  (:VK_BROWSER_FORWARD #xA7) ;Browser Forward key
+  (:VK_BROWSER_REFRESH #xA8) ;Browser Refresh key
+  (:VK_BROWSER_STOP #xA9) ;Browser Stop key
+  (:VK_BROWSER_SEARCH #xAA) ;Browser Search key
+  (:VK_BROWSER_FAVORITES #xAB) ;Browser Favorites key
+  (:VK_BROWSER_HOME #xAC) ;Browser Start and Home key
+  (:VK_VOLUME_MUTE #xAD) ;Volume Mute key
+  (:VK_VOLUME_DOWN #xAE) ;Volume Down key
+  (:VK_VOLUME_UP #xAF) ;Volume Up key
+  (:VK_MEDIA_NEXT_TRACK #xB0) ;Next Track key
+  (:VK_MEDIA_PREV_TRACK #xB1) ;Previous Track key
+  (:VK_MEDIA_STOP #xB2) ;Stop Media key
+  (:VK_MEDIA_PLAY_PAUSE #xB3) ;Play/Pause Media key
+  (:VK_LAUNCH_MAIL #xB4) ;Start Mail key
+  (:VK_LAUNCH_MEDIA_SELECT #xB5) ;Select Media key
+  (:VK_LAUNCH_APP1 #xB6) ;Start Application 1 key
+  (:VK_LAUNCH_APP2 #xB7) ;Start Application 2 key
+  (:VK_OEM_1 #xBA) ;Used for miscellaneous characters; it can vary by keyboard.For the US standard keyboard, the ';:' key
+  (:VK_OEM_PLUS #xBB) ;For any country/region, the '+' key
+  (:VK_OEM_COMMA #xBC) ;For any country/region, the ',' key
+  (:VK_OEM_MINUS #xBD) ;For any country/region, the '-' key
+  (:VK_OEM_PERIOD #xBE) ;For any country/region, the '.' key
+  (:VK_OEM_2 #xBF) ;Used for miscellaneous characters; it can vary by keyboard.For the US standard keyboard, the '/?' key
+  (:VK_OEM_3 #xC0) ;Used for miscellaneous characters; it can vary by keyboard.For the US standard keyboard, the '`~' key
+  (:VK_OEM_4 #xDB) ;Used for miscellaneous characters; it can vary by keyboard.For the US standard keyboard, the '[{' key
+  (:VK_OEM_5 #xDC) ;Used for miscellaneous characters; it can vary by keyboard.For the US standard keyboard, the '\|' key
+  (:VK_OEM_6 #xDD) ;Used for miscellaneous characters; it can vary by keyboard.For the US standard keyboard, the ']}' key
+  (:VK_OEM_7 #xDE) ;Used for miscellaneous characters; it can vary by keyboard.For the US standard keyboard, the 'single-quote/double-quote' key
+  (:VK_OEM_8 #xDF) ;Used for miscellaneous characters; it can vary by keyboard.
+  (:VK_OEM_102 #xE2) ;Either the angle bracket key or the backslash key on the RT 102-key keyboard
+  (:VK_PROCESSKEY #xE5) ;IME PROCESS key
+  (:VK_PACKET #xE7) ;Used to pass Unicode characters as if they were keystrokes. The VK_PACKET key is the low word of a 32-bit Virtual Key value used for non-keyboard input methods. For more information, see Remark in KEYBDINPUT, SendInput, WM_KEYDOWN, and WM_KEYUP
+  (:VK_ATTN #xF6) ;Attn key
+  (:VK_CRSEL #xF7) ;CrSel key
+  (:VK_EXSEL #xF8) ;ExSel key
+  (:VK_EREOF #xF9) ;Erase EOF key
+  (:VK_PLAY #xFA) ;Play key
+  (:VK_ZOOM #xFB) ;Zoom key
+  (:VK_NONAME #xFC) ;Reserved
+  (:VK_PA1 #xFD) ;PA1 key
+  (:VK_OEM_CLEAR #xFE)) ;Clear key
+
+(defcenum (MAPVK_ENUM :uint) 
+  (:MAPVK_VK_TO_CHAR 2) ;uCode is a virtual-key code and is translated into an unshifted character value in the low-order word of the return value. Dead keys (diacritics) are indicated by setting the top bit of the return value. If there is no translation, the function returns 0.
+  (:MAPVK_VK_TO_VSC 0) ;uCode is a virtual-key code and is translated into a scan code. If it is a virtual-key code that does not distinguish between left- and right-hand keys, the left-hand scan code is returned. If there is no translation, the function returns 0.
+  (:MAPVK_VSC_TO_VK 1) ;uCode is a scan code and is translated into a virtual-key code that does not distinguish between left- and right-hand keys. If there is no translation, the function returns 0.
+  (:MAPVK_VSC_TO_VK_EX 3)) ;uCode is a scan code and is translated into a virtual-key code that distinguishes between left- and right-hand keys. If there is no translation, the function returns 0.

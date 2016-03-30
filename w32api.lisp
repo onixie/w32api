@@ -1072,5 +1072,17 @@
 (defun key-pressed-p (lParam)
   (not (key-released-p lParam)))
 
-(defun alt-key-p (lParam)
-  (ldb-test (byte 1 29) lParam))
+(defun get-cursor-x (lParam)
+  (HIWORD lParam))
+
+(defun get-cursor-y (lParam)
+  (LOWORD lParam))
+
+(defun shift-pressed-p ()
+  (print (> (GetASyncKeyState :VK_SHIFT) 0)))
+
+(defun alt-pressed-p ()
+  (print (> (GetAsyncKeyState :VK_MENU) 0)))
+
+(defun ctrl-pressed-p ()
+  (print (> (GetAsyncKeyState :VK_CONTROL) 0)))

@@ -123,5 +123,11 @@
 	   get-key-repeat-count
 	   key-released-p
 	   key-pressed-p
-	   alt-key-p
+	   
+	   get-cursor-x
+	   get-cursor-y
+
+	   shift-pressed-p
+	   ctrl-pressed-p
+	   alt-pressed-p
 	   ))
