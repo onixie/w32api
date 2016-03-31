@@ -23,7 +23,8 @@
 	   Pie
 	   Chord
 	   InvertRect
-	   FrameRect))
+	   FrameRect
+	   GetTextMetricsW))
 
 (in-package #:w32api.gdi32)
 
@@ -201,3 +202,7 @@
   (hDC  HDC)
   (lprc (:pointer (:struct RECT)))
   (hbr HBRUSH))
+
+(defcfun "GetTextMetricsW" :boolean
+  (hdc HDC)
+  (lptm (:pointer (:struct TEXTMETRICW)))) 

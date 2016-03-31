@@ -1088,3 +1088,23 @@
   (if asynchronous
       (GetASyncKeyState key)
       (GetKeyState key)))
+
+(defmacro with-text-metrics-info (dc (&rest slot-name-and-var-list) &body body)
+  (let ((pvi (gensym)))
+    `(with-foreign-struct ((,pvi TEXTMETRICW) ,@(mapcar #'list slot-name-and-var-list))
+       (when (GetTextMetricsW ,dc ,pvi)
+	 ,@body))))
+
+(defun get-text-height (dc)
+  (with-text-metrics-info dc ((:tmHeight height)) height))
+
+(defun get-text-ascent (dc)
+  (with-text-metrics-info dc ((:tmAscent ascent)) ascent))
+
+(defun get-text-descent (dc)
+  (with-text-metrics-info dc ((:tmDescent descent)) descent))
+
+(defun get-text-char-width (dc &key max-p)
+  (with-text-metrics-info dc ((:tmMaxCharWidth max-width)
+			      (:tmAveCharWidth ave-width))
+    (if max-p max-width ave-width)))

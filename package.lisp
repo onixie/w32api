@@ -128,4 +128,8 @@
 	   get-cursor-x
 	   get-cursor-y
 	   get-modifier-key
-	   ))
+
+	   get-text-height
+	   get-text-ascent
+	   get-text-descent
+	   get-text-char-width))

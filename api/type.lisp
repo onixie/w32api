@@ -116,7 +116,8 @@
 	   COLORREF
 	   MK_FLAG
 	   VK_ENUM
-	   MAPVK_ENUM))
+	   MAPVK_ENUM
+	   TEXTMETRICW))
 
 (in-package #:w32api.type)
 
@@ -2148,3 +2149,25 @@
   (:MAPVK_VK_TO_VSC 0) ;uCode is a virtual-key code and is translated into a scan code. If it is a virtual-key code that does not distinguish between left- and right-hand keys, the left-hand scan code is returned. If there is no translation, the function returns 0.
   (:MAPVK_VSC_TO_VK 1) ;uCode is a scan code and is translated into a virtual-key code that does not distinguish between left- and right-hand keys. If there is no translation, the function returns 0.
   (:MAPVK_VSC_TO_VK_EX 3)) ;uCode is a scan code and is translated into a virtual-key code that distinguishes between left- and right-hand keys. If there is no translation, the function returns 0.
+
+(defcstruct TEXTMETRICW
+  (:tmHeight  :long)			;
+  (:tmAscent  :long)			;
+  (:tmDescent  :long)			;
+  (:tmInternalLeading  :long)		;
+  (:tmExternalLeading  :long)		;
+  (:tmAveCharWidth  :long)			;
+  (:tmMaxCharWidth  :long)			;
+  (:tmWeight  :long)			;
+  (:tmOverhang  :long)			;
+  (:tmDigitizedAspectX  :long)		;
+  (:tmDigitizedAspectY  :long)		;
+  (:tmFirstChar :char)			;
+  (:tmLastChar :char)			;
+  (:tmDefaultChar :char)			;
+  (:tmBreakChar :char)			;
+  (:tmItalic  C_BYTE)			;
+  (:tmUnderlined  C_BYTE)			;
+  (:tmStruckOut  C_BYTE)			;
+  (:tmPitchAndFamily  C_BYTE)		;
+  (:tmCharSet  C_BYTE))			;
