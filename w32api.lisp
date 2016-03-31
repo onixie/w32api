@@ -353,10 +353,11 @@
 	      (funcall default hWnd Msg wParam lParam))
 	    (or handler fallback))))))
 
-(defun message-handler+ (window Msg handler)
+(defun message-handler+ (window Msgs handler)
   (when (and (window-p window) (functionp handler))
     (with-recursive-lock-held (*message-handlers-lock*)
-      (setf (gethash (cons (pointer-address window) Msg) *message-handlers*) handler))))
+      (loop for Msg in (ensure-list Msgs) do
+	   (setf (gethash (cons (pointer-address window) Msg) *message-handlers*) handler)))))
 
 (defun message-handler- (window &optional Msg)
   (unless (null-pointer-p window)
@@ -1060,6 +1061,7 @@
 	  (GetGValue color)
 	  (GetBValue color)))
 
+;;; helper WM_CHAR, WM_KEYDOWN, WM_KEYUP
 (defun get-key-character (wParam)
   (code-char wParam))
 
@@ -1072,17 +1074,17 @@
 (defun key-pressed-p (lParam)
   (not (key-released-p lParam)))
 
+;;; helper for WM_XBUTTONDOWN, WM_XBUTTONUP
 (defun get-cursor-x (lParam)
   (HIWORD lParam))
 
 (defun get-cursor-y (lParam)
   (LOWORD lParam))
 
-(defun shift-pressed-p ()
-  (print (> (GetASyncKeyState :VK_SHIFT) 0)))
+(defun get-modifier-key (wParam)
+  (foreign-bitfield-symbols 'MK_FLAG wParam))
 
-(defun alt-pressed-p ()
-  (print (> (GetAsyncKeyState :VK_MENU) 0)))
-
-(defun ctrl-pressed-p ()
-  (print (> (GetAsyncKeyState :VK_CONTROL) 0)))
+(defun get-key-state (key &key asynchronous)
+  (if asynchronous
+      (GetASyncKeyState key)
+      (GetKeyState key)))

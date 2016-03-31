@@ -119,6 +119,7 @@
 
 	   make-rgb-color
 	   get-color-rgb
+
 	   get-key-character
 	   get-key-repeat-count
 	   key-released-p
@@ -126,8 +127,5 @@
 	   
 	   get-cursor-x
 	   get-cursor-y
-
-	   shift-pressed-p
-	   ctrl-pressed-p
-	   alt-pressed-p
+	   get-modifier-key
 	   ))
