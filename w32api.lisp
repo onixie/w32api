@@ -1089,6 +1089,26 @@
       (GetASyncKeyState key)
       (GetKeyState key)))
 
+(defmacro with-drawing-object ((dc new-object &key (delete-p nil) (old-object 0)) &body body)
+  (let ((old (if (symbolp old-object) old-object (gensym)))
+	(new (gensym)))
+    `(let* ((,new ,new-object)
+	    (,old (SelectObject ,dc ,new)))
+       (unwind-protect
+	    (progn ,@body ,(unless delete-p `,new))
+	 (unless (or (null-pointer-p ,old)
+		     (pointer-eq ,old ,(make-pointer +HGDI-ERROR+)))
+	   (SelectObject ,dc ,old)
+	   ,(when delete-p `(DeleteObject ,new)))))))
+
+(defmacro with-background-mode ((dc mode) &body body)
+  (let ((old (gensym)))
+    `(let ((,old (SetBkMode ,dc ,mode)))
+       (unwind-protect
+	    (progn ,@body)
+	 (unless (eq ,old :ERROR)
+	   (SetBkMode ,dc ,old))))))
+
 (defmacro with-text-metrics-info (dc (&rest slot-name-and-var-list) &body body)
   (let ((pvi (gensym)))
     `(with-foreign-struct ((,pvi TEXTMETRICW) ,@(mapcar #'list slot-name-and-var-list))
@@ -1104,7 +1124,26 @@
 (defun get-text-descent (dc)
   (with-text-metrics-info dc ((:tmDescent descent)) descent))
 
+(defun get-text-extent (dc text)
+  (with-foreign-object (size '(:struct SIZE))
+    (when (GetTextExtentPoint32W dc text (length text) size)
+      (values
+       (foreign-slot-value size '(:struct SIZE) :cx)
+       (foreign-slot-value size '(:struct SIZE) :cy)))))
+
 (defun get-text-char-width (dc &key max-p)
   (with-text-metrics-info dc ((:tmMaxCharWidth max-width)
 			      (:tmAveCharWidth ave-width))
     (if max-p max-width ave-width)))
+
+(defun get-text-color (dc)
+  (get-color-rgb (GetTextColor dc)))
+
+(defun set-text-color (dc &key (r 0) (g 0) (b 0))
+  (get-color-rgb (SetTextColor dc (make-rgb-color r g b))))
+
+(defun get-background-color (dc)
+  (get-color-rgb (GetBkColor dc)))
+
+(defun set-background-color (dc &key (r 0) (g 0) (b 0))
+  (get-color-rgb (SetBkColor dc (make-rgb-color r g b))))

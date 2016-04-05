@@ -132,4 +132,12 @@
 	   get-text-height
 	   get-text-ascent
 	   get-text-descent
-	   get-text-char-width))
+	   get-text-char-width
+	   get-text-extent
+	   
+	   with-drawing-object
+	   with-background-mode
+	   get-text-color
+	   set-text-color
+	   get-background-color
+	   set-background-color))

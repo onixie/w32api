@@ -24,7 +24,20 @@
 	   Chord
 	   InvertRect
 	   FrameRect
-	   GetTextMetricsW))
+	   SetBkMode
+	   GetBkMode
+	   GetBkColor
+	   SetBkColor
+	   GetTextExtentPoint32W
+	   GetTextMetricsW
+	   GetTextColor
+	   SetTextColor
+	   SelectObject
+	   DeleteObject
+	   CreatePen
+	   CreateSolidBrush
+	   CreateHatchBrush
+	   CreatePatternBrush))
 
 (in-package #:w32api.gdi32)
 
@@ -203,6 +216,55 @@
   (lprc (:pointer (:struct RECT)))
   (hbr HBRUSH))
 
+(defcfun "SetBkMode" BKM_ENUM
+  (hdc HDC)
+  (iBkMode BKM_ENUM))
+
+(defcfun "GetBkMode" BKM_ENUM
+  (hdc HDC))
+
+(defcfun "GetBkColor" COLORREF
+  (hdc HDC))
+
+(defcfun "SetBkColor" COLORREF
+  (hdc HDC)
+  (crColor COLORREF))
+
 (defcfun "GetTextMetricsW" :boolean
   (hdc HDC)
   (lptm (:pointer (:struct TEXTMETRICW)))) 
+
+(defcfun "GetTextColor" COLORREF
+  (hdc HDC))
+
+(defcfun "SetTextColor" COLORREF
+  (hdc HDC)
+  (crColor COLORREF))
+
+(defcfun "SelectObject" HGDIOBJ
+  (hdc     HDC)
+  (hgdiobj HGDIOBJ))
+
+(defcfun "DeleteObject" :boolean
+  (hObject HGDIOBJ))					;
+
+(defcfun "CreatePen" HPEN
+  (fnPenStyle PS_ENUM)
+  (nWidth     :int)
+  (crColor    COLORREF))
+
+(defcfun "CreateSolidBrush" HBRUSH
+  (crColor COLORREF))
+
+(defcfun "CreateHatchBrush" HBRUSH
+  (fnStyle HS_ENUM)
+  (clrref COLORREF))
+
+(defcfun "CreatePatternBrush" HBRUSH
+  (hbmp HBITMAP))
+
+(defcfun "GetTextExtentPoint32W" :boolean
+  (hdc     HDC)
+  (lpString :string)
+  (c     :int)
+  (lpSize  (:pointer (:struct SIZE))))

@@ -68,6 +68,7 @@
 	   OSVERSIONINFOEX
 	   PAINTSTRUCT
 	   POINT
+	   SIZE
 	   PRODUCT_ENUM
 	   PM_FLAG
 	   RECT
@@ -117,7 +118,14 @@
 	   MK_FLAG
 	   VK_ENUM
 	   MAPVK_ENUM
-	   TEXTMETRICW))
+	   TEXTMETRICW
+	   HGDIOBJ
+	   HPEN
+	   PS_ENUM
+	   HS_ENUM
+	   HBITMAP
+	   BKM_ENUM
+	   +HGDI-ERROR+))
 
 (in-package #:w32api.type)
 
@@ -175,6 +183,14 @@
 (defctype HMENU		:pointer)
 (defctype HACCEL	:pointer)
 (defctype HRGN          :pointer)
+(defctype HGDIOBJ       :pointer)
+(defctype HPEN          :pointer)
+(defctype HBITMAP          :pointer)
+
+#+x86-64
+(defparameter +HGDI-ERROR+ #xFFFFFFFFFFFFFFFF)
+#+x86
+(defparameter +HGDI-ERROR+ #xFFFFFFFF)
 
 (defctype LRESULT LONG_PTR)
 (defctype LPARAM  LONG_PTR)
@@ -828,6 +844,10 @@
 (defcstruct POINT
   (:x :long)
   (:y :long))
+
+(defcstruct SIZE
+  (:cx :long)
+  (:cy :long))
 
 (defcstruct MSG
   (:hwnd    HWND)
@@ -2171,3 +2191,26 @@
   (:tmStruckOut  C_BYTE)			;
   (:tmPitchAndFamily  C_BYTE)		;
   (:tmCharSet  C_BYTE))			;
+
+(defcenum (PS_ENUM :int)
+  (:PS_SOLID            0)
+  (:PS_DASH             1);       /* -------  */
+  (:PS_DOT              2);       /* .......  */
+  (:PS_DASHDOT          3);       /* _._._._  */
+  (:PS_DASHDOTDOT       4);       /* _.._.._  */
+  (:PS_NULL             5)
+  (:PS_INSIDEFRAME      6))
+
+(defcenum (HS_ENUM :int)
+  (:HS_HORIZONTAL       0);       /* ----- */
+  (:HS_VERTICAL         1);       /* ||||| */
+  (:HS_FDIAGONAL        2);       /* \\\\\ */
+  (:HS_BDIAGONAL        3);       /* ///// */
+  (:HS_CROSS            4);       /* +++++ */
+  (:HS_DIAGCROSS        5);       /* xxxxx */
+  (:HS_API_MAX          12))
+
+(defcenum (BKM_ENUM :int)
+  (:ERROR 0)
+  (:OPAQUE 1)
+  (:TRANSPARENT 2))

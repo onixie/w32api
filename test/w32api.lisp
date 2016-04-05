@@ -185,15 +185,15 @@
     (destroy-desktop new2)))
 
 (test |(switch-desktop ... (switch-desktop <desktop>)) chains will not hold <desktop>|
-      (let ((desktop-name (string (gensym "DESK"))))
-	(is (not (member desktop-name (get-all-desktops) :test #'string-equal)))
-	(destroy-desktop
-	 (switch-desktop
-	  (switch-desktop
-	   (switch-desktop
-	    (switch-desktop
-	     (create-desktop desktop-name))))))
-	(is (not (member desktop-name (get-all-desktops) :test #'string-equal)))))
+  (let ((desktop-name (string (gensym "DESK"))))
+    (is (not (member desktop-name (get-all-desktops) :test #'string-equal)))
+    (destroy-desktop
+     (switch-desktop
+      (switch-desktop
+       (switch-desktop
+	(switch-desktop
+	 (create-desktop desktop-name))))))
+    (is (not (member desktop-name (get-all-desktops) :test #'string-equal)))))
 
 (test |call on <invalid-desktop/monitor> should return nil| 
   (dolist (func (list
@@ -847,3 +847,113 @@
     (is (eq r 0))
     (is (eq g 100))
     (is (eq b 200))))
+
+(test |(with-drawing-object ...) changes current drawing object|
+  (with-fixture window ((string (gensym "WIN")))
+    (WITH-DRAWING-CONTEXT (dc <window>)
+      (let ((new-brush (w32api.gdi32::createSolidBrush (MAKE-RGB-COLOR 0 255 0)))
+	    (new-pen (w32api.gdi32::CreatePen :PS_SOLID 1 (MAKE-RGB-COLOR 255 0 0)))
+	    (old-brush nil))
+	(let ((alived-new-brush (WITH-DRAWING-OBJECT (dc new-brush :old-object got-old-brush)
+				  (is (not (pointer-eq new-brush got-old-brush)))
+				  (setf old-brush got-old-brush)
+				  (let ((alived-new-pen (WITH-DRAWING-OBJECT (dc new-pen :old-object old-pen :delete-p t)
+							  (is (not (pointer-eq new-pen old-pen)))
+							  (w32api.gdi32::Rectangle dc 100 100 200 200))))
+				    (is (not alived-new-pen))))))
+	  (is (pointer-eq alived-new-brush new-brush)))
+	(let ((alived-new-brush (WITH-DRAWING-OBJECT (dc new-brush :old-object new-old-brush :delete-p t)
+				  (is (pointer-eq old-brush new-old-brush)))))
+	  (is (not alived-new-brush)))))))
+
+(test |(with-background-mode ...) changes current background mode|
+  (with-fixture window ((string (gensym "WIN")))
+    (WITH-DRAWING-CONTEXT (dc <window>)
+      (let ((old (w32api.gdi32::GetBkMode dc)))
+	(with-background-mode (dc (car (remove old '(:OPAQUE :TRANSPARENT))))
+	  (is (not (equal old (w32api.gdi32::GetBkMode dc))))
+	  (w32api.gdi32::TextOutW dc 100 100 "DRAW" 4))
+	(is (equal old (w32api.gdi32::GetBkMode dc)))))))
+
+(test |(set-text-color ...) will change current text color and (get-text-color ...) will get current color|
+  (with-fixture window ((string (gensym "WIN")))
+    (WITH-DRAWING-CONTEXT (dc <window>)
+      (multiple-value-bind (r g b)
+	  (get-text-color dc)
+	(multiple-value-bind (rr gg bb)
+	    (set-text-color dc :r 11 :g 22 :b 33)
+	  (is (eq r rr))
+	  (is (not (eq r 11)))
+	  (is (eq g gg))
+	  (is (not (eq g 22)))
+	  (is (eq b bb))
+	  (is (not (eq b 33))))
+	(multiple-value-bind (rr gg bb)
+	    (get-text-color dc)
+	  (is (eq rr 11))
+	  (is (eq gg 22))
+	  (is (eq bb 33)))))))
+
+(test |(set-background-color ...) will change current bk color and (get-background-color ...) will get current color|
+  (with-fixture window ((string (gensym "WIN")))
+    (WITH-DRAWING-CONTEXT (dc <window>)
+      (multiple-value-bind (r g b)
+	  (get-background-color dc)
+	(multiple-value-bind (rr gg bb)
+	    (set-background-color dc :r 33 :g 22 :b 11)
+	  (is (eq r rr))
+	  (is (not (eq r 33)))
+	  (is (eq g gg))
+	  (is (not (eq g 22)))
+	  (is (eq b bb))
+	  (is (not (eq b 11))))
+	(multiple-value-bind (rr gg bb)
+	    (get-background-color dc)
+	  (is (eq rr 33))
+	  (is (eq gg 22))
+	  (is (eq bb 11)))))))
+
+(test |(get-text-ascent ...) can get ascent of char in current font|
+  (with-fixture window ((string (gensym "WIN")))
+    (WITH-DRAWING-CONTEXT (dc <window>)
+      (let ((a (get-text-ascent dc)))
+	(is (numberp a))
+	(is (not (eq a 0)))))))
+
+(test |(get-text-descent ...) can get descent of char in current font|
+  (with-fixture window ((string (gensym "WIN")))
+    (WITH-DRAWING-CONTEXT (dc <window>)
+      (let ((d (get-text-descent dc)))
+	(is (numberp d))
+	(is (not (eq d 0)))))))
+
+(test |(get-text-height ...) can get height of char in current font|
+  (with-fixture window ((string (gensym "WIN")))
+    (WITH-DRAWING-CONTEXT (dc <window>)
+      (let ((h (get-text-height dc)))
+	(is (numberp h))
+	(is (not (eq h 0)))
+	(is (eq h (+ (get-text-descent dc) (get-text-ascent dc))))))))
+
+(test |(get-text-char-width ...) can get average/max width of char in current font|
+  (with-fixture window ((string (gensym "WIN")))
+    (WITH-DRAWING-CONTEXT (dc <window>)
+      (let ((w (get-text-char-width dc)))
+	(is (numberp w))
+	(is (not (eq w 0))))
+      (let ((w (get-text-char-width dc :max-p t)))
+	(is (numberp w))
+	(is (not (eq w 0)))))))
+
+(test |(get-text-extent ...) can get width and height of texts with current font|
+  (with-fixture window ((string (gensym "WIN")))
+    (WITH-DRAWING-CONTEXT (dc <window>)
+      (let ((text "ABCD"))
+	(multiple-value-bind (cx cy)
+	    (get-text-extent dc text)
+	  (is (numberp cx))
+	  (is (numberp cy))
+	  (is (not (eq cx 0)))
+	  (is (not (eq cy 0)))
+	  (is (> cx (* (length text) (get-text-char-width dc)))) ; assume that the sum of chars' avg width < text width, maybe im wrong
+	  (is (eq cy (get-text-height dc))))))))
