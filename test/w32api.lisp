@@ -853,12 +853,14 @@
     (WITH-DRAWING-CONTEXT (dc <window>)
       (let ((new-brush (w32api.gdi32::createSolidBrush (MAKE-RGB-COLOR 0 255 0)))
 	    (new-pen (w32api.gdi32::CreatePen :PS_SOLID 1 (MAKE-RGB-COLOR 255 0 0)))
-	    (old-brush nil))
+	    (old-brush (w32api.gdi32::GetCurrentObject dc :OBJ_BRUSH))
+	    (old-pen (w32api.gdi32::GetCurrentObject dc :OBJ_PEN)))
 	(let ((alived-new-brush (WITH-DRAWING-OBJECT (dc new-brush :old-object got-old-brush)
 				  (is (not (pointer-eq new-brush got-old-brush)))
-				  (setf old-brush got-old-brush)
-				  (let ((alived-new-pen (WITH-DRAWING-OBJECT (dc new-pen :old-object old-pen :delete-p t)
-							  (is (not (pointer-eq new-pen old-pen)))
+				  (is (pointer-eq old-brush got-old-brush))
+				  (let ((alived-new-pen (WITH-DRAWING-OBJECT (dc new-pen :old-object got-old-pen :delete-p t)
+							  (is (not (pointer-eq new-pen got-old-pen)))
+							  (is (pointer-eq old-pen got-old-pen))
 							  (w32api.gdi32::Rectangle dc 100 100 200 200))))
 				    (is (not alived-new-pen))))))
 	  (is (pointer-eq alived-new-brush new-brush)))
@@ -957,3 +959,41 @@
 	  (is (not (eq cy 0)))
 	  (is (> cx (* (length text) (get-text-char-width dc)))) ; assume that the sum of chars' avg width < text width, maybe im wrong
 	  (is (eq cy (get-text-height dc))))))))
+
+(test |(create-font) return specified font object|
+  (is (not (null-pointer-p (create-font))))
+  (is (not (null-pointer-p (create-font :height 10))))
+  (is (not (null-pointer-p (create-font :width 10))))
+  (is (not (null-pointer-p (create-font :escapement 100.0))))
+  (is (not (null-pointer-p (create-font :orientation 100.0))))
+  (is (not (null-pointer-p (create-font :weight 100))))
+  (is (not (null-pointer-p (create-font :weight :FW_HEAVY))))
+  (is (not (null-pointer-p (create-font :italic t))))
+  (is (not (null-pointer-p (create-font :underline t))))
+  (is (not (null-pointer-p (create-font :strikeout t))))
+  (is (not (null-pointer-p (create-font :charset :ANSI_CHARSET))))
+  (is (not (null-pointer-p (create-font :precision '(:OUT_TT_PRECIS :CLIP_LH_ANGLES)))))
+  (is (not (null-pointer-p (create-font :quality :CLEARTYPE_NATURAL_QUALITY))))
+  (is (not (null-pointer-p (create-font :pitch :FIXED_PITCH))))
+  (is (not (null-pointer-p (create-font :family :SWISS))))
+  (is (not (null-pointer-p (create-font :face "custom font"))))
+  )
+
+(test |(get-font-info font) return font info|
+  (let ((font-info (list
+		    :height 10
+		    :width 10
+		    :escapement 100.0
+		    :orientation 100.0
+		    :weight :FW_HEAVY
+		    :italic t
+		    :underline t
+		    :strikeout t
+		    :charset :ANSI_CHARSET
+		    :precision '(:OUT_TT_PRECIS :CLIP_LH_ANGLES)
+		    :quality :CLEARTYPE_NATURAL_QUALITY
+		    :pitch :FIXED_PITCH
+		    :family :SWISS
+		    :face "custom font")))
+    (let ((got-font-info (get-font-info (apply #'create-font font-info))))
+      (equal font-info got-font-info))))

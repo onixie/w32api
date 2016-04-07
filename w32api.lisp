@@ -1147,3 +1147,76 @@
 
 (defun set-background-color (dc &key (r 0) (g 0) (b 0))
   (get-color-rgb (SetBkColor dc (make-rgb-color r g b))))
+
+(defun create-font (&key
+		      (height 0)
+		      (width 0)
+		      (escapement 0)
+		      (orientation 0)
+		      (weight 0)
+		      italic
+		      underline
+		      strikeout
+		      (charset :DEFAULT_CHARSET)
+		      (precision '(:OUT_DEFAULT_PRECIS :CLIP_DEFAULT_PRECIS))
+		      (quality :DEFAULT_QUALITY)
+		      (pitch :DEFAULT_PITCH)
+		      (family :DONTCARE)
+		      (face ""))
+  (CreateFontW height
+	       width
+	       (ceiling (* escapement 10))
+	       (ceiling (* orientation 10))
+	       (if (numberp weight) weight (foreign-enum-value 'FW_ENUM weight))
+	       italic
+	       underline
+	       strikeout
+	       charset
+	       (first precision)
+	       (second precision)
+	       quality
+	       (logior (foreign-enum-value 'PITCH_ENUM pitch) (ash (foreign-enum-value 'FAMILY_ENUM family) 4))
+	       face))
+
+(defmacro with-drawing-object-info ((object type &rest slot-name-and-var-list) &body body)
+  (let ((try (gensym))
+	(size (gensym)))
+    `(let ((,size (GetObjectW ,object 0 (null-pointer))))
+       (when (> ,size 0)
+	 (with-foreign-struct ((,try ,type) ,@(mapcar #'list slot-name-and-var-list))
+	   (let ((,size (GetObjectW ,object ,size ,try)))
+	     (when (> ,size 0)
+	       ,@body)))
+	 ))))
+
+(defun get-font-info (font)
+  (with-drawing-object-info (font LOGFONTW
+				  (:lfHeight height)
+				  (:lfWidth width)
+				  (:lfEscapement escapement)
+				  (:lfOrientation orientation)
+				  (:lfWeight weight); FW_ENUM can be used
+				  (:lfItalic italic)
+				  (:lfUnderline underline)
+				  (:lfStrikeOut strikeout)
+				  (:lfCharSet charset) ;CHARSET_ENUM
+				  (:lfOutPrecision out-precision);OUT_PRECIS_ENUM
+				  (:lfClipPrecision clip-precision);CLIP_PRECIS_ENUM
+				  (:lfQuality quality);QUALITY_ENUM
+				  (:lfPitchAndFamily pitch&family);PITCH_ENUM FAMILY_ENUM
+				  (:lfFaceName face))
+    (list :height height
+	  :width width
+	  :escapement (/ escapement 10.0)
+	  :orientation (/ escapement 10.0)
+	  :weight (foreign-enum-keyword 'FW_ENUM weight :errorp nil)
+	  :italic (/= italic 0)
+	  :underline (/= underline 0)
+	  :strikeout (/= strikeout 0)
+	  :charset (foreign-enum-keyword 'CHARSET_ENUM charset)
+	  :precision (list (foreign-enum-keyword 'OUT_PRECIS_ENUM out-precision)
+			   (foreign-enum-keyword 'CLIP_PRECIS_ENUM clip-precision))
+	  :quality (foreign-enum-keyword 'QUALITY_ENUM quality)
+	  :pitch (foreign-enum-keyword 'PITCH_ENUM (ldb (byte 4 0) pitch&family))
+	  :family (foreign-enum-keyword 'FAMILY_ENUM (ldb (byte 4 4) pitch&family))
+	  :face (foreign-string-to-lisp face :max-chars +LF_FACESIZE+))))

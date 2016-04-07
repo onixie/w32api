@@ -140,4 +140,7 @@
 	   get-text-color
 	   set-text-color
 	   get-background-color
-	   set-background-color))
+	   set-background-color
+
+	   create-font
+	   get-font-info))

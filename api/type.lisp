@@ -121,11 +121,22 @@
 	   TEXTMETRICW
 	   HGDIOBJ
 	   HPEN
+	   HFONT
 	   PS_ENUM
 	   HS_ENUM
 	   HBITMAP
 	   BKM_ENUM
-	   +HGDI-ERROR+))
+	   +HGDI-ERROR+
+	   OBJ_ENUM
+	   LOGFONTW
+	   +LF_FACESIZE+
+	   FAMILY_ENUM
+	   PITCH_ENUM
+	   QUALITY_ENUM
+	   CLIP_PRECIS_ENUM
+	   OUT_PRECIS_ENUM
+	   CHARSET_ENUM
+	   FW_ENUM	   ))
 
 (in-package #:w32api.type)
 
@@ -185,6 +196,7 @@
 (defctype HRGN          :pointer)
 (defctype HGDIOBJ       :pointer)
 (defctype HPEN          :pointer)
+(defctype HFONT          :pointer)
 (defctype HBITMAP          :pointer)
 
 #+x86-64
@@ -355,7 +367,7 @@
   (:ES_OEMCONVERT       #x0400)
   (:ES_READONLY         #x0800)
   (:ES_WANTRETURN       #x1000)
-					;>=0x0400
+			  ;>=0x0400
   (:ES_NUMBER           #x2000))
 
 (defctype WND_STYLE (bitfield-union DWORD WS_FLAG BS_FLAG ES_FLAG))
@@ -657,7 +669,7 @@
   (:WM_SYSDEADCHAR					#x0107)
   (:WM_UNICHAR						#x0109)
   (:WM_KEYLAST						#x0109)
-					;  (:KEYLAST    #x0108)
+			  ;  (:KEYLAST    #x0108)
   (:WM_IME_STARTCOMPOSITION				#x010D)
   (:WM_IME_ENDCOMPOSITION				#x010E)
   (:WM_IME_COMPOSITION					#x010F)
@@ -707,9 +719,9 @@
   (:WM_XBUTTONDBLCLK					#x020D)
   (:WM_MOUSEHWHEEL					#x020E)
   (:WM_MOUSELAST					#x020E)
-					;  (:MOUSELAST  #x020D)
-					;  (:MOUSELAST  #x020A)
-					;  (:MOUSELAST  #x0209)
+			  ;  (:MOUSELAST  #x020D)
+			  ;  (:MOUSELAST  #x020A)
+			  ;  (:MOUSELAST  #x0209)
   (:WM_PARENTNOTIFY					#x0210)
   (:WM_ENTERMENULOOP					#x0211)
   (:WM_EXITMENULOOP					#x0212)
@@ -815,11 +827,11 @@
   (:BM_GETSTATE        #x00F2)
   (:BM_SETSTATE        #x00F3)
   (:BM_SETSTYLE        #x00F4)
-					;(WINVER >= 0x0400)
+			  ;(WINVER >= 0x0400)
   (:BM_CLICK           #x00F5)
   (:BM_GETIMAGE        #x00F6)
   (:BM_SETIMAGE        #x00F7)
-					;(WINVER >= 0x0600)
+			  ;(WINVER >= 0x0600)
   (:BM_SETDONTCLICK    #x00F8))
 
 (defcenum (BN_ENUM WORD)
@@ -829,7 +841,7 @@
   (:BN_UNHILITE         3)
   (:BN_DISABLE          4)
   (:BN_DOUBLECLICKED    5)
-					;WINVER >= 0x0400
+			  ;WINVER >= 0x0400
   (:BN_PUSHED           2)
   (:BN_UNPUSHED         3)
   (:BN_DBLCLK           5)
@@ -1139,10 +1151,10 @@
 (defcenum (SM_ENUM :int)
   (:SM_ARRANGE 56)			;The flags that specify how the system arranged minimized windows. For more information, see the Remarks section in this topic.
   (:SM_CLEANBOOT 67)			;The value that specifies how the system is started:
-					;0 Normal boot
-					;1 Fail-safe boot
-					;2 Fail-safe with network boot
-					;A fail-safe boot (also called SafeBoot, Safe Mode, or Clean Boot) bypasses the user startup files.
+			  ;0 Normal boot
+			  ;1 Fail-safe boot
+			  ;2 Fail-safe with network boot
+			  ;A fail-safe boot (also called SafeBoot, Safe Mode, or Clean Boot) bypasses the user startup files.
   (:SM_CMONITORS 80)			;The number of display monitors on a desktop. For more information, see the Remarks section in this topic.
   (:SM_CMOUSEBUTTONS 43)		;The number of buttons on a mouse, or zero if no mouse is installed.
   (:SM_CONVERTIBLESLATEMODE #x2003)	;Reflects the state of the laptop or slate mode, 0 for Slate Mode and non-zero otherwise. When this system metric changes, the system sends a broadcast message via WM_SETTINGCHANGE with "ConvertibleSlateMode" in the LPARAM. Note that this system metric doesn't apply to desktop PCs. In that case, use GetAutoRotationState.
@@ -1150,13 +1162,13 @@
   (:SM_CXCURSOR 13)			;The width of a cursor, in pixels. The system cannot create cursors of other sizes.
   (:SM_CXDLGFRAME 7)			;This value is the same as SM_CXFIXEDFRAME.
   (:SM_CXDOUBLECLK 36)			;The width of the rectangle around the location of a first click in a double-click sequence, in pixels. The second click must occur within the rectangle that is defined by SM_CXDOUBLECLK and SM_CYDOUBLECLK for the system to consider the two clicks a double-click. The two clicks must also occur within a specified time.
-					;To set the width of the double-click rectangle, call SystemParametersInfo with SPI_SETDOUBLECLKWIDTH.
+			  ;To set the width of the double-click rectangle, call SystemParametersInfo with SPI_SETDOUBLECLKWIDTH.
   (:SM_CXDRAG 68)			;The number of pixels on either side of a mouse-down point that the mouse pointer can move before a drag operation begins. This allows the user to click and release the mouse button easily without unintentionally starting a drag operation. If this value is negative, it is subtracted from the left of the mouse-down point and added to the right of it.
   (:SM_CXEDGE 45)			;The width of a 3-D border, in pixels. This metric is the 3-D counterpart of SM_CXBORDER.
   (:SM_CXFIXEDFRAME 7)			;The thickness of the frame around the perimeter of a window that has a caption but is not sizable, in pixels. SM_CXFIXEDFRAME is the height of the horizontal border, and SM_CYFIXEDFRAME is the width of the vertical border.
-					;This value is the same as SM_CXDLGFRAME.
+			  ;This value is the same as SM_CXDLGFRAME.
   (:SM_CXFOCUSBORDER 83)		;The width of the left and right edges of the focus rectangle that the DrawFocusRect draws. This value is in pixels.
-					;Windows 2000:  This value is not supported.
+			  ;Windows 2000:  This value is not supported.
   (:SM_CXFRAME 32)			;This value is the same as SM_CXSIZEFRAME.
   (:SM_CXFULLSCREEN 16)			;The width of the client area for a full-screen window on the primary display monitor, in pixels. To get the coordinates of the portion of the screen that is not obscured by the system taskbar or by application desktop toolbars, call the SystemParametersInfo function with the SPI_GETWORKAREA value.
   (:SM_CXHSCROLL 21)			;The width of the arrow bitmap on a horizontal scroll bar, in pixels.
@@ -1172,11 +1184,11 @@
   (:SM_CXMINSPACING 47)			;The width of a grid cell for a minimized window, in pixels. Each minimized window fits into a rectangle this size when arranged. This value is always greater than or equal to SM_CXMINIMIZED.
   (:SM_CXMINTRACK 34)			;The minimum tracking width of a window, in pixels. The user cannot drag the window frame to a size smaller than these dimensions. A window can override this value by processing the WM_GETMINMAXINFO message.
   (:SM_CXPADDEDBORDER 92)		;The amount of border padding for captioned windows, in pixels.
-					;Windows XP/2000:  This value is not supported.
+			  ;Windows XP/2000:  This value is not supported.
   (:SM_CXSCREEN 0)			;The width of the screen of the primary display monitor, in pixels. This is the same value obtained by calling GetDeviceCaps as follows: GetDeviceCaps( hdcPrimaryMonitor, HORZRES).
   (:SM_CXSIZE 30)			;The width of a button in a window caption or title bar, in pixels.
   (:SM_CXSIZEFRAME 32)			;The thickness of the sizing border around the perimeter of a window that can be resized, in pixels. SM_CXSIZEFRAME is the width of the horizontal border, and SM_CYSIZEFRAME is the height of the vertical border.
-					;This value is the same as SM_CXFRAME.
+			  ;This value is the same as SM_CXFRAME.
   (:SM_CXSMICON 49)			;The recommended width of a small icon, in pixels. Small icons typically appear in window captions and in small icon view.
   (:SM_CXSMSIZE 52)			;The width of small caption buttons, in pixels.
   (:SM_CXVIRTUALSCREEN 78)		;The width of the virtual screen, in pixels. The virtual screen is the bounding rectangle of all display monitors. The SM_XVIRTUALSCREEN metric is the coordinates for the left side of the virtual screen.
@@ -1186,13 +1198,13 @@
   (:SM_CYCURSOR 14)			;The height of a cursor, in pixels. The system cannot create cursors of other sizes.
   (:SM_CYDLGFRAME 8)			;This value is the same as SM_CYFIXEDFRAME.
   (:SM_CYDOUBLECLK 37)			;The height of the rectangle around the location of a first click in a double-click sequence, in pixels. The second click must occur within the rectangle defined by SM_CXDOUBLECLK and SM_CYDOUBLECLK for the system to consider the two clicks a double-click. The two clicks must also occur within a specified time.
-					;To set the height of the double-click rectangle, call SystemParametersInfo with SPI_SETDOUBLECLKHEIGHT.
+			  ;To set the height of the double-click rectangle, call SystemParametersInfo with SPI_SETDOUBLECLKHEIGHT.
   (:SM_CYDRAG 69)			;The number of pixels above and below a mouse-down point that the mouse pointer can move before a drag operation begins. This allows the user to click and release the mouse button easily without unintentionally starting a drag operation. If this value is negative, it is subtracted from above the mouse-down point and added below it.
   (:SM_CYEDGE 46)			;The height of a 3-D border, in pixels. This is the 3-D counterpart of SM_CYBORDER.
   (:SM_CYFIXEDFRAME 8)			;The thickness of the frame around the perimeter of a window that has a caption but is not sizable, in pixels. SM_CXFIXEDFRAME is the height of the horizontal border, and SM_CYFIXEDFRAME is the width of the vertical border.
-					;This value is the same as SM_CYDLGFRAME.
+			  ;This value is the same as SM_CYDLGFRAME.
   (:SM_CYFOCUSBORDER 84)		;The height of the top and bottom edges of the focus rectangle drawn by DrawFocusRect. This value is in pixels.
-					;Windows 2000:  This value is not supported.
+			  ;Windows 2000:  This value is not supported.
   (:SM_CYFRAME 33)			;This value is the same as SM_CYSIZEFRAME.
   (:SM_CYFULLSCREEN 17)			;The height of the client area for a full-screen window on the primary display monitor, in pixels. To get the coordinates of the portion of the screen not obscured by the system taskbar or by application desktop toolbars, call the SystemParametersInfo function with the SPI_GETWORKAREA value.
   (:SM_CYHSCROLL 3)			;The height of a horizontal scroll bar, in pixels.
@@ -1211,7 +1223,7 @@
   (:SM_CYSCREEN 1)			;The height of the screen of the primary display monitor, in pixels. This is the same value obtained by calling GetDeviceCaps as follows: GetDeviceCaps( hdcPrimaryMonitor, VERTRES).
   (:SM_CYSIZE 31)			;The height of a button in a window caption or title bar, in pixels.
   (:SM_CYSIZEFRAME 33)			;The thickness of the sizing border around the perimeter of a window that can be resized, in pixels. SM_CXSIZEFRAME is the width of the horizontal border, and SM_CYSIZEFRAME is the height of the vertical border.
-					;This value is the same as SM_CYFRAME.
+			  ;This value is the same as SM_CYFRAME.
   (:SM_CYSMCAPTION 51)			;The height of a small caption, in pixels.
   (:SM_CYSMICON 50)			;The recommended height of a small icon, in pixels. Small icons typically appear in window captions and in small icon view.
   (:SM_CYSMSIZE 53)			;The height of small caption buttons, in pixels.
@@ -1221,12 +1233,12 @@
   (:SM_DBCSENABLED 42)			;Nonzero if User32.dll supports DBCS; otherwise, 0.
   (:SM_DEBUG 22)			;Nonzero if the debug version of User.exe is installed; otherwise, 0.
   (:SM_DIGITIZER 94)			;Nonzero if the current operating system is Windows 7 or Windows Server 2008 R2 and the Tablet PC Input service is started; otherwise, 0. The return value is a bitmask that specifies the type of digitizer input supported by the device. For more information, see Remarks.
-					;Windows Server 2008, Windows Vista, and Windows XP/2000:  This value is not supported.
+			  ;Windows Server 2008, Windows Vista, and Windows XP/2000:  This value is not supported.
   (:SM_IMMENABLED 82)			;Nonzero if Input Method Manager/Input Method Editor features are enabled; otherwise, 0.
-					;SM_IMMENABLED indicates whether the system is ready to use a Unicode-based IME on a Unicode application. To ensure that a language-dependent IME works, check SM_DBCSENABLED and the system ANSI code page. Otherwise the ANSI-to-Unicode conversion may not be performed correctly, or some components like fonts or registry settings may not be present.
+			  ;SM_IMMENABLED indicates whether the system is ready to use a Unicode-based IME on a Unicode application. To ensure that a language-dependent IME works, check SM_DBCSENABLED and the system ANSI code page. Otherwise the ANSI-to-Unicode conversion may not be performed correctly, or some components like fonts or registry settings may not be present.
   (:SM_MAXIMUMTOUCHES 95)		;Nonzero if there are digitizers in the system; otherwise, 0.
-					;SM_MAXIMUMTOUCHES returns the aggregate maximum of the maximum number of contacts supported by every digitizer in the system. If the system has only single-touch digitizers, the return value is 1. If the system has multi-touch digitizers, the return value is the number of simultaneous contacts the hardware can provide.
-					;Windows Server 2008, Windows Vista, and Windows XP/2000:  This value is not supported.
+			  ;SM_MAXIMUMTOUCHES returns the aggregate maximum of the maximum number of contacts supported by every digitizer in the system. If the system has only single-touch digitizers, the return value is 1. If the system has multi-touch digitizers, the return value is the number of simultaneous contacts the hardware can provide.
+			  ;Windows Server 2008, Windows Vista, and Windows XP/2000:  This value is not supported.
   (:SM_MEDIACENTER 87)			;Nonzero if the current operating system is the Windows XP, Media Center Edition, 0 if not.
   (:SM_MENUDROPALIGNMENT 40)		;Nonzero if drop-down menus are right-aligned with the corresponding menu-bar item; 0 if the menus are left-aligned.
   (:SM_MIDEASTENABLED 74)		;Nonzero if the system is enabled for Hebrew and Arabic languages, 0 if not.
@@ -1236,15 +1248,15 @@
   (:SM_NETWORK 63)			;The least significant bit is set if a network is present; otherwise, it is cleared. The other bits are reserved for future use.
   (:SM_PENWINDOWS 41)			;Nonzero if the Microsoft Windows for Pen computing extensions are installed; zero otherwise.
   (:SM_REMOTECONTROL #x2001)		;This system metric is used in a Terminal Services environment to determine if the current Terminal Server session is being remotely controlled. Its value is nonzero if the current session is remotely controlled; otherwise, 0.
-					;You can use terminal services management tools such as Terminal Services Manager (tsadmin.msc) and shadow.exe to control a remote session. When a session is being remotely controlled, another user can view the contents of that session and potentially interact with it.
+			  ;You can use terminal services management tools such as Terminal Services Manager (tsadmin.msc) and shadow.exe to control a remote session. When a session is being remotely controlled, another user can view the contents of that session and potentially interact with it.
   (:SM_REMOTESESSION #x1000)		;This system metric is used in a Terminal Services environment. If the calling process is associated with a Terminal Services client session, the return value is nonzero. If the calling process is associated with the Terminal Services console session, the return value is 0.
-					;Windows Server 2003 and Windows XP:  The console session is not necessarily the physical console. For more information, see WTSGetActiveConsoleSessionId.
+			  ;Windows Server 2003 and Windows XP:  The console session is not necessarily the physical console. For more information, see WTSGetActiveConsoleSessionId.
   (:SM_SAMEDISPLAYFORMAT 81)		;Nonzero if all the display monitors have the same color format, otherwise, 0. Two displays can have the same bit depth, but different color formats. For example, the red, green, and blue pixels can be encoded with different numbers of bits, or those bits can be located in different places in a pixel color value.
   (:SM_SECURE 44)			;This system metric should be ignored; it always returns 0.
   (:SM_SERVERR2 89)			;The build number if the system is Windows Server 2003 R2; otherwise, 0.
   (:SM_SHOWSOUNDS 70)			;Nonzero if the user requires an application to present information visually in situations where it would otherwise present the information only in audible form; otherwise, 0.
   (:SM_SHUTTINGDOWN #x2000)		;Nonzero if the current session is shutting down; otherwise, 0.
-					;Windows 2000:  This value is not supported.
+			  ;Windows 2000:  This value is not supported.
   (:SM_SLOWMACHINE 73)			;Nonzero if the computer has a low-end (slow) processor; otherwise, 0.
   (:SM_STARTER 88)			;Nonzero if the current operating system is Windows 7 Starter Edition, Windows Vista Starter, or Windows XP Starter Edition; otherwise, 0.
   (:SM_SWAPBUTTON 23)			;Nonzero if the meanings of the left and right mouse buttons are swapped; otherwise, 0.
@@ -2214,3 +2226,130 @@
   (:ERROR 0)
   (:OPAQUE 1)
   (:TRANSPARENT 2))
+
+(defcenum (OBJ_ENUM :uint)
+  (:OBJ_PEN             1)
+  (:OBJ_BRUSH           2)
+  (:OBJ_DC              3)
+  (:OBJ_METADC          4)
+  (:OBJ_PAL             5)
+  (:OBJ_FONT            6)
+  (:OBJ_BITMAP          7)
+  (:OBJ_REGION          8)
+  (:OBJ_METAFILE        9)
+  (:OBJ_MEMDC           10)
+  (:OBJ_EXTPEN          11)
+  (:OBJ_ENHMETADC       12)
+  (:OBJ_ENHMETAFILE     13)
+  (:OBJ_COLORSPACE      14))
+
+(defcenum (FW_ENUM :long)
+  (:FW_DONTCARE	0)
+  (:FW_THIN	100)
+  (:FW_EXTRALIGHT	200)
+  (:FW_ULTRALIGHT	200)
+  (:FW_LIGHT	300)
+  (:FW_NORMAL	400)
+  (:FW_REGULAR	400)
+  (:FW_MEDIUM	500)
+  (:FW_SEMIBOLD	600)
+  (:FW_DEMIBOLD	600)
+  (:FW_BOLD	700)
+  (:FW_EXTRABOLD	800)
+  (:FW_ULTRABOLD	800)
+  (:FW_HEAVY	900)
+  (:FW_BLACK	900))
+
+(defcenum (CHARSET_ENUM C_BYTE)
+  (:ANSI_CHARSET            0)
+  (:DEFAULT_CHARSET         1)
+  (:SYMBOL_CHARSET          2)
+  (:SHIFTJIS_CHARSET        128)
+  (:HANGEUL_CHARSET         129)
+  (:HANGUL_CHARSET          129)
+  (:GB2312_CHARSET          134)
+  (:CHINESEBIG5_CHARSET     136)
+  (:OEM_CHARSET             255)
+			  ;#if(WINVER >= 0x0400)
+  (:JOHAB_CHARSET           130)
+  (:HEBREW_CHARSET          177)
+  (:ARABIC_CHARSET          178)
+  (:GREEK_CHARSET           161)
+  (:TURKISH_CHARSET         162)
+  (:VIETNAMESE_CHARSET      163)
+  (:THAI_CHARSET            222)
+  (:EASTEUROPE_CHARSET      238)
+  (:RUSSIAN_CHARSET         204)
+  (:MAC_CHARSET             77)
+  (:BALTIC_CHARSET          186))
+
+(defcenum (OUT_PRECIS_ENUM C_BYTE)
+  (:OUT_DEFAULT_PRECIS          0)
+  (:OUT_STRING_PRECIS           1)
+  (:OUT_CHARACTER_PRECIS        2)
+  (:OUT_STROKE_PRECIS           3)
+  (:OUT_TT_PRECIS               4)
+  (:OUT_DEVICE_PRECIS           5)
+  (:OUT_RASTER_PRECIS           6)
+  (:OUT_TT_ONLY_PRECIS          7)
+  (:OUT_OUTLINE_PRECIS          8)
+  (:OUT_SCREEN_OUTLINE_PRECIS   9)
+  (:OUT_PS_ONLY_PRECIS          10))
+
+(defcenum (CLIP_PRECIS_ENUM C_BYTE)
+  (:CLIP_DEFAULT_PRECIS     0)
+  (:CLIP_CHARACTER_PRECIS   1)
+  (:CLIP_STROKE_PRECIS      2)
+  (:CLIP_MASK               #x0f)
+  (:CLIP_LH_ANGLES          #x10)
+  (:CLIP_TT_ALWAYS          #x20)
+  ;;#if (_WIN32_WINNT >= _WIN32_WINNT_LONGHORN)
+  (:CLIP_DFA_DISABLE        #x40)
+  ;;#endif // (_WIN32_WINNT >= _WIN32_WINNT_LONGHORN)
+  (:CLIP_EMBEDDED           #x80))
+
+(defcenum (QUALITY_ENUM C_BYTE)
+  (:DEFAULT_QUALITY 0)
+  (:DRAFT_QUALITY 1)
+  (:PROOF_QUALITY 2)
+			  ;#if(WINVER >= 0x0400)
+  (:NONANTIALIASED_QUALITY  3)
+  (:ANTIALIASED_QUALITY     4)
+			  ;#endif /* WINVER >= 0x0400 */
+
+			  ;#if (_WIN32_WINNT >= _WIN32_WINNT_WINXP)
+  (:CLEARTYPE_QUALITY       5)
+  (:CLEARTYPE_NATURAL_QUALITY 6)
+			  ;#endif
+  )
+
+(defcenum (PITCH_ENUM C_BYTE) ;two low order bits
+  (:DEFAULT_PITCH           0)
+  (:FIXED_PITCH             1)
+  (:VARIABLE_PITCH          2)
+			  ;#if(WINVER >= 0x0400)
+  (:MONO_FONT               8))
+			  ;#endif /* WINVER >= 0x0400 */
+(defcenum (FAMILY_ENUM C_BYTE) ; bit4~bit7
+  (:DONTCARE         0);  /* Don't care or don't know. */
+  (:ROMAN            1);  /* Variable stroke width, serifed. *//* Times Roman, Century Schoolbook, etc. */
+  (:SWISS            2);  /* Variable stroke width, sans-serifed. */ /* Helvetica, Swiss, etc. */
+  (:MODERN           3);  /* Constant stroke width, serifed or sans-serifed. */ /* Pica, Elite, Courier, etc. */ (:SCRIPT           (4<<4));  /* Cursive, etc. */
+  (:DECORATIVE       4));  /* Old English, etc. */
+
+(defparameter +LF_FACESIZE+ 32)
+(defcstruct LOGFONTW
+  (:lfHeight :long)
+  (:lfWidth :long)
+  (:lfEscapement :long)
+  (:lfOrientation :long)
+  (:lfWeight :long); FW_ENUM can be used
+  (:lfItalic C_BYTE)
+  (:lfUnderline C_BYTE)
+  (:lfStrikeOut C_BYTE)
+  (:lfCharSet C_BYTE) ;CHARSET_ENUM
+  (:lfOutPrecision C_BYTE);OUT_PRECIS_ENUM
+  (:lfClipPrecision C_BYTE);CLIP_PRECIS_ENUM
+  (:lfQuality C_BYTE);QUALITY_ENUM
+  (:lfPitchAndFamily C_BYTE);PITCH_ENUM FAMILY_ENUM
+  (:lfFaceName WORD :count 32))

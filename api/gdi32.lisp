@@ -34,10 +34,14 @@
 	   SetTextColor
 	   SelectObject
 	   DeleteObject
+	   GetObjectW
+	   GetCurrentObject
 	   CreatePen
 	   CreateSolidBrush
 	   CreateHatchBrush
-	   CreatePatternBrush))
+	   CreatePatternBrush
+	   CreateFontW
+	   CreateFontIndirectW))
 
 (in-package #:w32api.gdi32)
 
@@ -245,6 +249,15 @@
   (hdc     HDC)
   (hgdiobj HGDIOBJ))
 
+(defcfun "GetCurrentObject" HGDIOBJ
+  (hdc  HDC)
+  (uObjectType OBJ_ENUM))
+
+(defcfun "GetObjectW" :int
+  (hgdiobj HGDIOBJ)
+  (cbBuffer :int)
+  (lpvObject :pointer))
+
 (defcfun "DeleteObject" :boolean
   (hObject HGDIOBJ))					;
 
@@ -268,3 +281,22 @@
   (lpString :string)
   (c     :int)
   (lpSize  (:pointer (:struct SIZE))))
+
+(defcfun "CreateFontW" HFONT
+  (nHeight     :int)
+  (nWidth      :int)
+  (nEscapement :int)
+  (nOrientation :int)
+  (fnWeight     :int) ;FW_ENUM
+  (fdwItalic      :boolean)
+  (fdwUnderline   :boolean)
+  (fdwStrikeOut   :boolean)
+  (fdwCharSet     CHARSET_ENUM)
+  (fdwOutputPrecision OUT_PRECIS_ENUM)
+  (fdwClipPrecision CLIP_PRECIS_ENUM)
+  (fdwQuality QUALITY_ENUM)
+  (fdwPitchAndFamily DWORD)		;PITCH_ENUM and FAMILY_ENUM
+  (lpszFace :string))
+
+(defcfun "CreateFontIndirectW" HFONT
+  (lplf (:pointer (:struct LOGFONTW))))
