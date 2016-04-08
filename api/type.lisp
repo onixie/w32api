@@ -2335,7 +2335,8 @@
   (:ROMAN            1);  /* Variable stroke width, serifed. *//* Times Roman, Century Schoolbook, etc. */
   (:SWISS            2);  /* Variable stroke width, sans-serifed. */ /* Helvetica, Swiss, etc. */
   (:MODERN           3);  /* Constant stroke width, serifed or sans-serifed. */ /* Pica, Elite, Courier, etc. */ (:SCRIPT           (4<<4));  /* Cursive, etc. */
-  (:DECORATIVE       4));  /* Old English, etc. */
+  (:SCRIPT           4)
+  (:DECORATIVE       5))					;  /* Old English, etc. */
 
 (defparameter +LF_FACESIZE+ 32)
 (defcstruct LOGFONTW

@@ -41,7 +41,8 @@
 	   CreateHatchBrush
 	   CreatePatternBrush
 	   CreateFontW
-	   CreateFontIndirectW))
+	   CreateFontIndirectW
+	   EnumFontFamiliesExW))
 
 (in-package #:w32api.gdi32)
 
@@ -300,3 +301,10 @@
 
 (defcfun "CreateFontIndirectW" HFONT
   (lplf (:pointer (:struct LOGFONTW))))
+
+(defcfun "EnumFontFamiliesExW" :int
+  (hdc HDC)
+  (lpLogfont (:pointer (:struct LOGFONTW)))
+  (lpEnumFontFamExProc :pointer)
+  (lParam LPARAM)
+  (dwFlags DWORD))

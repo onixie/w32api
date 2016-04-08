@@ -57,9 +57,9 @@
 (defmethod translate-from-foreign (value (type enum-union-type))
   (enum-union-keyword-or-value value (enum-types type)))
 
-(defmacro %with-foreign-struct (((var type &optional size-var) &rest slots) &body body)
+(defmacro %with-foreign-struct (allocate-p ((var type &optional size-var) &rest slots) &body body)
   `(let ,(when size-var `((,size-var (foreign-type-size ',type))))
-     (with-foreign-object (,var ',type)
+     (,@(if allocate-p `(with-foreign-object (,var ',type)) `(let ((,var ,var))))
        (setf ,@(loop for (slot-name slot-val) in slots
 		  append
 		    (destructuring-bind ((slot-name &optional slot-var) &optional slot-val)
@@ -80,7 +80,10 @@
 	 ,@body))))
 
 (defmacro with-foreign-struct (((var type &optional size-var) &rest slots) &body body)
-  `(%with-foreign-struct ((,var (:struct ,type) ,size-var) ,@slots) ,@body))
+  `(%with-foreign-struct t ((,var (:struct ,type) ,size-var) ,@slots) ,@body))
+
+(defmacro parse-foreign-struct (((var type &optional size-var) &rest slots) &body body)
+  `(%with-foreign-struct nil ((,var (:struct ,type) ,size-var) ,@slots) ,@body))
 
 (defmacro with-foreign-union (((var type &optional size-var) &rest slots) &body body)
-  `(%with-foreign-struct ((,var (:union ,type) ,size-var) ,@slots) ,@body))
+  `(%with-foreign-struct t ((,var (:union ,type) ,size-var) ,@slots) ,@body))

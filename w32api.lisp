@@ -1148,6 +1148,15 @@
 (defun set-background-color (dc &key (r 0) (g 0) (b 0))
   (get-color-rgb (SetBkColor dc (make-rgb-color r g b))))
 
+(defmacro with-drawing-object-info (((object type &optional (object-info (gensym))) &rest slot-name-and-var-list) &body body)
+  (let* ((size (gensym)))
+    `(let ((,size (GetObjectW ,object 0 (null-pointer))))
+       (when (> ,size 0)
+	 (with-foreign-struct ((,object-info ,type) ,@(mapcar #'list slot-name-and-var-list))
+	   (let ((,size (GetObjectW ,object ,size ,object-info)))
+	     (when (> ,size 0)
+	       ,@body)))))))
+
 (defun create-font (&key
 		      (height 0)
 		      (width 0)
@@ -1178,45 +1187,62 @@
 	       (logior (foreign-enum-value 'PITCH_ENUM pitch) (ash (foreign-enum-value 'FAMILY_ENUM family) 4))
 	       face))
 
-(defmacro with-drawing-object-info ((object type &rest slot-name-and-var-list) &body body)
-  (let ((try (gensym))
-	(size (gensym)))
-    `(let ((,size (GetObjectW ,object 0 (null-pointer))))
-       (when (> ,size 0)
-	 (with-foreign-struct ((,try ,type) ,@(mapcar #'list slot-name-and-var-list))
-	   (let ((,size (GetObjectW ,object ,size ,try)))
-	     (when (> ,size 0)
-	       ,@body)))
-	 ))))
+(defun destroy-font (font)
+  (unless (null-pointer-p font)
+    (DeleteObject font)))
+
+(defun get-current-font (dc)
+  (GetCurrentObject dc :OBJ_FONT))
+
+(defmacro parse-font-info (font-info)
+  `(parse-foreign-struct ((,font-info LOGFONTW)
+			  ((:lfHeight height))
+			  ((:lfWidth width))
+			  ((:lfEscapement escapement))
+			  ((:lfOrientation orientation))
+			  ((:lfWeight weight)) ; FW_ENUM can be used
+			  ((:lfItalic italic))
+			  ((:lfUnderline underline))
+			  ((:lfStrikeOut strikeout))
+			  ((:lfCharSet charset)) ;CHARSET_ENUM
+			  ((:lfOutPrecision out-precision)) ;OUT_PRECIS_ENUM
+			  ((:lfClipPrecision clip-precision)) ;CLIP_PRECIS_ENUM
+			  ((:lfQuality quality)) ;QUALITY_ENUM
+			  ((:lfPitchAndFamily pitch&family)) ;PITCH_ENUM FAMILY_ENUM
+			  ((:lfFaceName face)))
+     (list :height height
+	   :width width
+	   :escapement (/ escapement 10.0)
+	   :orientation (/ orientation 10.0)
+	   :weight (or (foreign-enum-keyword 'FW_ENUM weight :errorp nil) weight)
+	   :italic (/= italic 0)
+	   :underline (/= underline 0)
+	   :strikeout (/= strikeout 0)
+	   :charset (foreign-enum-keyword 'CHARSET_ENUM charset)
+	   :precision (list (foreign-enum-keyword 'OUT_PRECIS_ENUM out-precision)
+			    (foreign-enum-keyword 'CLIP_PRECIS_ENUM clip-precision))
+	   :quality (foreign-enum-keyword 'QUALITY_ENUM quality)
+	   :pitch (foreign-enum-keyword 'PITCH_ENUM (ldb (byte 4 0) pitch&family))
+	   :family (foreign-enum-keyword 'FAMILY_ENUM (ldb (byte 4 4) pitch&family))
+	   :face (foreign-string-to-lisp face :max-chars +LF_FACESIZE+))))
 
 (defun get-font-info (font)
-  (with-drawing-object-info (font LOGFONTW
-				  (:lfHeight height)
-				  (:lfWidth width)
-				  (:lfEscapement escapement)
-				  (:lfOrientation orientation)
-				  (:lfWeight weight); FW_ENUM can be used
-				  (:lfItalic italic)
-				  (:lfUnderline underline)
-				  (:lfStrikeOut strikeout)
-				  (:lfCharSet charset) ;CHARSET_ENUM
-				  (:lfOutPrecision out-precision);OUT_PRECIS_ENUM
-				  (:lfClipPrecision clip-precision);CLIP_PRECIS_ENUM
-				  (:lfQuality quality);QUALITY_ENUM
-				  (:lfPitchAndFamily pitch&family);PITCH_ENUM FAMILY_ENUM
-				  (:lfFaceName face))
-    (list :height height
-	  :width width
-	  :escapement (/ escapement 10.0)
-	  :orientation (/ escapement 10.0)
-	  :weight (foreign-enum-keyword 'FW_ENUM weight :errorp nil)
-	  :italic (/= italic 0)
-	  :underline (/= underline 0)
-	  :strikeout (/= strikeout 0)
-	  :charset (foreign-enum-keyword 'CHARSET_ENUM charset)
-	  :precision (list (foreign-enum-keyword 'OUT_PRECIS_ENUM out-precision)
-			   (foreign-enum-keyword 'CLIP_PRECIS_ENUM clip-precision))
-	  :quality (foreign-enum-keyword 'QUALITY_ENUM quality)
-	  :pitch (foreign-enum-keyword 'PITCH_ENUM (ldb (byte 4 0) pitch&family))
-	  :family (foreign-enum-keyword 'FAMILY_ENUM (ldb (byte 4 4) pitch&family))
-	  :face (foreign-string-to-lisp face :max-chars +LF_FACESIZE+))))
+  (with-drawing-object-info ((font LOGFONTW font-info))
+    (parse-font-info font-info)))
+
+(defcallback EnumFontFamExCallback :boolean
+    ((lpelfe (:pointer (:struct LOGFONTW)))
+     (lpntme (:pointer (:struct TEXTMETRICW)))
+     (FontType DWORD)
+     (lParam LPARAM))
+  (declare (special font-infos) (ignore lpntme FontType lParam))
+  (setf font-infos (cons (parse-font-info lpelfe) font-infos)))
+(defun get-all-font-infos (dc &key (charset :DEFAULT_CHARSET) (face ""))
+  (let ((font-infos nil))
+    (declare (special font-infos))
+    (with-foreign-struct ((font LOGFONTW)
+			  (:lfCharSet (foreign-enum-value 'CHARSET_ENUM charset))
+			  ((:lfFaceName lfFaceName)))
+      (cffi:lisp-string-to-foreign face lfFaceName +LF_FACESIZE+)
+      (EnumFontFamiliesExW dc font (callback EnumFontFamExCallback) 0 0)) 
+    font-infos))

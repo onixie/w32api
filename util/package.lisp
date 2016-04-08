@@ -5,4 +5,5 @@
 	   bitfield-union
 	   enum-union
 	   with-foreign-struct
+	   parse-foreign-struct
 	   with-foreign-union))

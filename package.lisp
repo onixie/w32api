@@ -143,4 +143,7 @@
 	   set-background-color
 
 	   create-font
-	   get-font-info))
+	   destroy-font
+	   get-current-font
+	   get-font-info
+	   get-all-font-infos))

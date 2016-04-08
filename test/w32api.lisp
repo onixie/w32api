@@ -960,6 +960,13 @@
 	  (is (> cx (* (length text) (get-text-char-width dc)))) ; assume that the sum of chars' avg width < text width, maybe im wrong
 	  (is (eq cy (get-text-height dc))))))))
 
+(test |(get-current-font ...) can get current font from dc|
+  (with-fixture window ((string (gensym "WIN")))
+    (WITH-DRAWING-CONTEXT (dc <window>)
+      (let ((font (get-current-font dc)))
+	(is (not (null-pointer-p font)))
+	(is (listp (get-font-info font)))))))
+
 (test |(create-font) return specified font object|
   (is (not (null-pointer-p (create-font))))
   (is (not (null-pointer-p (create-font :height 10))))
@@ -997,3 +1004,21 @@
 		    :face "custom font")))
     (let ((got-font-info (get-font-info (apply #'create-font font-info))))
       (equal font-info got-font-info))))
+
+(test |(get-all-font-infos dc) get all available font infos in dc|
+  (with-fixture window ((string (gensym "WIN")))
+    (WITH-DRAWING-CONTEXT (dc <window>)
+      (let ((font-infos (get-all-font-infos dc)))
+	(is (> (length font-infos) 0))
+	(let ((got-font-infos
+	       (loop for info in font-infos collect
+		    (progn
+		      (let ((font (apply #'create-font info)))
+			(unwind-protect
+			     (get-font-info font)
+			  (destroy-font font)))))))
+	  (is (equal (length font-infos) (length got-font-infos)))
+	  (is (equal font-infos got-font-infos)))))))
+
+(test |(destroy-font font) will destroy the created font|
+  (is-true (destroy-font (create-font))))
