@@ -146,4 +146,10 @@
 	   destroy-font
 	   get-current-font
 	   get-font-info
-	   get-all-font-infos))
+	   get-all-font-infos
+	   create-pen
+	   destroy-pen
+	   get-pen-info
+	   create-brush
+	   destroy-brush
+	   get-brush-info))

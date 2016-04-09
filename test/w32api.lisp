@@ -1022,3 +1022,52 @@
 
 (test |(destroy-font font) will destroy the created font|
   (is-true (destroy-font (create-font))))
+
+(test |(create-pen) return specified pen object|
+  (is (not (null-pointer-p (create-pen))))
+  (is (not (null-pointer-p (create-pen :style :PS_DOT))))
+  (is (not (null-pointer-p (create-pen :type :PS_COSMETIC))))
+  (is (not (null-pointer-p (create-pen :style '(1 2 3) :endcap :PS_ENDCAP_ROUND))))
+  (is (not (null-pointer-p (create-pen :color '(0 0 1)))))
+  (is (not (null-pointer-p (create-pen :brush :BS_HATCHED :hatch :HS_CROSS))))
+  (is (not (null-pointer-p (create-pen :width 3))))
+  (is (not (null-pointer-p (create-pen :join :PS_JOIN_ROUND)))))
+
+(test |(get-pen-info) return specified pen info from pen|
+  (let ((pen-info (get-pen-info (create-pen))))
+    (is (equal pen-info (get-pen-info (apply #'create-pen pen-info)))))
+  (let ((pen-info (get-pen-info (create-pen :style :PS_DOT))))
+    (is (equal pen-info (get-pen-info (apply #'create-pen pen-info)))))
+  (let ((pen-info (get-pen-info (create-pen :type :PS_COSMETIC))))
+    (is (equal pen-info (get-pen-info (apply #'create-pen pen-info)))))
+  (let ((pen-info (get-pen-info (create-pen :style '(1 2 3) :endcap :PS_ENDCAP_ROUND))))
+    (is (equal pen-info (get-pen-info (apply #'create-pen pen-info)))))
+  (let ((pen-info (get-pen-info (create-pen :brush :BS_HATCHED :hatch :HS_CROSS))))
+    (is (equal pen-info (get-pen-info (apply #'create-pen pen-info)))))
+  (let ((pen-info (get-pen-info (create-pen :width 3))))
+    (is (equal pen-info (get-pen-info (apply #'create-pen pen-info)))))
+  (let ((pen-info (get-pen-info (create-pen :join :PS_JOIN_ROUND))))
+    (is (equal pen-info (get-pen-info (apply #'create-pen pen-info)))))
+  )
+
+(test |(destroy-pen pen) will destroy the pen created|
+  (is-true (destroy-pen (create-pen))))
+
+(test |(create-brush) will create specified brush|
+  (is (not (null-pointer-p (create-brush))))
+  (is (not (null-pointer-p (create-brush :style :BS_HATCHED))))
+  (is (not (null-pointer-p (create-brush :color '(255 255 255)))))
+  (is (not (null-pointer-p (create-brush :hatch :HS_CROSS)))))
+
+(test |(get-brush-info) will get specified brush info|
+  (let ((brush-info (get-brush-info (create-brush))))
+    (is (equal brush-info (get-brush-info (apply #'create-brush brush-info)))))
+  (let ((brush-info (get-brush-info (create-brush :style :BS_HATCHED))))
+    (is (equal brush-info (get-brush-info (apply #'create-brush brush-info)))))
+  (let ((brush-info (get-brush-info (create-brush :color '(255 255 255)))))
+    (is (equal brush-info (get-brush-info (apply #'create-brush brush-info)))))
+  (let ((brush-info (get-brush-info (create-brush :hatch :HS_CROSS))))
+    (is (equal brush-info (get-brush-info (apply #'create-brush brush-info))))))
+
+(test |(destroy-brush brush will destroy brush|
+  (is-true (destroy-brush (create-brush))))

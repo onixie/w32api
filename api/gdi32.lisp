@@ -37,9 +37,11 @@
 	   GetObjectW
 	   GetCurrentObject
 	   CreatePen
+	   ExtCreatePen
 	   CreateSolidBrush
 	   CreateHatchBrush
 	   CreatePatternBrush
+	   CreateBrushIndirect
 	   CreateFontW
 	   CreateFontIndirectW
 	   EnumFontFamiliesExW))
@@ -263,9 +265,19 @@
   (hObject HGDIOBJ))					;
 
 (defcfun "CreatePen" HPEN
-  (fnPenStyle PS_ENUM)
+  (fnPenStyle PS_STYLE_ENUM)
   (nWidth     :int)
   (crColor    COLORREF))
+
+(defcfun "CreatePenIndirect" HPEN
+  (lplgpn (:pointer (:struct LOGPEN))))
+
+(defcfun "ExtCreatePen" HPEN
+  (dwPenStyle DWORD)			;PS_ENUM and PS_FLAG
+  (dwWidth    DWORD)
+  (lplb (:pointer (:struct LOGBRUSH)))
+  (dwStyleCount DWORD)
+  (lpStyle (:pointer DWORD)))
 
 (defcfun "CreateSolidBrush" HBRUSH
   (crColor COLORREF))
@@ -277,11 +289,14 @@
 (defcfun "CreatePatternBrush" HBRUSH
   (hbmp HBITMAP))
 
+(defcfun "CreateBrushIndirect" HBRUSH
+  (lplb (:pointer (:struct LOGBRUSH))))
+
 (defcfun "GetTextExtentPoint32W" :boolean
-  (hdc     HDC)
+  (hdc HDC)
   (lpString :string)
-  (c     :int)
-  (lpSize  (:pointer (:struct SIZE))))
+  (c :int)
+  (lpSize (:pointer (:struct SIZE))))
 
 (defcfun "CreateFontW" HFONT
   (nHeight     :int)

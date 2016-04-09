@@ -1246,3 +1246,102 @@
       (cffi:lisp-string-to-foreign face lfFaceName +LF_FACESIZE+)
       (EnumFontFamiliesExW dc font (callback EnumFontFamExCallback) 0 0)) 
     font-infos))
+
+(defun create-pen (&key
+		     (type :PS_GEOMETRIC)
+		     (style :PS_SOLID)
+		     (endcap :PS_ENDCAP_FLAT)
+		     (join :PS_JOIN_ROUND)
+		     (width 1)
+		     (brush :BS_SOLID)
+		     (color '(0 0 0))
+		     (hatch 0))
+  (let ((color (apply #'make-rgb-color color)))
+    (cond ((and style (listp style))
+	   (with-foreign-struct ((brush-info LOGBRUSH)
+				 ((:lbStyle) brush)
+				 ((:lbColor) color)
+				 ((:lbHatch) (if (numberp hatch) hatch (foreign-enum-value 'HS_ENUM hatch))))
+	     (with-foreign-object (style-array 'DWORD (length style))
+	       (loop for s in style and i from 0 do (setf (mem-aref style-array 'DWORD i) s))
+	       (ExtCreatePen (logior (foreign-enum-value 'PS_STYLE_ENUM :PS_USERSTYLE)
+				     (foreign-enum-value 'PS_ENDCAP_ENUM endcap)
+				     (foreign-enum-value 'PS_JOIN_ENUM join)
+				     (foreign-enum-value 'PS_TYPE_ENUM type))
+			     width
+			     brush-info
+			     (length style)
+			     style-array))))
+	  (brush (with-foreign-struct ((brush-info LOGBRUSH)
+				       ((:lbStyle) brush)
+				       ((:lbColor) color)
+				       ((:lbHatch) (if (numberp hatch) hatch (foreign-enum-value 'HS_ENUM hatch))))
+		   (ExtCreatePen (logior (foreign-enum-value 'PS_STYLE_ENUM style)
+					 (foreign-enum-value 'PS_ENDCAP_ENUM endcap)
+					 (foreign-enum-value 'PS_JOIN_ENUM join)
+					 (foreign-enum-value 'PS_TYPE_ENUM type))
+				 width
+				 brush-info
+				 0
+				 (null-pointer))))
+	  (t (CreatePen style width color)))))
+
+(defun destroy-pen (pen)
+  (unless (null-pointer-p pen)
+    (DeleteObject pen)))
+
+(defmacro parse-pen-info (pen-info)
+  `(parse-foreign-struct ((,pen-info EXTLOGPEN)
+			  ((:elpPenStyle type&style&endcap&join)) ;PS_ENUM, PS_FLAG
+			  ((:elpWidth width))
+			  ((:elpBrushStyle brush))
+			  ((:elpColor  color))
+			  ((:elpHatch hatch)) ;HS_ENUM or pointer to bitmap
+			  ((:elpNumEntries style-length)))
+     (let ((type   (foreign-enum-keyword 'PS_TYPE_ENUM   (logand +PS_TYPE_MASK+   type&style&endcap&join)))
+	   (style  (foreign-enum-keyword 'PS_STYLE_ENUM  (logand +PS_STYLE_MASK+  type&style&endcap&join)))
+	   (endcap (foreign-enum-keyword 'PS_ENDCAP_ENUM (logand +PS_ENDCAP_MASK+ type&style&endcap&join)))
+	   (join   (foreign-enum-keyword 'PS_JOIN_ENUM   (logand +PS_JOIN_MASK+   type&style&endcap&join)))
+	   (custom (loop for i from 0 below style-length collect
+			(mem-aref (foreign-slot-pointer ,pen-info '(:struct EXTLOGPEN) :elpStyleEntry) 'DWORD i)))
+	   (color  (multiple-value-list (get-color-rgb color))))
+       (list :type type
+	       :style (if (eq style :PS_USERSTYLE) custom style)
+	       :endcap endcap
+	       :join   join
+	       :width width
+	       :brush brush
+	       :color color
+	       :hatch (or (foreign-enum-keyword 'HS_ENUM hatch :errorp nil) hatch)))))
+
+(defun get-pen-info (pen)
+  (with-drawing-object-info ((pen EXTLOGPEN pen-info))
+    (parse-pen-info pen-info)))
+
+(defun create-brush (&key
+		       ((:style s) :BS_SOLID)
+		       ((:color c) (list 0 0 0))
+		       ((:hatch h) :HS_VERTICAL))
+  (with-foreign-struct ((brush LOGBRUSH)
+			((:lbStyle style) s)
+			((:lbColor color) (apply #'make-rgb-color c))
+			((:lbHatch hatch) (if (numberp h) h (foreign-enum-value 'HS_ENUM h :errorp nil))))
+    (CreateBrushIndirect brush)))
+
+(defun destroy-brush (brush)
+  (unless (null-pointer-p brush)
+    (DeleteObject brush)))
+
+(defmacro parse-brush-info (brush-info)
+  `(parse-foreign-struct ((,brush-info LOGBRUSH)
+			  ((:lbStyle style))
+			  ((:lbColor color))
+			  ((:lbHatch hatch)))
+     
+     (list :style style
+	   :color (multiple-value-list (get-color-rgb color))
+	   :hatch (or (foreign-enum-keyword 'HS_ENUM hatch :errorp nil) hatch))))
+
+(defun get-brush-info (brush)
+  (with-drawing-object-info ((brush LOGBRUSH brush-info))
+    (parse-brush-info brush-info)))
