@@ -1095,9 +1095,9 @@
     `(let* ((,new ,new-object)
 	    (,old (SelectObject ,dc ,new)))
        (unwind-protect
-	    (progn ,@body ,(unless delete-p `,new))
+	    (values (progn ,@body) ,(unless delete-p `,new))
 	 (unless (or (null-pointer-p ,old)
-		     (pointer-eq ,old ,(make-pointer +HGDI-ERROR+)))
+		     (pointer-eq ,old (make-pointer +HGDI-ERROR+)))
 	   (SelectObject ,dc ,old)
 	   ,(when delete-p `(DeleteObject ,new)))))))
 
