@@ -1148,6 +1148,9 @@
 (defun set-background-color (dc &key (r 0) (g 0) (b 0))
   (get-color-rgb (SetBkColor dc (make-rgb-color r g b))))
 
+(defun get-stock-object (id)
+  (GetStockObject id))
+
 (defmacro with-drawing-object-info (((object type &optional (object-info (gensym))) &rest slot-name-and-var-list) &body body)
   (let* ((size (gensym)))
     `(let ((,size (GetObjectW ,object 0 (null-pointer))))

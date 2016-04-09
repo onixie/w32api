@@ -915,6 +915,10 @@
 	  (is (eq gg 22))
 	  (is (eq bb 11)))))))
 
+(test |(get-stock-object id) will return specified object |
+  (loop for id in (foreign-enum-keyword-list 'w32api.type:STKOBJ_ENUM)
+     do (is (not (null (get-stock-object id))))))
+
 (test |(get-text-ascent ...) can get ascent of char in current font|
   (with-fixture window ((string (gensym "WIN")))
     (WITH-DRAWING-CONTEXT (dc <window>)

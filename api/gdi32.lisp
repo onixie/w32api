@@ -44,7 +44,8 @@
 	   CreateBrushIndirect
 	   CreateFontW
 	   CreateFontIndirectW
-	   EnumFontFamiliesExW))
+	   EnumFontFamiliesExW
+	   GetStockObject))
 
 (in-package #:w32api.gdi32)
 
@@ -323,3 +324,6 @@
   (lpEnumFontFamExProc :pointer)
   (lParam LPARAM)
   (dwFlags DWORD))
+
+(defcfun "GetStockObject" HGDIOBJ
+  (fnObject STKOBJ_ENUM))

@@ -142,6 +142,7 @@
 	   get-background-color
 	   set-background-color
 
+	   get-stock-object
 	   create-font
 	   destroy-font
 	   get-current-font
