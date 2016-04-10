@@ -1096,50 +1096,54 @@
 		 (gensym)))
 	(new (gensym)))
     `(let ((,new ,new-object))
-       (if (and ,new (not (null-pointer-p ,new)))
-	   (let ((,old (SelectObject ,dc ,new)))
-	     (unwind-protect
-		  (values (progn ,@body) ,(unless delete-p `,new))
-	       (unless (or (null-pointer-p ,old)
-			   (pointer-eq ,old (make-pointer +HGDI-ERROR+)))
-		 (SelectObject ,dc ,old)
-		 ,(when delete-p `(DeleteObject ,new)))))
-	   (progn ,@body)))))
+       (let ((,old (if (and (pointerp ,dc) (not (null-pointer-p ,dc)) (pointerp ,new) (not (null-pointer-p ,new)))
+		       (SelectObject ,dc ,new)
+		       (null-pointer))))
+	 (unwind-protect
+	      (values (progn ,@body) ,(unless delete-p `,new))
+	   (unless (or (null-pointer-p ,old)
+		       (pointer-eq ,old (make-pointer +HGDI-ERROR+)))
+	     (SelectObject ,dc ,old)
+	     ,(when delete-p `(DeleteObject ,new))))))))
 
 (defmacro with-background-mode ((dc mode) &body body)
   (let ((old (gensym)))
-    `(let ((,old (SetBkMode ,dc ,mode)))
-       (unwind-protect
-	    (progn ,@body)
-	 (unless (eq ,old :ERROR)
-	   (SetBkMode ,dc ,old))))))
+    `(if (and ,dc (not (null-pointer-p ,dc)))
+	 (let ((,old (SetBkMode ,dc ,mode)))
+	   (unwind-protect
+		(progn ,@body)
+	     (unless (eq ,old :ERROR)
+	       (SetBkMode ,dc ,old))))
+	 (progn ,@body))))
 
 (defmacro with-text-metrics-info (dc (&rest slot-name-and-var-list) &body body)
   (let ((pvi (gensym)))
     `(with-foreign-struct ((,pvi TEXTMETRICW) ,@(mapcar #'list slot-name-and-var-list))
-       (when (GetTextMetricsW ,dc ,pvi)
+       (when (and (pointerp ,dc) (not (null-pointer-p ,dc)) (GetTextMetricsW ,dc ,pvi))
 	 ,@body))))
 
 (defun get-text-height (dc)
-  (with-text-metrics-info dc ((:tmHeight height)) height))
+  (or (with-text-metrics-info dc ((:tmHeight height)) height) 0))
 
 (defun get-text-ascent (dc)
-  (with-text-metrics-info dc ((:tmAscent ascent)) ascent))
+  (or (with-text-metrics-info dc ((:tmAscent ascent)) ascent) 0))
 
 (defun get-text-descent (dc)
-  (with-text-metrics-info dc ((:tmDescent descent)) descent))
+  (or (with-text-metrics-info dc ((:tmDescent descent)) descent) 0))
 
 (defun get-text-extent (dc text)
   (with-foreign-object (size '(:struct SIZE))
-    (when (GetTextExtentPoint32W dc text (length text) size)
-      (values
-       (foreign-slot-value size '(:struct SIZE) :cx)
-       (foreign-slot-value size '(:struct SIZE) :cy)))))
+    (if (GetTextExtentPoint32W dc text (length text) size)
+	(values
+	 (foreign-slot-value size '(:struct SIZE) :cx)
+	 (foreign-slot-value size '(:struct SIZE) :cy))
+	(values 0 0))))
 
 (defun get-text-char-width (dc &key max-p)
-  (with-text-metrics-info dc ((:tmMaxCharWidth max-width)
-			      (:tmAveCharWidth ave-width))
-    (if max-p max-width ave-width)))
+  (or (with-text-metrics-info dc ((:tmMaxCharWidth max-width)
+				  (:tmAveCharWidth ave-width))
+	(if max-p max-width ave-width))
+      0))
 
 (defun get-text-color (dc)
   (get-color-rgb (GetTextColor dc)))
@@ -1196,11 +1200,12 @@
 	       face))
 
 (defun destroy-font (font)
-  (unless (null-pointer-p font)
+  (when (and (pointerp font) (not (null-pointer-p font)))
     (DeleteObject font)))
 
 (defun get-current-font (dc)
-  (GetCurrentObject dc :OBJ_FONT))
+  (when (and (pointerp dc) (not (null-pointer-p dc)))
+    (GetCurrentObject dc :OBJ_FONT)))
 
 (defmacro parse-font-info (font-info)
   `(parse-foreign-struct ((,font-info LOGFONTW)
@@ -1235,8 +1240,9 @@
 	   :face (foreign-string-to-lisp face :max-chars +LF_FACESIZE+))))
 
 (defun get-font-info (font)
-  (with-drawing-object-info ((font LOGFONTW font-info))
-    (parse-font-info font-info)))
+  (when (and (pointerp font) (not (null-pointer-p font)))
+    (with-drawing-object-info ((font LOGFONTW font-info))
+      (parse-font-info font-info))))
 
 (defcallback EnumFontFamExCallback :boolean
     ((lpelfe (:pointer (:struct LOGFONTW)))
@@ -1246,14 +1252,15 @@
   (declare (special font-infos) (ignore lpntme FontType lParam))
   (setf font-infos (cons (parse-font-info lpelfe) font-infos)))
 (defun get-all-font-infos (dc &key (charset :DEFAULT_CHARSET) (face ""))
-  (let ((font-infos nil))
-    (declare (special font-infos))
-    (with-foreign-struct ((font LOGFONTW)
-			  (:lfCharSet (foreign-enum-value 'CHARSET_ENUM charset))
-			  ((:lfFaceName lfFaceName)))
-      (cffi:lisp-string-to-foreign face lfFaceName +LF_FACESIZE+)
-      (EnumFontFamiliesExW dc font (callback EnumFontFamExCallback) 0 0)) 
-    font-infos))
+  (when (and (pointerp dc) (not (null-pointer-p dc)))
+    (let ((font-infos nil))
+      (declare (special font-infos))
+      (with-foreign-struct ((font LOGFONTW)
+			    (:lfCharSet (foreign-enum-value 'CHARSET_ENUM charset))
+			    ((:lfFaceName lfFaceName)))
+	(cffi:lisp-string-to-foreign face lfFaceName +LF_FACESIZE+)
+	(EnumFontFamiliesExW dc font (callback EnumFontFamExCallback) 0 0)) 
+      font-infos)))
 
 (defun create-pen (&key
 		     (type :PS_GEOMETRIC)
@@ -1295,7 +1302,7 @@
 	  (t (CreatePen style width color)))))
 
 (defun destroy-pen (pen)
-  (unless (null-pointer-p pen)
+  (when (and (pointerp pen) (not (null-pointer-p pen)))
     (DeleteObject pen)))
 
 (defmacro parse-pen-info (pen-info)
@@ -1323,8 +1330,9 @@
 	     :hatch (or (foreign-enum-keyword 'HS_ENUM hatch :errorp nil) hatch)))))
 
 (defun get-pen-info (pen)
-  (with-drawing-object-info ((pen EXTLOGPEN pen-info))
-    (parse-pen-info pen-info)))
+  (when (and (pointerp pen) (not (null-pointer-p pen)))
+    (with-drawing-object-info ((pen EXTLOGPEN pen-info))
+      (parse-pen-info pen-info))))
 
 (defun create-brush (&key
 		       ((:style s) :BS_SOLID)
@@ -1337,7 +1345,7 @@
     (CreateBrushIndirect brush)))
 
 (defun destroy-brush (brush)
-  (unless (null-pointer-p brush)
+  (when (and (pointerp brush) (not (null-pointer-p brush)))
     (DeleteObject brush)))
 
 (defmacro parse-brush-info (brush-info)
@@ -1351,5 +1359,6 @@
 	   :hatch (or (foreign-enum-keyword 'HS_ENUM hatch :errorp nil) hatch))))
 
 (defun get-brush-info (brush)
-  (with-drawing-object-info ((brush LOGBRUSH brush-info))
-    (parse-brush-info brush-info)))
+  (when (and (pointerp brush) (not (null-pointer-p brush)))
+    (with-drawing-object-info ((brush LOGBRUSH brush-info))
+      (parse-brush-info brush-info))))
