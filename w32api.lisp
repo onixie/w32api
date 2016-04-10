@@ -1089,17 +1089,22 @@
       (GetASyncKeyState key)
       (GetKeyState key)))
 
-(defmacro with-drawing-object ((dc new-object &key (delete-p nil) (old-object 0)) &body body)
-  (let ((old (if (symbolp old-object) old-object (gensym)))
+(defmacro with-drawing-object ((dc new-object &key (delete-p nil) (old-object nil old-object-specified-p)) &body body)
+  (let ((old (if (and old-object-specified-p
+		      (symbolp old-object))
+		 old-object
+		 (gensym)))
 	(new (gensym)))
-    `(let* ((,new ,new-object)
-	    (,old (SelectObject ,dc ,new)))
-       (unwind-protect
-	    (values (progn ,@body) ,(unless delete-p `,new))
-	 (unless (or (null-pointer-p ,old)
-		     (pointer-eq ,old (make-pointer +HGDI-ERROR+)))
-	   (SelectObject ,dc ,old)
-	   ,(when delete-p `(DeleteObject ,new)))))))
+    `(let ((,new ,new-object))
+       (if (and ,new (not (null-pointer-p ,new)))
+	   (let ((,old (SelectObject ,dc ,new)))
+	     (unwind-protect
+		  (values (progn ,@body) ,(unless delete-p `,new))
+	       (unless (or (null-pointer-p ,old)
+			   (pointer-eq ,old (make-pointer +HGDI-ERROR+)))
+		 (SelectObject ,dc ,old)
+		 ,(when delete-p `(DeleteObject ,new)))))
+	   (progn ,@body)))))
 
 (defmacro with-background-mode ((dc mode) &body body)
   (let ((old (gensym)))
@@ -1309,13 +1314,13 @@
 			(mem-aref (foreign-slot-pointer ,pen-info '(:struct EXTLOGPEN) :elpStyleEntry) 'DWORD i)))
 	   (color  (multiple-value-list (get-color-rgb color))))
        (list :type type
-	       :style (if (eq style :PS_USERSTYLE) custom style)
-	       :endcap endcap
-	       :join   join
-	       :width width
-	       :brush brush
-	       :color color
-	       :hatch (or (foreign-enum-keyword 'HS_ENUM hatch :errorp nil) hatch)))))
+	     :style (if (eq style :PS_USERSTYLE) custom style)
+	     :endcap endcap
+	     :join   join
+	     :width width
+	     :brush brush
+	     :color color
+	     :hatch (or (foreign-enum-keyword 'HS_ENUM hatch :errorp nil) hatch)))))
 
 (defun get-pen-info (pen)
   (with-drawing-object-info ((pen EXTLOGPEN pen-info))
