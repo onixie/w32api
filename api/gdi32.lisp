@@ -45,7 +45,13 @@
 	   CreateFontW
 	   CreateFontIndirectW
 	   EnumFontFamiliesExW
-	   GetStockObject))
+	   GetStockObject
+	   GetPixel
+	   SetPixel
+	   GetDCPenColor
+	   SetDCPenColor
+	   GetDCBrushColor
+	   SetDCBrushColor))
 
 (in-package #:w32api.gdi32)
 
@@ -327,3 +333,28 @@
 
 (defcfun "GetStockObject" HGDIOBJ
   (fnObject STKOBJ_ENUM))
+
+(defcfun "SetPixel" COLORREF
+  (hdc HDC)
+  (X :int)
+  (Y :int)
+  (crColor COLORREF))
+
+(defcfun "GetPixel" COLORREF
+  (hdc HDC)
+  (nXPos :int)
+  (nYPos :int))					;
+
+(defcfun "GetDCPenColor" COLORREF
+  (hdc      HDC))
+
+(defcfun "SetDCPenColor" COLORREF
+  (hdc      HDC)
+  (crColor COLORREF))
+
+(defcfun "GetDCBrushColor" COLORREF
+  (hdc      HDC))
+
+(defcfun "SetDCBrushColor" COLORREF
+  (hdc      HDC)
+  (crColor COLORREF))
