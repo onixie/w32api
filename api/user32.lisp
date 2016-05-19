@@ -119,7 +119,8 @@
 	   GetKeyState
 	   GetAsyncKeyState
 	   GetKeyboardState
-	   MapVirtualKeyW))
+	   MapVirtualKeyW
+	   MapWindowPoints))
 
 (in-package #:w32api.user32)
 
@@ -641,3 +642,9 @@
 (defcfun "MapVirtualKeyW" :uint
   (uCode :uint)
   (uMapType MAPVK_ENUM))
+
+(defcfun "MapWindowPoints" :int
+  (hWndFrom    HWND)
+  (hWndTo    HWND)
+  (lpPoints :pointer)
+  (cPoints  :uint))

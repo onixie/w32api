@@ -669,7 +669,7 @@
   (with-fixture window ((string (gensym "WIN")))
     (move-&-resize-window <window> 100 100 200 200)
     (multiple-value-bind (x1 y1 x2 y2)
-	(get-window-rectangle <window> t)
+	(get-window-rectangle <window> :client-area-p t)
       (is (eq 0 x1))			;Client Area always start from (0,0)
       (is (eq 0 y1))
       (multiple-value-bind (xx1 yy1 xx2 yy2)

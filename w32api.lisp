@@ -986,7 +986,7 @@
 		:extended-style extended-style))
 
 ;;; gdi32 - Drawing
-(defun get-window-rectangle (window &optional client-area-p)
+(defun get-window-rectangle (window &key (parent-coordinate-p t) client-area-p)
   (when (window-p window)
     (with-foreign-struct ((rect RECT)
 			  ((:left x1))
@@ -994,14 +994,24 @@
 			  ((:right  x2))
 			  ((:bottom y2)))
       (if client-area-p
-	  (GetClientRect window rect)
-	  (GetWindowRect window rect))
+	  (progn
+	    (GetClientRect window rect)
+	    (unless parent-coordinate-p
+	      (let ((parent (get-parent-window window)))
+		(when (window-p parent)
+		  (MapWindowPoints parent (null-pointer) rect 2)))))
+	  (progn
+	    (GetWindowRect window rect)
+	    (when parent-coordinate-p
+	      (let ((parent (get-parent-window window)))
+		(when (window-p parent)
+		  (MapWindowPoints (null-pointer) parent rect 2))))))
       (values x1 y1 x2 y2))))
 
 (defun get-window-size (window &optional client-area-p)
   (when (window-p window)
     (multiple-value-bind (x1 y1 x2 y2)
-	(get-window-rectangle window client-area-p)
+	(get-window-rectangle window :client-area-p client-area-p)
       (values (- x2 x1)
 	      (- y2 y1)))))
 
