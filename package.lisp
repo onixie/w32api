@@ -153,4 +153,8 @@
 	   get-pen-info
 	   create-brush
 	   destroy-brush
-	   get-brush-info))
+	   get-brush-info
+	   set-window-extended-style
+	   get-window-extended-style
+	   calculate-window-rectangle-by-expect-client-area
+	   calculate-window-size-by-expect-client-area))

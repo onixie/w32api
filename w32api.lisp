@@ -614,6 +614,14 @@
   (when (window-p window)
     (GetWindowStyle window)))
 
+(defun set-window-extended-style (window &optional (styles w32api.type:+WS_EX_OVERLAPPEDWINDOW+))
+  (when (window-p window)
+    (SetWindowExtendedStyle window (ensure-list styles))))
+
+(defun get-window-extended-style (window)
+  (when (window-p window)
+    (GetWindowExtendedStyle window)))
+
 (defun set-parent-window (window &optional (parent *parent-window*))
   (when (and (window-p window) (or (window-p parent) (null-pointer-p parent)))
     (cond ((window-p parent)
@@ -1014,6 +1022,28 @@
 	(get-window-rectangle window :client-area-p client-area-p)
       (values (- x2 x1)
 	      (- y2 y1)))))
+
+(defun calculate-window-rectangle-by-expect-client-area (window left top right bottom &key menu-p scroll-bar)
+  (when (window-p window)
+    (with-foreign-struct ((rect RECT)
+			  ((:left x1) left)
+			  ((:top  y1) top)
+			  ((:right  x2) right)
+			  ((:bottom y2) bottom))
+      (AdjustWindowRectEx rect (get-window-style window) menu-p (get-window-extended-style window))
+      (if scroll-bar
+	  (let ((vs (if (eq scroll-bar :horizontal) 0 (GetSystemMetrics :SM_CXVSCROLL)))
+		(hs (if (eq scroll-bar :vertical) 0 (GetSystemMetrics :SM_CXHSCROLL))))
+	    (values x1 y1
+		    (+ x2 hs) (+ y2 vs)))
+	  (values x1 y1 x2 y2)))))
+
+(defun calculate-window-size-by-expect-client-area (window width height &key menu-p scroll-bar)
+  (when (window-p window)
+   (multiple-value-bind (x1 y1 x2 y2)
+       (calculate-window-rectangle-by-expect-client-area window 0 0 width height :menu-p menu-p :scroll-bar scroll-bar)
+     (values (- x2 x1)
+	     (- y2 y1)))))
 
 (defun get-update-rectangle (window &optional erase-p)
   (when (window-p window)

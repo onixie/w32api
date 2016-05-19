@@ -120,7 +120,11 @@
 	   GetAsyncKeyState
 	   GetKeyboardState
 	   MapVirtualKeyW
-	   MapWindowPoints))
+	   MapWindowPoints
+	   AdjustWindowRectEx
+	   SetWindowExtendedStyle
+	   GetWindowExtendedStyle
+	   ))
 
 (in-package #:w32api.user32)
 
@@ -306,6 +310,19 @@
 		   HWND hWnd
 		   GWLP_ENUM :GWL_STYLE
 		   WND_STYLE))
+
+(defun SetWindowExtendedStyle (hWnd styles)
+  (foreign-funcall "SetWindowLongPtrW"
+		   HWND hWnd
+		   GWLP_ENUM :GWL_EXSTYLE
+		   WS_EX_FLAG styles
+		   WS_EX_FLAG))
+
+(defun GetWindowExtendedStyle (hWnd)
+  (foreign-funcall "GetWindowLongPtrW"
+		   HWND hWnd
+		   GWLP_ENUM :GWL_EXSTYLE
+		   WS_EX_FLAG))
 
 (defcfun "GetWindowThreadProcessId" DWORD
   (hWnd    HWND)
@@ -648,3 +665,9 @@
   (hWndTo    HWND)
   (lpPoints :pointer)
   (cPoints  :uint))
+
+(defcfun "AdjustWindowRectEx" :boolean
+  (lpRect (:pointer (:struct RECT)))
+  (dwStyle  WND_STYLE)
+  (bMenu   :boolean)
+  (dwExStyle  WS_EX_FLAG))
