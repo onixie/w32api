@@ -1021,8 +1021,6 @@
     (let ((got-font-info (get-font-info (apply #'create-font font-info))))
       (equal font-info got-font-info))))
 
-;;bug: x86 breakage
-#-x86
 (test |(get-all-font-infos dc) get all available font infos in dc|
   (with-fixture window ((string (gensym "WIN")))
     (WITH-DRAWING-CONTEXT (dc <window>)

@@ -1247,44 +1247,44 @@
   (when (and (pointerp dc) (not (null-pointer-p dc)))
     (GetCurrentObject dc :OBJ_FONT)))
 
-(defmacro parse-font-info (font-info)
-  `(parse-foreign-struct ((,font-info LOGFONTW)
-			  ((:lfHeight height))
-			  ((:lfWidth width))
-			  ((:lfEscapement escapement))
-			  ((:lfOrientation orientation))
-			  ((:lfWeight weight)) ; FW_ENUM can be used
-			  ((:lfItalic italic))
-			  ((:lfUnderline underline))
-			  ((:lfStrikeOut strikeout))
-			  ((:lfCharSet charset)) ;CHARSET_ENUM
-			  ((:lfOutPrecision out-precision)) ;OUT_PRECIS_ENUM
-			  ((:lfClipPrecision clip-precision)) ;CLIP_PRECIS_ENUM
-			  ((:lfQuality quality)) ;QUALITY_ENUM
-			  ((:lfPitchAndFamily pitch&family)) ;PITCH_ENUM FAMILY_ENUM
-			  ((:lfFaceName face)))
-     (list :height height
-	   :width width
-	   :escapement (/ escapement 10.0)
-	   :orientation (/ orientation 10.0)
-	   :weight (or (foreign-enum-keyword 'FW_ENUM weight :errorp nil) weight)
-	   :italic (/= italic 0)
-	   :underline (/= underline 0)
-	   :strikeout (/= strikeout 0)
-	   :charset (foreign-enum-keyword 'CHARSET_ENUM charset)
-	   :precision (list (foreign-enum-keyword 'OUT_PRECIS_ENUM out-precision)
-			    (foreign-enum-keyword 'CLIP_PRECIS_ENUM clip-precision))
-	   :quality (foreign-enum-keyword 'QUALITY_ENUM quality)
-	   :pitch (foreign-enum-keyword 'PITCH_ENUM (ldb (byte 4 0) pitch&family))
-	   :family (foreign-enum-keyword 'FAMILY_ENUM (ldb (byte 4 4) pitch&family))
-	   :face (foreign-string-to-lisp face :max-chars +LF_FACESIZE+))))
+(defun parse-font-info (font-info)
+  (parse-foreign-struct ((font-info LOGFONTW)
+			 ((:lfHeight height))
+			 ((:lfWidth width))
+			 ((:lfEscapement escapement))
+			 ((:lfOrientation orientation))
+			 ((:lfWeight weight)) ; FW_ENUM can be used
+			 ((:lfItalic italic))
+			 ((:lfUnderline underline))
+			 ((:lfStrikeOut strikeout))
+			 ((:lfCharSet charset)) ;CHARSET_ENUM
+			 ((:lfOutPrecision out-precision)) ;OUT_PRECIS_ENUM
+			 ((:lfClipPrecision clip-precision)) ;CLIP_PRECIS_ENUM
+			 ((:lfQuality quality)) ;QUALITY_ENUM
+			 ((:lfPitchAndFamily pitch&family)) ;PITCH_ENUM FAMILY_ENUM
+			 ((:lfFaceName face)))
+    (list :height height
+	  :width width
+	  :escapement (/ escapement 10.0)
+	  :orientation (/ orientation 10.0)
+	  :weight (or (foreign-enum-keyword 'FW_ENUM weight :errorp nil) weight)
+	  :italic (/= italic 0)
+	  :underline (/= underline 0)
+	  :strikeout (/= strikeout 0)
+	  :charset (foreign-enum-keyword 'CHARSET_ENUM charset)
+	  :precision (list (foreign-enum-keyword 'OUT_PRECIS_ENUM out-precision)
+			   (foreign-enum-keyword 'CLIP_PRECIS_ENUM clip-precision))
+	  :quality (foreign-enum-keyword 'QUALITY_ENUM quality)
+	  :pitch (foreign-enum-keyword 'PITCH_ENUM (ldb (byte 4 0) pitch&family))
+	  :family (foreign-enum-keyword 'FAMILY_ENUM (ldb (byte 4 4) pitch&family))
+	  :face (foreign-string-to-lisp face :max-chars +LF_FACESIZE+))))
 
 (defun get-font-info (font)
   (when (and (pointerp font) (not (null-pointer-p font)))
     (with-drawing-object-info ((font LOGFONTW font-info))
       (parse-font-info font-info))))
 
-(defcallback EnumFontFamExCallback :boolean
+(defcallback (EnumFontFamExCallback :convention :stdcall) :boolean
     ((lpelfe (:pointer (:struct LOGFONTW)))
      (lpntme (:pointer (:struct TEXTMETRICW)))
      (FontType DWORD)
@@ -1299,7 +1299,7 @@
 			    (:lfCharSet (foreign-enum-value 'CHARSET_ENUM charset))
 			    ((:lfFaceName lfFaceName)))
 	(cffi:lisp-string-to-foreign face lfFaceName +LF_FACESIZE+)
-	(EnumFontFamiliesExW dc font (callback EnumFontFamExCallback) 0 0)) 
+	(EnumFontFamiliesExW dc font (get-callback 'EnumFontFamExCallback) 0 0)) 
       font-infos)))
 
 (defun create-pen (&key
@@ -1390,15 +1390,15 @@
   (when (and (pointerp brush) (not (null-pointer-p brush)))
     (DeleteObject brush)))
 
-(defmacro parse-brush-info (brush-info)
-  `(parse-foreign-struct ((,brush-info LOGBRUSH)
-			  ((:lbStyle style))
-			  ((:lbColor color))
-			  ((:lbHatch hatch)))
-     
-     (list :style style
-	   :color (multiple-value-list (get-color-rgb color))
-	   :hatch (or (foreign-enum-keyword 'HS_ENUM hatch :errorp nil) hatch))))
+(defun parse-brush-info (brush-info)
+  (parse-foreign-struct ((brush-info LOGBRUSH)
+			 ((:lbStyle style))
+			 ((:lbColor color))
+			 ((:lbHatch hatch)))
+    
+    (list :style style
+	  :color (multiple-value-list (get-color-rgb color))
+	  :hatch (or (foreign-enum-keyword 'HS_ENUM hatch :errorp nil) hatch))))
 
 (defun get-brush-info (brush)
   (when (and (pointerp brush) (not (null-pointer-p brush)))
