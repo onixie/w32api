@@ -289,40 +289,57 @@
   (lpfn       :pointer)
   (lParam     LPARAM))
 
-(defcfun "SetWindowLongPtrW" LONG_PTR
+
+(defcfun #+x86 ("SetWindowLongW" SetWindowLongPtrW) #+x86-64 "SetWindowLongPtrW" LONG_PTR
   (hWnd     HWND)
   (nIndex   GWLP_ENUM)
   (dwNewLong LONG_PTR))
 
-(defcfun "GetWindowLongPtrW" LONG_PTR
+(defcfun #+x86 ("GetWindowLongW" GetWindowLongPtrW) #+x86-64 "GetWindowLongPtrW" LONG_PTR
   (hWnd     HWND)
   (nIndex   GWLP_ENUM))
 
 (defun SetWindowStyle (hWnd styles)
-  (foreign-funcall "SetWindowLongPtrW"
-		   HWND hWnd
-		   GWLP_ENUM :GWL_STYLE
-		   WND_STYLE styles
-		   WND_STYLE))
+  (foreign-funcall
+   #+x86-64
+   "SetWindowLongPtrW"
+   #+x86
+   "SetWindowLongW"
+   HWND hWnd
+   GWLP_ENUM :GWL_STYLE
+   WND_STYLE styles
+   WND_STYLE))
 
 (defun GetWindowStyle (hWnd)
-  (foreign-funcall "GetWindowLongPtrW"
-		   HWND hWnd
-		   GWLP_ENUM :GWL_STYLE
-		   WND_STYLE))
+  (foreign-funcall
+   #+x86-64
+   "GetWindowLongPtrW"
+   #+x86
+   "GetWindowLongW"
+   HWND hWnd
+   GWLP_ENUM :GWL_STYLE
+   WND_STYLE))
 
 (defun SetWindowExtendedStyle (hWnd styles)
-  (foreign-funcall "SetWindowLongPtrW"
-		   HWND hWnd
-		   GWLP_ENUM :GWL_EXSTYLE
-		   WS_EX_FLAG styles
-		   WS_EX_FLAG))
+  (foreign-funcall
+   #+x86-64
+   "SetWindowLongPtrW"
+   #+x86
+   "SetWindowLongW"
+   HWND hWnd
+   GWLP_ENUM :GWL_EXSTYLE
+   WS_EX_FLAG styles
+   WS_EX_FLAG))
 
 (defun GetWindowExtendedStyle (hWnd)
-  (foreign-funcall "GetWindowLongPtrW"
-		   HWND hWnd
-		   GWLP_ENUM :GWL_EXSTYLE
-		   WS_EX_FLAG))
+  (foreign-funcall
+   #+x86-64
+   "GetWindowLongPtrW"
+   #+x86
+   "GetWindowLongW"
+   HWND hWnd
+   GWLP_ENUM :GWL_EXSTYLE
+   WS_EX_FLAG))
 
 (defcfun "GetWindowThreadProcessId" DWORD
   (hWnd    HWND)
