@@ -1345,29 +1345,31 @@
   (when (and (pointerp pen) (not (null-pointer-p pen)))
     (DeleteObject pen)))
 
-(defmacro parse-pen-info (pen-info)
-  `(parse-foreign-struct ((,pen-info EXTLOGPEN)
-			  ((:elpPenStyle type&style&endcap&join)) ;PS_ENUM, PS_FLAG
-			  ((:elpWidth width))
-			  ((:elpBrushStyle brush))
-			  ((:elpColor  color))
-			  ((:elpHatch hatch)) ;HS_ENUM or pointer to bitmap
-			  ((:elpNumEntries style-length)))
-     (let ((type   (foreign-enum-keyword 'PS_TYPE_ENUM   (logand +PS_TYPE_MASK+   type&style&endcap&join)))
-	   (style  (foreign-enum-keyword 'PS_STYLE_ENUM  (logand +PS_STYLE_MASK+  type&style&endcap&join)))
-	   (endcap (foreign-enum-keyword 'PS_ENDCAP_ENUM (logand +PS_ENDCAP_MASK+ type&style&endcap&join)))
-	   (join   (foreign-enum-keyword 'PS_JOIN_ENUM   (logand +PS_JOIN_MASK+   type&style&endcap&join)))
-	   (custom (loop for i from 0 below style-length collect
-			(mem-aref (foreign-slot-pointer ,pen-info '(:struct EXTLOGPEN) :elpStyleEntry) 'DWORD i)))
-	   (color  (multiple-value-list (get-color-rgb color))))
-       (list :type type
-	     :style (if (eq style :PS_USERSTYLE) custom style)
-	     :endcap endcap
-	     :join   join
-	     :width width
-	     :brush brush
-	     :color color
-	     :hatch (or (foreign-enum-keyword 'HS_ENUM hatch :errorp nil) hatch)))))
+(defun parse-pen-info (pen-info)
+  (parse-foreign-struct ((pen-info EXTLOGPEN)
+			 ((:elpPenStyle type&style&endcap&join)) ;PS_ENUM, PS_FLAG
+			 ((:elpWidth width))
+			 ((:elpBrushStyle brush))
+			 ((:elpColor  color))
+			 ((:elpHatch hatch)) ;HS_ENUM or pointer to bitmap
+			 ((:elpNumEntries style-length)))
+    (let ((style-entry (foreign-slot-pointer pen-info '(:struct EXTLOGPEN) :elpStyleEntry)))
+      (let ((type   (foreign-enum-keyword 'PS_TYPE_ENUM   (logand +PS_TYPE_MASK+   type&style&endcap&join)))
+	    (style  (foreign-enum-keyword 'PS_STYLE_ENUM  (logand +PS_STYLE_MASK+  type&style&endcap&join)))
+	    (endcap (foreign-enum-keyword 'PS_ENDCAP_ENUM (logand +PS_ENDCAP_MASK+ type&style&endcap&join)))
+	    (join   (foreign-enum-keyword 'PS_JOIN_ENUM   (logand +PS_JOIN_MASK+   type&style&endcap&join)))
+	    (color  (multiple-value-list (get-color-rgb color))))
+	(list :type type
+	      :style (if (eq style :PS_USERSTYLE)
+			 (loop for i below style-length collect
+			      (mem-aref style-entry 'DWORD i))
+			 style)
+	      :endcap endcap
+	      :join   join
+	      :width width
+	      :brush brush
+	      :color color
+	      :hatch (or (foreign-enum-keyword 'HS_ENUM hatch :errorp nil) hatch))))))
 
 (defun get-pen-info (pen)
   (when (and (pointerp pen) (not (null-pointer-p pen)))

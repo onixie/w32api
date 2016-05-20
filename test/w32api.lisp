@@ -1058,8 +1058,6 @@
     (is (equal pen-info (get-pen-info (apply #'create-pen pen-info)))))
   (let ((pen-info (get-pen-info (create-pen :type :PS_COSMETIC))))
     (is (equal pen-info (get-pen-info (apply #'create-pen pen-info)))))
-  ;;bug: ccl breakage
-  #-ccl
   (let ((pen-info (get-pen-info (create-pen :style '(1 2 3) :endcap :PS_ENDCAP_ROUND))))
     (is (equal pen-info (get-pen-info (apply #'create-pen pen-info)))))
   (let ((pen-info (get-pen-info (create-pen :brush :BS_HATCHED :hatch :HS_CROSS))))
