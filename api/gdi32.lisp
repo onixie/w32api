@@ -59,7 +59,9 @@
 	   FillPath
 	   StrokeAndFillPath
 	   StrokePath
-	   WidenPath))
+	   WidenPath
+	   FlattenPath
+	   PathToRegion))
 
 (in-package #:w32api.gdi32)
 
@@ -389,4 +391,10 @@
   (hdc HDC))
 
 (defcfun "WidenPath" :boolean
+  (hdc HDC))
+
+(defcfun "FlattenPath" :boolean
+  (hdc HDC))
+
+(defcfun "PathToRegion" HRGN
   (hdc HDC))

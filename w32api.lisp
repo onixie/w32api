@@ -1404,3 +1404,17 @@
   (when (and (pointerp brush) (not (null-pointer-p brush)))
     (with-drawing-object-info ((brush LOGBRUSH brush-info))
       (parse-brush-info brush-info))))
+
+(defmacro with-path-drawing ((drawing-context &optional op) &body body)
+  (let ((dc (gensym)))
+    `(if (not ,op)
+	 (progn ,@body)
+	 (let ((,dc ,drawing-context))
+	   (BeginPath ,dc)
+	   ,@body
+	   (EndPath ,dc)
+	   (case ,op
+	     (:fill (FillPath ,dc))
+	     (:stroke (StrokePath ,dc))
+	     (:stroke-and-fill (StrokeAndFillPath ,dc))
+	     (t nil))))))
