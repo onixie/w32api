@@ -68,10 +68,12 @@
 	   OSVERSIONINFOEX
 	   PAINTSTRUCT
 	   POINT
+	   with-points
 	   SIZE
 	   PRODUCT_ENUM
 	   PM_FLAG
 	   RECT
+	   with-rects
 	   SECURITY_ATTRIBUTES
 	   SM_ENUM
 	   SW_ENUM
@@ -868,6 +870,18 @@
   (:x :long)
   (:y :long))
 
+(defmacro with-points (((array &optional (count (gensym))) point-seq) &body body)
+  (let ((points (gensym)))
+    `(let* ((,points ,point-seq)
+	    (,count (length ,points)))
+       (with-foreign-object (,array '(:struct POINT) ,count)
+	 (dotimes (i ,count)
+	   (let ((point (mem-aptr ,array '(:struct POINT) i)))
+	     (parse-foreign-struct ((point POINT)
+				    ((:x x) (first (nth i ,points)))
+				    ((:y y) (second (nth i ,points)))))))
+	 ,@body))))
+
 (defcstruct SIZE
   (:cx :long)
   (:cy :long))
@@ -892,6 +906,20 @@
   (:top		:long)
   (:right	:long)
   (:bottom	:long))
+
+(defmacro with-rects (((array &optional (count (gensym))) rect-seq) &body body)
+  (let ((rects (gensym)))
+    `(let* ((,rects ,rect-seq)
+	    (,count (length ,rects)))
+       (with-foreign-object (,array '(:struct RECT) ,count)
+	 (dotimes (i ,count)
+	   (let ((rect (mem-aptr ,array '(:struct RECT) i)))
+	     (parse-foreign-struct ((rect RECT)
+				    ((:top top) (first (nth i ,rects)))
+				    ((:left left) (second (nth i ,rects)))
+				    ((:right right) (third (nth i ,rects)))
+				    ((:bottom bottom) (fourth (nth i ,rects)))))))
+	 ,@body))))
 
 (defcstruct PAINTSTRUCT
   (:hdc         HDC)
