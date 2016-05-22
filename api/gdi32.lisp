@@ -51,7 +51,15 @@
 	   GetDCPenColor
 	   SetDCPenColor
 	   GetDCBrushColor
-	   SetDCBrushColor))
+	   SetDCBrushColor
+	   BeginPath
+	   EndPath
+	   AbortPath
+	   CloseFigure
+	   FillPath
+	   StrokeAndFillPath
+	   StrokePath
+	   WidenPath))
 
 (in-package #:w32api.gdi32)
 
@@ -358,3 +366,27 @@
 (defcfun "SetDCBrushColor" COLORREF
   (hdc      HDC)
   (crColor COLORREF))
+
+(defcfun "BeginPath" :boolean
+  (hdc HDC))
+
+(defcfun "EndPath" :boolean
+  (hdc HDC))
+
+(defcfun "AbortPath" :boolean
+  (hdc HDC))
+
+(defcfun "CloseFigure" :boolean
+  (hdc HDC))
+
+(defcfun "FillPath" :boolean
+  (hdc HDC))
+
+(defcfun "StrokeAndFillPath" :boolean
+  (hdc HDC))
+
+(defcfun "StrokePath" :boolean
+  (hdc HDC))
+
+(defcfun "WidenPath" :boolean
+  (hdc HDC))
