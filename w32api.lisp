@@ -180,7 +180,8 @@
 (defun get-all-monitors ()
   (let ((monitors nil))
     (declare (special monitors))
-    (EnumDisplayMonitors (null-pointer) (null-pointer) (callback EnumDisplayMonitorsCallback) 0)
+    (handler-case (EnumDisplayMonitors (null-pointer) (null-pointer) (callback EnumDisplayMonitorsCallback) 0)
+      (error nil nil))
     monitors))
 
 (defun get-monitor (&key (x1 0) (y1 0) (x2 nil) (y2 nil) (method nil))
@@ -281,7 +282,8 @@
 	(desktops nil))
     (declare (special desktops))
     (unless (null-pointer-p winsta)
-      (EnumDesktopsW winsta (callback EnumDesktopsW) 0)
+      (handler-case (EnumDesktopsW winsta (callback EnumDesktopsW) 0)
+	(error nil nil))
       desktops)))
 
 (defun desktop-p (desktop)
@@ -582,8 +584,9 @@
 (defun get-current-thread-windows ()
   (let ((windows nil))
     (declare (special windows))
-    (when (EnumThreadWindows (GetCurrentThreadId) (callback EnumThreadWindowsCallback) 0)
-      windows)))
+    (handler-case (EnumThreadWindows (GetCurrentThreadId) (callback EnumThreadWindowsCallback) 0)
+      (error nil nil))
+    windows))
 
 (defun get-window (name &key (class-name nil) (parent *parent-window*) (nth 0) (current-thread-window-p nil))
   (let ((windows (remove-if-not
@@ -670,7 +673,8 @@
   (when (window-p window)
     (let ((descendant nil))
       (declare (special descendant))
-      (EnumChildWindows window (callback EnumChildWindows) 0)
+      (handler-case (EnumChildWindows window (callback EnumChildWindows) 0)
+	(error nil nil))
       descendant)))
 
 (defun get-desktop-window ()
@@ -1040,10 +1044,10 @@
 
 (defun calculate-window-size-by-expect-client-area (window width height &key menu-p scroll-bar)
   (when (window-p window)
-   (multiple-value-bind (x1 y1 x2 y2)
-       (calculate-window-rectangle-by-expect-client-area window 0 0 width height :menu-p menu-p :scroll-bar scroll-bar)
-     (values (- x2 x1)
-	     (- y2 y1)))))
+    (multiple-value-bind (x1 y1 x2 y2)
+	(calculate-window-rectangle-by-expect-client-area window 0 0 width height :menu-p menu-p :scroll-bar scroll-bar)
+      (values (- x2 x1)
+	      (- y2 y1)))))
 
 (defun get-update-rectangle (window &optional erase-p)
   (when (window-p window)
@@ -1299,7 +1303,8 @@
 			    (:lfCharSet (foreign-enum-value 'CHARSET_ENUM charset))
 			    ((:lfFaceName lfFaceName)))
 	(cffi:lisp-string-to-foreign face lfFaceName +LF_FACESIZE+)
-	(EnumFontFamiliesExW dc font (get-callback 'EnumFontFamExCallback) 0 0)) 
+	(handler-case (EnumFontFamiliesExW dc font (get-callback 'EnumFontFamExCallback) 0 0)
+	  (error nil nil))) 
       font-infos)))
 
 (defun create-pen (&key
