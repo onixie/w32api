@@ -1118,6 +1118,15 @@
 (defun key-pressed-p (lParam)
   (not (key-released-p lParam)))
 
+(defun get-cursor-position (&optional window)
+  (with-foreign-struct ((pos POINT)
+			((:x x))
+			((:y y)))
+    (when (GetCursorPos pos)
+      (when (window-p window)
+	(MapWindowPoints (null-pointer) window pos 1))
+      (values x y))))
+
 ;;; helper for WM_XBUTTONDOWN, WM_XBUTTONUP
 (defun get-cursor-x (lParam)
   (LOWORD lParam))

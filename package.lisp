@@ -125,6 +125,7 @@
 	   key-released-p
 	   key-pressed-p
 	   
+	   get-cursor-position
 	   get-cursor-x
 	   get-cursor-y
 	   get-modifier-key

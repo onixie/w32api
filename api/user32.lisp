@@ -124,6 +124,7 @@
 	   AdjustWindowRectEx
 	   SetWindowExtendedStyle
 	   GetWindowExtendedStyle
+	   GetCursorPos
 	   ))
 
 (in-package #:w32api.user32)
@@ -688,3 +689,6 @@
   (dwStyle  WND_STYLE)
   (bMenu   :boolean)
   (dwExStyle  WS_EX_FLAG))
+
+(defcfun "GetCursorPos" :boolean
+  (lpPoint (:pointer (:struct POINT))))
