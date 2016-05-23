@@ -1116,10 +1116,10 @@
 
 ;;; helper for WM_XBUTTONDOWN, WM_XBUTTONUP
 (defun get-cursor-x (lParam)
-  (HIWORD lParam))
+  (LOWORD lParam))
 
 (defun get-cursor-y (lParam)
-  (LOWORD lParam))
+  (HIWORD lParam))
 
 (defun get-modifier-key (wParam)
   (foreign-bitfield-symbols 'MK_FLAG wParam))
