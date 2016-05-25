@@ -61,7 +61,13 @@
 	   StrokePath
 	   WidenPath
 	   FlattenPath
-	   PathToRegion))
+	   PathToRegion
+	   SaveDC
+	   RestoreDC
+	   CreateCompatibleDC
+	   CreateCompatibleBitmap
+	   DeleteDC
+	   BitBlt))
 
 (in-package #:w32api.gdi32)
 
@@ -398,3 +404,33 @@
 
 (defcfun "PathToRegion" HRGN
   (hdc HDC))
+
+(defcfun "SaveDC" :int
+  (hdc HDC))
+
+(defcfun "RestoreDC" :boolean
+  (hdc HDC)
+  (nSaveDC :int))
+
+(defcfun "CreateCompatibleDC" HDC
+  (hdc HDC))
+
+(defcfun "CreateCompatibleBitmap" HBITMAP
+  (hdc HDC)
+  (nWidth :int)
+  (nHeight :int)) 
+
+(defcfun "DeleteDC" :boolean
+  (hDC  HDC))
+
+(defcfun "BitBlt" :boolean
+  (hdcDest   HDC)
+  (nXDest   :int)
+  (nYDest   :int)
+  (nWidth   :int)
+  (nHeight   :int)
+  (hdcSrc   HDC)
+  (nXSrc   :int)
+  (nYSrc   :int)
+  (dwRop ROP_ENUM))
+

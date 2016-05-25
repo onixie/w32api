@@ -149,7 +149,8 @@
 	   OUT_PRECIS_ENUM
 	   CHARSET_ENUM
 	   FW_ENUM
-	   STKOBJ_ENUM))
+	   STKOBJ_ENUM
+	   ROP_ENUM))
 
 (in-package #:w32api.type)
 
@@ -2465,4 +2466,44 @@
   (:DEVICE_DEFAULT_FONT 14)
   (:DEFAULT_PALETTE     15)
   (:SYSTEM_FIXED_FONT   16)
+  )
+
+(defcenum (ROP_ENUM DWORD)
+  ;; Binary
+  (:R2_BLACK            1)		;  0
+  (:R2_NOTMERGEPEN      2)		; DPon
+  (:R2_MASKNOTPEN       3)		; DPna
+  (:R2_NOTCOPYPEN       4)		; PN
+  (:R2_MASKPENNOT       5)		; PDna
+  (:R2_NOT              6)		; Dn
+  (:R2_XORPEN           7)		; DPx
+  (:R2_NOTMASKPEN       8)		; DPan
+  (:R2_MASKPEN          9)		; DPa
+  (:R2_NOTXORPEN        10)		; DPxn
+  (:R2_NOP              11)		; D
+  (:R2_MERGENOTPEN      12)		; DPno
+  (:R2_COPYPEN          13)		; P
+  (:R2_MERGEPENNOT      14)		; PDno
+  (:R2_MERGEPEN         15)		; DPo
+  (:R2_WHITE            16)		;  1
+
+  ;; Ternary
+  (:SRCCOPY             #x00CC0020)    ; dest = source
+  (:SRCPAINT            #x00EE0086)   ; dest = sourcedest
+  (:SRCAND              #x008800C6)  ; dest = source Adest
+  (:SRCINVERT           #x00660046) ; dest = source Xdest
+  (:SRCERASE            #x00440328)   ; dest = source A(NOT dest )
+  (:NOTSRCCOPY          #x00330008)  ; dest = (NOT sour)
+  (:NOTSRCERASE         #x001100A6) ; dest = (NOT s) AND (NOT dest)
+  (:MERGECOPY           #x00C000CA)	; dest = (source Apattern)
+  (:MERGEPAINT          #x00BB0226)	; dest = (NOT sour) OR dest
+  (:PATCOPY             #x00F00021)	; dest = pattern
+  (:PATPAINT            #x00FB0A09)	; dest = DPSnoo
+  (:PATINVERT           #x005A0049)	; dest = pattern Xdest
+  (:DSTINVERT           #x00550009)	; dest = (NOT de)
+  (:BLACKNESS           #x00000042)	; dest = BLACK
+  (:WHITENESS           #x00FF0062)	; dest = WHITE
+					;WINVER >= 0x0500
+  (:NOMIRRORBITMAP               #x80000000) ; Do not Mirrthe bitmap in this call
+  (:CAPTUREBLT                   #x40000000) ; Include layered windo
   )
