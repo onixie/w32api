@@ -1425,10 +1425,19 @@
 	 (progn ,@body)
 	 (let ((,dc ,drawing-context))
 	   (BeginPath ,dc)
-	   ,@body
-	   (EndPath ,dc)
-	   (case ,op
-	     (:fill (FillPath ,dc))
-	     (:stroke (StrokePath ,dc))
-	     (:stroke-and-fill (StrokeAndFillPath ,dc))
-	     (t nil))))))
+	   (unwind-protect (progn ,@body)
+	     (EndPath ,dc)
+	     (case ,op
+	       (:fill (FillPath ,dc))
+	       (:stroke (StrokePath ,dc))
+	       (:stroke-and-fill (StrokeAndFillPath ,dc))
+	       (t nil)))))))
+
+(defmacro with-rop2 ((drawing-context rop) &body body)
+  (let ((old-rop (gensym))
+	(dc (gensym)))
+    `(let ((,dc ,drawing-context))
+       (let ((,old-rop (SetROP2 ,dc ,rop)))
+	 (unwind-protect (progn ,@body)
+	   (unless (eq ,old-rop :R2_ERROR)
+	     (SetROP2 ,dc ,old-rop))))))) 

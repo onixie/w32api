@@ -67,7 +67,9 @@
 	   CreateCompatibleDC
 	   CreateCompatibleBitmap
 	   DeleteDC
-	   BitBlt))
+	   BitBlt
+	   SetROP2
+	   GetROP2))
 
 (in-package #:w32api.gdi32)
 
@@ -434,3 +436,9 @@
   (nYSrc   :int)
   (dwRop ROP_ENUM))
 
+(defcfun "SetROP2" ROP_ENUM
+  (hdc HDC)
+  (fnDrawMode ROP_ENUM))
+
+(defcfun "GetROP2" ROP_ENUM
+  (hdc HDC))

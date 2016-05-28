@@ -2470,6 +2470,7 @@
 
 (defcenum (ROP_ENUM DWORD)
   ;; Binary
+  (:R2_ERROR            0)
   (:R2_BLACK            1)		;  0
   (:R2_NOTMERGEPEN      2)		; DPon
   (:R2_MASKNOTPEN       3)		; DPna
