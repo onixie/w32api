@@ -1419,6 +1419,28 @@
     (with-drawing-object-info ((brush LOGBRUSH brush-info))
       (parse-brush-info brush-info))))
 
+(defun parse-bitmap-info (bitmap-info)
+  (parse-foreign-struct ((bitmap-info BITMAP)
+			 ((:bmType type))
+			 ((:bmWidth width))
+			 ((:bmHeight height))
+			 ((:bmWidthBytes width-bytes))
+			 ((:bmPlanes planes))
+			 ((:bmBitsPixel bits-pixel))
+			 ((:bmBits bits)))
+    (list :type type
+	  :width width
+	  :height height
+	  :width-bytes width-bytes
+	  :planes planes
+	  :bits-pixel bits-pixel
+	  :bits bits)))
+
+(defun get-bitmap-info (bitmap)
+  (when (and (pointerp bitmap) (not (null-pointer-p bitmap)))
+    (with-drawing-object-info ((bitmap BITMAP bitmap-info))
+      (parse-bitmap-info bitmap-info))))
+
 (defmacro with-path-drawing ((drawing-context &optional op) &body body)
   (let ((dc (gensym)))
     `(if (not ,op)
@@ -1441,3 +1463,57 @@
 	 (unwind-protect (progn ,@body)
 	   (unless (eq ,old-rop :R2_ERROR)
 	     (SetROP2 ,dc ,old-rop))))))) 
+
+(defmacro with-buffering ((buffer-dc original-dc &key client-area-p image alpha-blend) &body body)
+  (let ((dst-width (gensym))
+	(dst-height (gensym))
+	(src-width (gensym))
+	(src-height (gensym))
+	(old-dc (gensym))
+	(bitmap (gensym))
+	(bitmap-info (gensym))
+	(alpha (gensym))
+	(format (gensym))
+	(blend-func (gensym))
+	(alphablend (gensym)))
+    `(let ((,old-dc ,original-dc)
+	   (,bitmap ,image)
+	   (,alphablend (cond ((eq t ,alpha-blend) '(255 :AC_SRC_ALPHA))
+			      (t (ensure-list ,alpha-blend)))))
+       (when ,old-dc
+	 (multiple-value-bind (,dst-width ,dst-height)
+	     (get-window-size (get-drawing-context-window ,original-dc) ,client-area-p)
+	   (when (and ,dst-width ,dst-height)
+	     (let* ((,bitmap (or ,bitmap (CreateCompatibleBitmap ,old-dc ,dst-width ,dst-height)))
+		    (,buffer-dc (CreateCompatibleDC ,old-dc)))
+	       (SelectObject ,buffer-dc ,bitmap)
+	       (unwind-protect (progn ,@body)
+		 (if ,alpha-blend
+		     (let* ((,alpha (cond ((numberp ,alphablend) ,alphablend)
+					  ((numberp (car ,alphablend)) (car ,alphablend))
+					  (t 255)))
+			    (,format (cond ((keywordp ,alphablend) ,alphablend)
+					   ((keywordp (cadr ,alphablend)) (cadr ,alphablend))
+					   (t :AC_SRC_OPAQUE)))
+			    (,bitmap-info (get-bitmap-info ,bitmap))
+			    (,src-width (getf ,bitmap-info :width))
+			    (,src-height (getf ,bitmap-info :height)))
+		       (when (and ,src-width ,src-height)
+			 (with-foreign-struct ((,blend-func BLENDFUNCTION)
+					       (:BlendOp :AC_SRC_OVER)
+					       (:BlendFlags 0)
+					       (:SourceConstantAlpha ,alpha)
+					       (:AlphaFormat ,format))
+			   (AlphaBlend ,old-dc 0 0
+				       (min ,src-width ,dst-width)
+				       (min ,src-height ,dst-height)
+				       ,buffer-dc 0 0
+				       (min ,src-width ,dst-width)
+				       (min ,src-height ,dst-height)
+				       (mem-ref ,blend-func 'DWORD)))))
+		     (BitBlt ,old-dc 0 0 ,dst-width ,dst-height ,buffer-dc 0 0 :SRCCOPY))
+		 (DeleteObject ,bitmap)
+		 (DeleteDC ,buffer-dc)))))))))
+
+(defun load-image (path &key (type :IMAGE_BITMAP) (cxDesired 0) (cyDesired 0) fuLoad)
+  (LoadImageW (null-pointer) path type cxDesired cyDesired (list* :LR_LOADFROMFILE fuLoad)))

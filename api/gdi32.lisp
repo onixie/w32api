@@ -68,8 +68,12 @@
 	   CreateCompatibleBitmap
 	   DeleteDC
 	   BitBlt
+	   TransparentBlt
 	   SetROP2
-	   GetROP2))
+	   GetROP2
+	   CreatePatternBrush
+	   CreateBitmap
+	   LoadImageW))
 
 (in-package #:w32api.gdi32)
 
@@ -436,9 +440,35 @@
   (nYSrc   :int)
   (dwRop ROP_ENUM))
 
+(defcfun "TransparentBlt" :boolean
+  (hdcDest   HDC)
+  (nXDest   :int)
+  (nYDest   :int)
+  (nWidth   :int)
+  (nHeight   :int)
+  (hdcSrc   HDC)
+  (nXSrc   :int)
+  (nYSrc   :int)
+  (crTransparent :uint))
+
 (defcfun "SetROP2" ROP_ENUM
   (hdc HDC)
   (fnDrawMode ROP_ENUM))
 
 (defcfun "GetROP2" ROP_ENUM
   (hdc HDC))
+
+(defcfun "CreateBitmap" HBITMAP
+  (nWidth  :int)
+  (nHeight  :int)
+  (cPlanes :uint)
+  (cBitsPerPel :uint)
+  (lpvBits :pointer))
+
+(defcfun "LoadImageW" HANDLE
+  (hinst HINSTANCE)
+  (lpszName :string)
+  (uType IMAGE_TYPE_ENUM)
+  (cxDesired :int)
+  (cyDesired :int)
+  (fuLoad IMAGE_LR_FLAG))

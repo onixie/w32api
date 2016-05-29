@@ -7,6 +7,7 @@
 	#:w32api.secur32	
 	#:w32api.user32
 	#:w32api.gdi32
+	#:w32api.msimg32
 	#:w32api.util)
   (:export get-processor-type
 	   get-processor-arch
@@ -155,6 +156,8 @@
 	   create-brush
 	   destroy-brush
 	   get-brush-info
+	   load-image
+	   get-bitmap-info
 	   set-window-extended-style
 	   get-window-extended-style
 	   calculate-window-rectangle-by-expect-client-area
