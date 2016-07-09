@@ -1518,3 +1518,8 @@
 
 (defun load-image (path &key (type :IMAGE_BITMAP) (cxDesired 0) (cyDesired 0) fuLoad)
   (LoadImageW (null-pointer) path type cxDesired cyDesired (list* :LR_LOADFROMFILE fuLoad)))
+
+(defmacro with-rect-region (hrgn (left top right bottom) &body body)
+  `(let ((,hrgn (CreateRectRgn ,left ,top ,right ,bottom)))
+     (unwind-protect (progn ,@body)
+       (DeleteObject ,hrgn))))

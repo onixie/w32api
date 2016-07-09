@@ -1,6 +1,7 @@
 (defpackage #:w32api.msimg32
   (:use #:common-lisp #:cffi #:w32api.type)
-  (:export AlphaBlend))
+  (:export AlphaBlend
+	   TransparentBlt))
 
 (in-package #:w32api.msimg32)
 
@@ -21,3 +22,14 @@
   (wSrc :int)
   (hSrc :int)
   (blendfunction DWORD))
+
+(defcfun "TransparentBlt" :boolean
+  (hdcDest   HDC)
+  (nXDest   :int)
+  (nYDest   :int)
+  (nWidth   :int)
+  (nHeight   :int)
+  (hdcSrc   HDC)
+  (nXSrc   :int)
+  (nYSrc   :int)
+  (crTransparent :uint))

@@ -156,7 +156,9 @@
 	   ALPHA_FORMAT_FLAG
 	   BLEND_OP_ENUM
 	   BLENDFUNCTION
-	   BITMAP))
+	   BITMAP
+	   RGN_COMPLEX_ENUM
+	   RGN_COMBINE_ENUM))
 
 (in-package #:w32api.type)
 
@@ -2563,3 +2565,16 @@
   (:bmPlanes   WORD)
   (:bmBitsPixel   WORD)
   (:bmBits :pointer))
+
+(defcenum (RGN_COMPLEX_ENUM :int)
+  (:ERROR               0)
+  (:NULLREGION          1)
+  (:SIMPLEREGION        2)
+  (:COMPLEXREGION       3))
+
+(defcenum (RGN_COMBINE_ENUM :int)
+  (:RGN_AND             1)
+  (:RGN_OR              2)
+  (:RGN_XOR             3)
+  (:RGN_DIFF            4)
+  (:RGN_COPY            5))

@@ -68,12 +68,22 @@
 	   CreateCompatibleBitmap
 	   DeleteDC
 	   BitBlt
-	   TransparentBlt
 	   SetROP2
 	   GetROP2
 	   CreatePatternBrush
 	   CreateBitmap
-	   LoadImageW))
+	   LoadImageW
+	   CreateRectRgn
+	   CreatePolygonRgn
+	   GetClipRgn
+	   GetClipBox
+	   SelectClipRgn
+	   SelectClipPath
+	   IntersectClipRect
+	   ExcludeClipRect
+	   OffsetClipRgn
+	   PtVisible
+	   RectVisible))
 
 (in-package #:w32api.gdi32)
 
@@ -440,17 +450,6 @@
   (nYSrc   :int)
   (dwRop ROP_ENUM))
 
-(defcfun "TransparentBlt" :boolean
-  (hdcDest   HDC)
-  (nXDest   :int)
-  (nYDest   :int)
-  (nWidth   :int)
-  (nHeight   :int)
-  (hdcSrc   HDC)
-  (nXSrc   :int)
-  (nYSrc   :int)
-  (crTransparent :uint))
-
 (defcfun "SetROP2" ROP_ENUM
   (hdc HDC)
   (fnDrawMode ROP_ENUM))
@@ -472,3 +471,60 @@
   (cxDesired :int)
   (cyDesired :int)
   (fuLoad IMAGE_LR_FLAG))
+
+(defcfun "CreateRectRgn" HRGN
+  (nLeftRect :int)
+  (nTopRect :int)
+  (nRightRect :int)
+  (nBottomRect :int))
+
+(defcfun "CreatePolygonRgn" HRGN
+  (lppt (:pointer (:struct POINT)))
+  (cPoints :int)
+  (fnPolyFillMode :int))
+
+(defcfun "GetClipRgn" :int
+  (hdc  HDC)
+  (hrgn HRGN))
+
+(defcfun "GetClipBox" RGN_COMPLEX_ENUM
+  (hdc HDC)
+  (lprc (:pointer (:struct RECT))))
+
+(defcfun "SelectClipRgn" RGN_COMPLEX_ENUM
+  (hdc  HDC)
+  (hrgn HRGN))
+
+(defcfun "SelectClipPath" :boolean
+  (hdc  HDC)
+  (iMode RGN_COMBINE_ENUM))
+
+(defcfun "IntersectClipRect" RGN_COMPLEX_ENUM
+  (hdc HDC)
+  (nLeftRect :int)
+  (nTopRect :int)
+  (nRightRect :int)
+  (nBottomRect :int))
+
+(defcfun "ExcludeClipRect" RGN_COMPLEX_ENUM
+  (hdc HDC)
+  (nLeftRect :int)
+  (nTopRect :int)
+  (nRightRect :int)
+  (nBottomRect :int))
+
+(defcfun "OffsetClipRgn" RGN_COMPLEX_ENUM
+  (hdc HDC)
+  (nXOffset :int)
+  (nYOffset :int)) 
+
+(defcfun "PtVisible" :int
+  (hdc HDC)
+  (X :int)
+  (Y :int))
+
+(defcfun "RectVisible" :int
+  (hdc HDC)
+  (lprc (:pointer (:struct RECT))))
+
+

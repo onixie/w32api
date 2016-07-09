@@ -163,4 +163,5 @@
 	   calculate-window-rectangle-by-expect-client-area
 	   calculate-window-size-by-expect-client-area
 	   with-path-drawing
-	   with-rop2))
+	   with-rop2
+	   with-rect-region))
