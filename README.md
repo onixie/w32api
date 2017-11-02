@@ -6,5 +6,5 @@
 - Refactor user level APIs with OOP(CLOS). 
 - Doc, Doc, Doc...
 
-**This project was planned for making a thin trampoline between Win32 natives and McClim. **
+**This project was planned for making a thin trampoline between Win32 natives and McClim.**
 **If you want to try it with McClim, please use [this](https://github.com/onixie/mcclim-old) - a fork from an older version of McClim.**
